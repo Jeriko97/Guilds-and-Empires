@@ -1,0 +1,52 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Ss]ysinfo/
+.obj/
+*.user
+*.userprefs
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb
+*.booproj
+*.svd
+*.apk
+*.aab
+*.app
+*.ipa
+
+# Unity Cache
+/[Aa]ssets/AssetStoreTools*
+
+# Crashlytics / Gradle / Android
+.gradle/
+*.apk
+*.aab
+*.keystore
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firebase.json
+.firebaserc
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.DotSettings
+*.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
