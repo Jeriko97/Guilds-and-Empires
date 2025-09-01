@@ -1,0 +1,49 @@
+name: CI (C# format + Unity hygiene)
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+
+jobs:
+  csharpier:
+    name: C# formatting check
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CSharpier
+        run: dotnet tool install -g csharpier
+      - name: Check formatting (Assets/**/*.cs)
+        run: csharpier --check "Assets/**/*.cs"
+
+  unity-meta:
+    name: Unity .meta hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure every asset has a .meta (and vice versa)
+        shell: bash
+        run: |
+          set -e
+          missing=0
+          # fichiers Unity qui doivent avoir un .meta
+          while IFS= read -r -d '' f; do
+            if [[ ! -f "${f}.meta" ]]; then
+              echo "::error file=${f}::Missing .meta for ${f}"
+              missing=1
+            fi
+          done < <(find Assets -type f ! -name "*.meta" -print0)
+
+          # .meta orphelins
+          while IFS= read -r -d '' m; do
+            base="${m%.meta}"
+            if [[ ! -e "$base" ]]; then
+              echo "::error file=${m}::.meta without asset: ${m}"
+              missing=1
+            fi
+          done < <(find Assets -type f -name "*.meta" -print0)
+
+          if [[ $missing -ne 0 ]]; then
+            echo "Unity meta hygiene failed"; exit 1
+          fi
+          echo "Unity meta hygiene OK"
