@@ -50,3 +50,6 @@ firebase.json
 # OS
 .DS_Store
 Thumbs.db
+
+Assets/Firebase/Plugins/x86_64/*.bundle
+Assets/Firebase/Plugins/x86_64/*.so
