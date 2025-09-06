@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "773015135537",
+    "project_id": "guildsandempires-ca543",
+    "storage_bucket": "guildsandempires-ca543.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:773015135537:android:9d513f1ee9f30a52a87c10",
+        "android_client_info": {
+          "package_name": "com.gne.guildsandempires"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAke8erYZiDV4bTpCBJ62da4IigrE-vYdU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
