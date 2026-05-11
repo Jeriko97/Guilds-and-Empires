@@ -1,0 +1,47 @@
+{
+  "skill_name": "unity-firebase-architect",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Je veux implémenter le système de collecte des bâtiments pour Guilds & Empires. Le joueur a des bâtiments qui produisent des ressources (bois, pierre, nourriture) en fonction du temps écoulé. Quand il appuie sur un bâtiment, il collecte la production accumulée. Comment je structure ça ? Côté Unity et côté Firebase.",
+      "expected_output": "Cloud Function collectBuilding (validation timer serveur), schéma Firestore avec lastCollectedAt serverTimestamp, interface IBuildingService, MainThreadDispatcher, Security Rules write: if false.",
+      "files": [],
+      "expectations": [
+        "Recommande une Cloud Function pour la collecte (pas de calcul côté client)",
+        "Mentionne FieldValue.serverTimestamp() pour lastCollectedAt",
+        "Propose une interface C# (IBuildingService ou similaire) pas une classe statique",
+        "Mentionne le risque de triche si le timer est validé côté client",
+        "Propose un schéma Firestore pour players/{uid}/buildings/{buildingId}",
+        "Mentionne CancellationToken ou gestion du lifecycle MonoBehaviour"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Je veux ajouter un marché joueur-à-joueur dans Guilds & Empires. Les joueurs peuvent mettre en vente leurs ressources avec un prix qu'ils fixent. D'autres joueurs peuvent acheter. Est-ce que je peux faire ça directement avec Firestore depuis le client, ou j'ai besoin de Cloud Functions ? Et comment je gère la concurrence si deux joueurs achètent le même lot en même temps ?",
+      "expected_output": "Cloud Functions obligatoires, runTransaction OCC pour concurrence, schéma market/{region}/listings, Security Rules write:false, idempotency keys, estimation coûts Firestore.",
+      "files": [],
+      "expectations": [
+        "Affirme clairement que les Cloud Functions sont obligatoires (pas client-direct)",
+        "Explique comment gérer la concurrence avec runTransaction Firestore",
+        "Propose le schéma Firestore pour le marché",
+        "Mentionne les Security Rules (write: if false pour les listings)",
+        "Mentionne l'idempotency ou la protection double-spend",
+        "Parle du coût Firestore ou du risque de lectures excessives"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "J'ai ce code dans mon ProfileUIController qui affiche les stats du joueur en temps réel depuis Firestore. Est-ce qu'il est correct ?\n\npublic class ProfileUIController : MonoBehaviour\n{\n    public TMP_Text statsText;\n    private IDisposable listener;\n    void Start()\n    {\n        var uid = FirebaseAuth.DefaultInstance.CurrentUser.UserId;\n        listener = FirebaseFirestore.DefaultInstance.Collection(\"profiles\").Document(uid).Listen(snapshot => {\n            var profile = snapshot.ConvertTo<Profile>();\n            statsText.text = $\"Gold: {profile.gold}\";\n        });\n    }\n    void OnDestroy() { listener?.Dispose(); }\n}",
+      "expected_output": "5 bugs identifiés : thread safety (crash Android), null guard CurrentUser, OnDisable pas OnDestroy, IProfileService pas accès direct, code corrigé complet avec MainThreadDispatcher.",
+      "files": [],
+      "expectations": [
+        "Identifie le bug de thread (callback Firebase sur background thread → crash UI)",
+        "Identifie le NullReferenceException si CurrentUser est null",
+        "Recommande OnEnable/OnDisable plutôt que Start/OnDestroy",
+        "Recommande d'utiliser MainThreadDispatcher ou équivalent",
+        "Recommande de passer par IProfileService plutôt qu'accès Firestore direct",
+        "Fournit du code corrigé (pas seulement une description des problèmes)"
+      ]
+    }
+  ]
+}
