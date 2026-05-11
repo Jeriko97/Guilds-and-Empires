@@ -1,8 +1,10 @@
 {
   "skill_name": "unity-firebase-architect",
+  "version": "2.0.0",
   "evals": [
     {
       "id": 1,
+      "category": "economy-architecture",
       "prompt": "Je veux implémenter le système de collecte des bâtiments pour Guilds & Empires. Le joueur a des bâtiments qui produisent des ressources (bois, pierre, nourriture) en fonction du temps écoulé. Quand il appuie sur un bâtiment, il collecte la production accumulée. Comment je structure ça ? Côté Unity et côté Firebase.",
       "expected_output": "Cloud Function collectBuilding (validation timer serveur), schéma Firestore avec lastCollectedAt serverTimestamp, interface IBuildingService, MainThreadDispatcher, Security Rules write: if false.",
       "files": [],
@@ -12,11 +14,15 @@
         "Propose une interface C# (IBuildingService ou similaire) pas une classe statique",
         "Mentionne le risque de triche si le timer est validé côté client",
         "Propose un schéma Firestore pour players/{uid}/buildings/{buildingId}",
-        "Mentionne CancellationToken ou gestion du lifecycle MonoBehaviour"
+        "Mentionne CancellationToken ou gestion du lifecycle MonoBehaviour",
+        "V2: Mentionne idempotency key dans la Cloud Function",
+        "V2: Mentionne rate limiting",
+        "V2: Précise que le serveur lit lastCollectedAt depuis Firestore (pas depuis le client)"
       ]
     },
     {
       "id": 2,
+      "category": "economy-architecture",
       "prompt": "Je veux ajouter un marché joueur-à-joueur dans Guilds & Empires. Les joueurs peuvent mettre en vente leurs ressources avec un prix qu'ils fixent. D'autres joueurs peuvent acheter. Est-ce que je peux faire ça directement avec Firestore depuis le client, ou j'ai besoin de Cloud Functions ? Et comment je gère la concurrence si deux joueurs achètent le même lot en même temps ?",
       "expected_output": "Cloud Functions obligatoires, runTransaction OCC pour concurrence, schéma market/{region}/listings, Security Rules write:false, idempotency keys, estimation coûts Firestore.",
       "files": [],
@@ -26,11 +32,14 @@
         "Propose le schéma Firestore pour le marché",
         "Mentionne les Security Rules (write: if false pour les listings)",
         "Mentionne l'idempotency ou la protection double-spend",
-        "Parle du coût Firestore ou du risque de lectures excessives"
+        "Parle du coût Firestore ou du risque de lectures excessives",
+        "V2: Mentionne la commission marché comme sink économique",
+        "V2: Propose l'architecture anti-hot-document pour les prix globaux (Cloud Scheduler, pas listener)"
       ]
     },
     {
       "id": 3,
+      "category": "code-review",
       "prompt": "J'ai ce code dans mon ProfileUIController qui affiche les stats du joueur en temps réel depuis Firestore. Est-ce qu'il est correct ?\n\npublic class ProfileUIController : MonoBehaviour\n{\n    public TMP_Text statsText;\n    private IDisposable listener;\n    void Start()\n    {\n        var uid = FirebaseAuth.DefaultInstance.CurrentUser.UserId;\n        listener = FirebaseFirestore.DefaultInstance.Collection(\"profiles\").Document(uid).Listen(snapshot => {\n            var profile = snapshot.ConvertTo<Profile>();\n            statsText.text = $\"Gold: {profile.gold}\";\n        });\n    }\n    void OnDestroy() { listener?.Dispose(); }\n}",
       "expected_output": "5 bugs identifiés : thread safety (crash Android), null guard CurrentUser, OnDisable pas OnDestroy, IProfileService pas accès direct, code corrigé complet avec MainThreadDispatcher.",
       "files": [],
@@ -40,7 +49,115 @@
         "Recommande OnEnable/OnDisable plutôt que Start/OnDestroy",
         "Recommande d'utiliser MainThreadDispatcher ou équivalent",
         "Recommande de passer par IProfileService plutôt qu'accès Firestore direct",
-        "Fournit du code corrigé (pas seulement une description des problèmes)"
+        "Fournit du code corrigé (pas seulement une description des problèmes)",
+        "V2: Mentionne OnApplicationPause pour suspendre le listener en background",
+        "V2: Mentionne CancellationTokenSource",
+        "V2: Identifie la string concatenation GC alloc dans statsText.text = $\"Gold: {profile.gold}\""
+      ]
+    },
+    {
+      "id": 4,
+      "category": "anticheat-veto",
+      "prompt": "Pour aller vite, je pensais laisser le client calculer combien de ressources il doit recevoir quand il collecte un bâtiment, et envoyer ce montant à la Cloud Function qui l'écrit directement en Firestore. Le client est quand même validé par Firebase Auth. C'est okay pour l'instant ?",
+      "expected_output": "VETO explicite, explication que le montant client-fourni est le vecteur d'attaque principal, alternative correcte immédiate.",
+      "files": [],
+      "expectations": [
+        "VETO explicite et immédiat",
+        "Explique que 'pour l'instant' n'existe pas pour l'économie server-authoritative",
+        "Explique concrètement comment ce vecteur est exploité (montant arbitraire)",
+        "Rappelle que Firebase Auth valide l'identité, pas les montants",
+        "Propose immédiatement l'alternative correcte (serveur lit lastCollectedAt, calcule le yield)",
+        "Mentionne que ce refactoring coûte plus cher plus tard que maintenant"
+      ]
+    },
+    {
+      "id": 5,
+      "category": "performance",
+      "prompt": "J'ai une liste de bâtiments affichée dans le HUD principal. Chaque bâtiment a un compteur de temps (temps restant avant collecte) qui se met à jour chaque seconde. Voici mon Update() :\n\nvoid Update() {\n    foreach (var b in _buildings) {\n        b.timerText.text = \"Prêt dans: \" + GetTimeRemaining(b) + \" sec\";\n    }\n}",
+      "expected_output": "3 violations de performance budget : GC alloc string concat, update chaque frame inutile, correction avec SetText et update seulement quand la valeur change.",
+      "files": [],
+      "expectations": [
+        "Identifie l'allocation string dans chaque frame (GC pressure)",
+        "Recommande TMP SetText avec format args (zero-alloc)",
+        "Recommande d'éviter l'update si la valeur n'a pas changé (dirty flag ou timer)",
+        "Fournit du code corrigé",
+        "V2: Mentionne le budget GC (0 B/frame en steady state)",
+        "V2: Mentionne que ceci sera problématique sur Snapdragon 665"
+      ]
+    },
+    {
+      "id": 6,
+      "category": "liveops",
+      "prompt": "Je veux lancer un événement 'Festival des Marchands' le week-end prochain qui double la production de toutes les ressources pendant 48h. Comment je fais ça sans pousser un nouveau build sur le store ?",
+      "expected_output": "Remote Config eventActive + eventMultiplier + eventEndTimestamp, Cloud Function lit RC, Unity poll RC toutes les 30 min, architecture data-driven.",
+      "files": [],
+      "expectations": [
+        "Remote Config comme mécanisme central (pas de code spécifique à l'événement)",
+        "Propose les clés RC : eventActive, eventMultiplier, eventEndTimestamp",
+        "Explique que la Cloud Function lit Remote Config (pas le client) pour les multiplicateurs",
+        "Explique le refresh RC en session (polling toutes les 30 min)",
+        "Mentionne les Analytics events pour tracker l'engagement événement",
+        "V2: Mentionne FCM pour notifier les joueurs du début de l'événement"
+      ]
+    },
+    {
+      "id": 7,
+      "category": "solo-founder-veto",
+      "prompt": "Je pense qu'on devrait utiliser Zenject pour l'injection de dépendances, et aussi implémenter un pattern repository générique IRepository<T> pour abstraire Firestore. Ça rendrait le code plus clean et testable.",
+      "expected_output": "VETO Zenject (ServiceLocator suffit), VETO IRepository<T> (YAGNI pour 3 entités), explication du coût de maintenance pour un solo founder.",
+      "files": [],
+      "expectations": [
+        "VETO ou forte recommandation contre Zenject",
+        "Explique que ServiceLocator suffit jusqu'à 50k DAU",
+        "VETO ou forte recommandation contre IRepository<T>",
+        "Explique YAGNI : 3 collections Firestore ne justifient pas un générique",
+        "Explique le coût de maintenance de ces abstractions pour un solo founder",
+        "Propose l'alternative concrète (ServiceLocator + interfaces concrètes par domaine)"
+      ]
+    },
+    {
+      "id": 8,
+      "category": "firebase-cost",
+      "prompt": "Je veux afficher les prix du marché en temps réel à tous les joueurs dès qu'un trade est exécuté. Je pensais mettre un listener Firestore sur le document globalEconomy/prices qui se met à jour à chaque vente.",
+      "expected_output": "VETO listener temps réel sur document global — coût explosion à scale. Cloud Scheduler toutes les 5 minutes + polling Unity.",
+      "files": [],
+      "expectations": [
+        "Identifie le problème de coût : N joueurs × 1 update = N lectures Firestore",
+        "Calcule ou estime le coût à 10k DAU",
+        "VETO le listener temps réel sur un document partagé",
+        "Propose Cloud Scheduler + écriture agrégée périodique",
+        "Propose polling côté Unity (toutes les 5 minutes, pas de listener)",
+        "V2: Mentionne que Firestore a une limite de 1 write/sec/document sur les documents hot"
+      ]
+    },
+    {
+      "id": 9,
+      "category": "anticheat-advanced",
+      "prompt": "Un joueur a réussi à accumuler 500 000 gold en 2 heures alors que le maximum légal par heure est 1000. Qu'est-ce qui a pu se passer et comment on prévient ça ?",
+      "expected_output": "Analyse des vecteurs d'attaque possibles, architecture rate limiting Cloud Functions, anomaly detection, freeze du compte suspect.",
+      "files": [],
+      "expectations": [
+        "Identifie les vecteurs possibles : race condition CF, missing rate limit, Security Rules manquantes",
+        "Propose rate limiting par uid/action/minute dans les Cloud Functions",
+        "Propose anomaly detection avec seuil configurable via RC",
+        "Propose freeze automatique du compte au-delà du seuil",
+        "Mentionne BigQuery ou Analytics pour l'audit post-incident",
+        "V2: Mentionne la collection 'anomalies' Firestore inaccessible aux clients"
+      ]
+    },
+    {
+      "id": 10,
+      "category": "mobile-architecture",
+      "prompt": "Mon app crashe parfois sur des appareils Android quand le joueur reçoit une notification Firebase et que l'app est en background. Comment corriger ça ?",
+      "expected_output": "OnApplicationPause suspend les listeners, MainThreadDispatcher pour les callbacks, CancellationToken sur reprise.",
+      "files": [],
+      "expectations": [
+        "Identifie le crash probable : callback Firebase sur thread background après reprise",
+        "Recommande OnApplicationPause(true) pour disposer les listeners",
+        "Recommande de réouvrir les listeners sur OnApplicationPause(false)",
+        "Mentionne le fetch serveur au resume (état peut avoir changé)",
+        "Mentionne MainThreadDispatcher.Post pour tout accès UI après callback",
+        "V2: Mentionne CancellationTokenSource.Cancel() sur pause et nouvelle CTS sur resume"
       ]
     }
   ]
