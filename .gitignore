@@ -57,7 +57,10 @@ Assets/Firebase/Plugins/x86_64/*.so
 
 # Claude Code
 .claude/
+.claude/worktrees/
 
 # Firebase Functions
 functions/node_modules/
 functions/lib/
+
+UserSettings/
