@@ -102,9 +102,9 @@ export const claimDailyBonus = onCall(
       tx.set(nonceRef, {
         uid,
         action: "claimDailyBonus",
-        result,
+        result: result as Record<string, unknown>,
         processedAt: serverTs,
-      } satisfies Omit<TransactionLog, "processedAt"> & { processedAt: admin.firestore.FieldValue });
+      });
 
       return result;
     });
