@@ -62,5 +62,7 @@ Assets/Firebase/Plugins/x86_64/*.so
 # Firebase Functions
 functions/node_modules/
 functions/lib/
+functions/.env*
+firebase-debug.log
 
 UserSettings/
