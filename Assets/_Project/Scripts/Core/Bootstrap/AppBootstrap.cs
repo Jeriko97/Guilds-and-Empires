@@ -6,6 +6,8 @@ using GuildsAndEmpires.Core.Config;
 using GuildsAndEmpires.Core.Lifecycle;
 using GuildsAndEmpires.Core.Logging;
 using GuildsAndEmpires.Core.Threading;
+using GuildsAndEmpires.Services;
+using GuildsAndEmpires.Services.Economy;
 using GuildsAndEmpires.Services.Firebase;
 using GuildsAndEmpires.UI.Screens;
 
@@ -16,12 +18,13 @@ namespace GuildsAndEmpires.Core.Bootstrap
     ///
     /// Initialization order (sequential, each step logs its outcome):
     ///   1. Logging configured from EnvironmentConfig
-    ///   2. Core services registered in ServiceLocator
+    ///   2. Core services registered in ServiceLocator (LifecycleManager, ScreenManager)
     ///   3. Network reachability checked (informational — Firebase handles offline via persistence)
     ///   4. Firebase SDK initialized, Firestore offline persistence enabled
-    ///   5. Remote Config fetched and activated (non-fatal, falls back to ScriptableObject defaults)
-    ///   6. AppState set to Ready or OfflineReady
-    ///   7. ScreenManager.OnBootReady() called — first screen is pushed here
+    ///   5. App services registered (IProfileService, IEconomyService) — Firebase required
+    ///   6. Remote Config fetched and activated (non-fatal, falls back to ScriptableObject defaults)
+    ///   7. AppState set to Ready or OfflineReady
+    ///   8. ScreenManager.OnBootReady() called — first screen is pushed here
     ///
     /// CancellationToken is cancelled on OnDestroy. Any async step that checks the token will
     /// stop cleanly when the app is force-quit mid-init (e.g. in the editor).
@@ -113,7 +116,17 @@ namespace GuildsAndEmpires.Core.Bootstrap
                 GELogger.Warning("Bootstrap", "Firebase unavailable offline — starting in limited mode.");
             }
 
-            // --- Step 4: Remote Config ---------------------------------------------------------
+            // --- Step 4: App services ----------------------------------------------------------
+            // Enregistrés seulement si Firebase est prêt (les services dépendent du SDK).
+            // En mode offline dégradé, les services ne sont pas disponibles.
+            if (firebaseReady)
+            {
+                ServiceLocator.Register<IProfileService>(new ProfileService());
+                ServiceLocator.Register<IEconomyService>(new EconomyService());
+                GELogger.Debug("Bootstrap", "App services registered.");
+            }
+
+            // --- Step 5: Remote Config ---------------------------------------------------------
             // Non-fatal. ScriptableObject defaults are pre-loaded so values are always valid.
             // Skipped when EnvironmentConfig.SkipRemoteConfig is set (editor debug override).
             if (firebaseReady && !_environmentConfig.SkipRemoteConfig)
@@ -123,7 +136,7 @@ namespace GuildsAndEmpires.Core.Bootstrap
                 await rcBootstrap.FetchAndActivateAsync(ct, rcTimeout);
             }
 
-            // --- Step 5: Ready -----------------------------------------------------------------
+            // --- Step 6: Ready -----------------------------------------------------------------
             State = firebaseReady ? AppState.Ready : AppState.OfflineReady;
             GELogger.Info("Bootstrap", $"Init complete — {State}");
 
