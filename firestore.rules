@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Profils joueurs ─────────────────────────────────────────────────────
+    // Le client peut lire son propre profil (pour l'affichage en temps réel).
+    // L'écriture est INTERDITE au client — le SDK Admin (Cloud Functions) contourne ces règles.
+    // Toute mutation économique (gold, level) passe par une Cloud Function.
+    match /profiles/{uid} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ─── Logs d'idempotency ───────────────────────────────────────────────────
+    // Enregistre chaque transaction traitée (nonce → résultat).
+    // Le client peut lire ses propres logs (pour debug/UI), jamais écrire.
+    match /transactionLogs/{nonce} {
+      allow read:  if request.auth != null
+                   && resource != null
+                   && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ─── Refus par défaut ─────────────────────────────────────────────────────
+    // Toute collection non listée ci-dessus est bloquée au client.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

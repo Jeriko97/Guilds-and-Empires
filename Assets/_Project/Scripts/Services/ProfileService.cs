@@ -1,58 +1,78 @@
 using System;
-using System.Threading.Tasks;
+using System.Threading;
 using Firebase.Firestore;
+using GuildsAndEmpires.Core.Logging;
+using GuildsAndEmpires.Core.Threading;
 
-public static class ProfileService
+namespace GuildsAndEmpires.Services
 {
-    // Modèle Firestore
-    [FirestoreData]
-    public class Profile
+    /// <summary>
+    /// Implémentation Firebase de <see cref="IProfileService"/>.
+    /// Lit le profil Firestore en temps réel et dispatche les callbacks sur le main thread Unity.
+    ///
+    /// Le profil est créé côté serveur par le trigger Firebase Auth <c>initPlayerProfile</c>
+    /// à l'inscription. Le client ne crée jamais de document profil.
+    ///
+    /// SUPPRIMÉ : AddGoldAsync — toute mutation économique passe par IEconomyService
+    /// (Cloud Function claimDailyBonus / collectBuilding / etc.).
+    /// </summary>
+    public sealed class ProfileService : IProfileService
     {
-        [FirestoreProperty] public int level { get; set; } = 1;
-        [FirestoreProperty] public int gold { get; set; } = 0;
-        [FirestoreProperty] public string displayName { get; set; } = "";
-        [FirestoreProperty] public string uid { get; set; } = "";
-    }
+        private static CollectionReference Profiles =>
+            FirebaseFirestore.DefaultInstance.Collection("profiles");
 
-    // Référence à la collection
-    private static CollectionReference Profiles =>
-        FirebaseFirestore.DefaultInstance.Collection("profiles");
-
-    /// Observer un profil en temps réel (création si inexistant)
-    public static IDisposable Observe(string uid, Action<Profile> onChanged)
-    {
-        var doc = Profiles.Document(uid);
-
-        return doc.Listen(snapshot =>
+        public IDisposable Observe(string uid, Action<ProfileData> onChanged, CancellationToken ct)
         {
-            if (!snapshot.Exists)
+            if (string.IsNullOrEmpty(uid))
+                throw new ArgumentException("uid ne peut pas être null ou vide.", nameof(uid));
+
+            var listener = Profiles.Document(uid).Listen(snapshot =>
             {
-                var p = new Profile { uid = uid, level = 1, gold = 0 };
-                doc.SetAsync(p); // Création si pas encore présent
-                onChanged?.Invoke(p);
-                return;
-            }
+                // Le callback Firestore arrive sur un thread du pool — jamais sur le main thread Unity.
+                // MainThreadDispatcher.Post garantit que l'UI ne crashe pas sur Android.
+                if (!snapshot.Exists)
+                {
+                    // Le profil n'existe pas encore (trigger Auth pas encore exécuté).
+                    // Ne rien faire : le listener se redéclenchera quand le profil sera créé.
+                    GELogger.Debug("ProfileService", $"Snapshot inexistant pour uid {uid} — en attente du trigger.");
+                    return;
+                }
 
-            var profile = snapshot.ConvertTo<Profile>();
-            onChanged?.Invoke(profile);
-        });
-    }
+                ProfileData data;
+                try
+                {
+                    data = MapSnapshot(snapshot);
+                }
+                catch (Exception ex)
+                {
+                    GELogger.Error("ProfileService", $"Erreur de mapping snapshot: {ex.Message}");
+                    return;
+                }
 
-    /// Ajouter de l’or de manière atomique (+ création doc si besoin)
-    public static Task AddGoldAsync(string uid, int amount)
-    {
-        var db = FirebaseFirestore.DefaultInstance;
-        var doc = Profiles.Document(uid);
+                MainThreadDispatcher.Post(() => onChanged?.Invoke(data));
+            });
 
-        return db.RunTransactionAsync(async tr =>
+            // Arrête le listener proprement si le CancellationToken est annulé
+            // (ex: OnDisable du MonoBehaviour, OnDestroy, ou timeout de session).
+            ct.Register(() => listener.Stop());
+            return listener;
+        }
+
+        // ── Modèle Firestore (lecture seule) ────────────────────────────────────────
+        // uid intentionnellement absent : la clé du document EST l'uid, pas de redondance.
+        [FirestoreData]
+        private sealed class FirestoreProfile
         {
-            var snap = await tr.GetSnapshotAsync(doc);
-            var p = snap.Exists
-                ? snap.ConvertTo<Profile>()
-                : new Profile { uid = uid, level = 1, gold = 0 };
+            [FirestoreProperty] public string displayName  { get; set; } = string.Empty;
+            [FirestoreProperty] public int    level        { get; set; } = 1;
+            [FirestoreProperty] public long   gold         { get; set; } = 0;
+            [FirestoreProperty] public int    schemaVersion { get; set; } = 0;
+        }
 
-            p.gold += amount;
-            tr.Set(doc, p); // upsert
-        });
+        private static ProfileData MapSnapshot(DocumentSnapshot snapshot)
+        {
+            var p = snapshot.ConvertTo<FirestoreProfile>();
+            return new ProfileData(p.displayName, p.level, p.gold, p.schemaVersion);
+        }
     }
 }
