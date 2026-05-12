@@ -35,11 +35,12 @@
 *.aab
 *.keystore
 
-# Firebase
+# Firebase — secrets de configuration (jamais versionner)
 google-services.json
 GoogleService-Info.plist
-firebase.json
-.firebaserc
+
+# firebase.json et .firebaserc ne contiennent pas de secrets — ils sont versionnés.
+# Voir firestore.rules et functions/ pour la configuration Firebase CLI.
 
 # Visual Studio / Rider
 .vs/
