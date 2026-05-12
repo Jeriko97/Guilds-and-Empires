@@ -102,7 +102,7 @@ export const claimDailyBonus = onCall(
       tx.set(nonceRef, {
         uid,
         action: "claimDailyBonus",
-        result: result as Record<string, unknown>,
+        result: result as unknown as Record<string, unknown>,
         processedAt: serverTs,
       });
 
