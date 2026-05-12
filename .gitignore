@@ -57,3 +57,7 @@ Assets/Firebase/Plugins/x86_64/*.so
 
 # Claude Code
 .claude/
+
+# Firebase Functions
+functions/node_modules/
+functions/lib/
