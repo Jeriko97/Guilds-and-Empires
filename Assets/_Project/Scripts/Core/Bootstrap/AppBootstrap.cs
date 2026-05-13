@@ -59,11 +59,12 @@ namespace GuildsAndEmpires.Core.Bootstrap
             DontDestroyOnLoad(gameObject);
             _cts = new CancellationTokenSource();
 
-            // Logging must be configured before any other system logs — do it first in Awake.
             GELogger.Configure(_environmentConfig);
-            GELogger.Info("Bootstrap",
-                $"Guilds & Empires v{_appConfig.Version}+{_appConfig.BuildNumber} " +
-                $"[{_environmentConfig.Environment}] — init start");
+            var version = _appConfig != null
+                ? $"v{_appConfig.Version}+{_appConfig.BuildNumber}"
+                : "dev";
+            var env = _environmentConfig?.Environment.ToString() ?? "Development";
+            GELogger.Info("Bootstrap", $"Guilds & Empires {version} [{env}] — init start");
         }
 
         private async void Start()
@@ -88,8 +89,8 @@ namespace GuildsAndEmpires.Core.Bootstrap
         {
             // --- Step 1: Register core services ------------------------------------------------
             // Synchronous. These services are safe to resolve from any subsequent step.
-            ServiceLocator.Register<GameLifecycleManager>(_lifecycleManager);
-            ServiceLocator.Register<ScreenManager>(_screenManager);
+            if (_lifecycleManager != null) ServiceLocator.Register<GameLifecycleManager>(_lifecycleManager);
+            if (_screenManager    != null) ServiceLocator.Register<ScreenManager>(_screenManager);
             GELogger.Debug("Bootstrap", "Core services registered.");
 
             // --- Step 2: Network check ---------------------------------------------------------
@@ -99,7 +100,7 @@ namespace GuildsAndEmpires.Core.Bootstrap
 
             // --- Step 3: Firebase SDK ----------------------------------------------------------
             // Required. Configures Firestore offline persistence before any read/write occurs.
-            var firebaseTimeout = TimeSpan.FromSeconds(_appConfig.FirebaseInitTimeoutSeconds);
+            var firebaseTimeout = TimeSpan.FromSeconds(_appConfig?.FirebaseInitTimeoutSeconds ?? 10f);
             var firebaseBootstrap = new FirebaseBootstrap();
             bool firebaseReady = await firebaseBootstrap.InitializeAsync(ct, firebaseTimeout);
 
@@ -129,9 +130,9 @@ namespace GuildsAndEmpires.Core.Bootstrap
             // --- Step 5: Remote Config ---------------------------------------------------------
             // Non-fatal. ScriptableObject defaults are pre-loaded so values are always valid.
             // Skipped when EnvironmentConfig.SkipRemoteConfig is set (editor debug override).
-            if (firebaseReady && !_environmentConfig.SkipRemoteConfig)
+            if (firebaseReady && !(_environmentConfig?.SkipRemoteConfig ?? false))
             {
-                var rcTimeout = TimeSpan.FromSeconds(_appConfig.RemoteConfigTimeoutSeconds);
+                var rcTimeout = TimeSpan.FromSeconds(_appConfig?.RemoteConfigTimeoutSeconds ?? 5f);
                 var rcBootstrap = new RemoteConfigBootstrap(_remoteConfigDefaults);
                 await rcBootstrap.FetchAndActivateAsync(ct, rcTimeout);
             }
@@ -141,7 +142,7 @@ namespace GuildsAndEmpires.Core.Bootstrap
             GELogger.Info("Bootstrap", $"Init complete — {State}");
 
             // Signal the screen layer. ScreenManager decides which screen to show first.
-            _screenManager.OnBootReady(State);
+            _screenManager?.OnBootReady(State);
         }
 
         private void OnDestroy()

@@ -63,7 +63,7 @@ namespace GuildsAndEmpires.Services.Firebase
             // PersistenceEnabled = true keeps a local SQLite cache so reads succeed offline
             // and writes are queued and replayed when connectivity returns.
             var db = FirebaseFirestore.DefaultInstance;
-            db.Settings = new FirebaseFirestoreSettings { PersistenceEnabled = true };
+            db.Settings.PersistenceEnabled = true;
         }
     }
 }

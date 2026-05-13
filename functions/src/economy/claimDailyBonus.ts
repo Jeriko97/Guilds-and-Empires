@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
-import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineInt } from "firebase-functions/params";
-import type { ClaimDailyBonusRequest, ClaimDailyBonusResult, PlayerProfile, TransactionLog } from "./types";
+import type { ClaimDailyBonusResult, PlayerProfile, TransactionLog } from "./types";
 
 // Valeur configurable sans redéploiement via Firebase Functions Parameters.
 // Pour les tests A/B ou les événements saisonniers, modifier dans la console Firebase.
@@ -10,12 +10,8 @@ const COOLDOWN_HOURS    = defineInt("DAILY_BONUS_COOLDOWN_HOURS", { default: 24 
 
 const SCHEMA_VERSION = 1;
 
-export const claimDailyBonus = onCall(
-  {
-    region: "us-central1",
-    // enforceAppCheck: true  ← activer avant le lancement public (App Check requis)
-  },
-  async (request: CallableRequest<ClaimDailyBonusRequest>): Promise<ClaimDailyBonusResult> => {
+export const claimDailyBonus = onCall<{ nonce: string }>(
+  async (request): Promise<ClaimDailyBonusResult> => {
 
     // ── 1. Authentification ───────────────────────────────────────────────────
     if (!request.auth) {

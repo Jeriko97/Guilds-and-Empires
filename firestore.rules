@@ -5,11 +5,24 @@ service cloud.firestore {
 
     // ─── Profils joueurs ─────────────────────────────────────────────────────
     // Le client peut lire son propre profil (pour l'affichage en temps réel).
-    // L'écriture est INTERDITE au client — le SDK Admin (Cloud Functions) contourne ces règles.
-    // Toute mutation économique (gold, level) passe par une Cloud Function.
+    //
+    // create : autorisé uniquement depuis Unity après le signup Firebase Auth.
+    //   - gold DOIT être 0 à la création (pas d'inflation client-side possible)
+    //   - level DOIT être 1
+    //   - schemaVersion DOIT être 1
+    //
+    // update / delete : INTERDITS au client.
+    //   Toute mutation économique (gold, level) passe par la Cloud Function
+    //   claimDailyBonus (Admin SDK, contourne ces règles).
     match /profiles/{uid} {
-      allow read:  if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
+      allow read:   if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.gold == 0
+                    && request.resource.data.level == 1
+                    && request.resource.data.schemaVersion == 1;
+      allow update: if false;
+      allow delete: if false;
     }
 
     // ─── Logs d'idempotency ───────────────────────────────────────────────────

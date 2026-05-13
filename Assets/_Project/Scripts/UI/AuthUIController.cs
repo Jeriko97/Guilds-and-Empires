@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Firebase.Auth;
+using Firebase.Firestore;
 
 public class AuthUIController : MonoBehaviour
 {
@@ -70,6 +72,9 @@ public class AuthUIController : MonoBehaviour
             var res = await FirebaseAuth.DefaultInstance
                 .CreateUserWithEmailAndPasswordAsync(email, pass);
 
+            if (statusText) statusText.text = "Creating profile...";
+            await CreatePlayerProfileAsync(res.User);
+
             if (statusText) statusText.text = $"Created: {res.User.Email}";
             Debug.Log($"[AUTH] SignUp OK: {res.User.UserId}");
         }
@@ -92,5 +97,31 @@ public class AuthUIController : MonoBehaviour
             if (statusText) statusText.text = $"Signout error: {e.Message}";
             Debug.LogError($"[AUTH] SignOut error: {e}");
         }
+    }
+
+    // Crée le document Firestore /profiles/{uid} immédiatement après le signup.
+    // gold=0 et level=1 sont validés par les règles Firestore (protection anti-triche).
+    // lastClaimedDailyBonusAt est omis : la Cloud Function gère son absence via null-coalescing.
+    private static async Task CreatePlayerProfileAsync(FirebaseUser user)
+    {
+        var displayName = !string.IsNullOrEmpty(user.DisplayName)
+            ? user.DisplayName
+            : !string.IsNullOrEmpty(user.Email)
+                ? user.Email.Split('@')[0]
+                : $"Player_{user.UserId.Substring(0, 6)}";
+
+        await FirebaseFirestore.DefaultInstance
+            .Collection("profiles")
+            .Document(user.UserId)
+            .SetAsync(new Dictionary<string, object>
+            {
+                ["displayName"]   = displayName,
+                ["level"]         = 1,
+                ["gold"]          = 0L,
+                ["schemaVersion"] = 1,
+                ["createdAt"]     = FieldValue.ServerTimestamp,
+            });
+
+        Debug.Log($"[AUTH] Profil Firestore créé pour {user.UserId}");
     }
 }

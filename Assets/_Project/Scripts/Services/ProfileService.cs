@@ -10,8 +10,8 @@ namespace GuildsAndEmpires.Services
     /// Implémentation Firebase de <see cref="IProfileService"/>.
     /// Lit le profil Firestore en temps réel et dispatche les callbacks sur le main thread Unity.
     ///
-    /// Le profil est créé côté serveur par le trigger Firebase Auth <c>initPlayerProfile</c>
-    /// à l'inscription. Le client ne crée jamais de document profil.
+    /// Le profil est créé côté client par <c>AuthUIController.CreatePlayerProfileAsync</c>
+    /// immédiatement après le signup Firebase Auth.
     ///
     /// SUPPRIMÉ : AddGoldAsync — toute mutation économique passe par IEconomyService
     /// (Cloud Function claimDailyBonus / collectBuilding / etc.).
@@ -32,7 +32,7 @@ namespace GuildsAndEmpires.Services
                 // MainThreadDispatcher.Post garantit que l'UI ne crashe pas sur Android.
                 if (!snapshot.Exists)
                 {
-                    // Le profil n'existe pas encore (trigger Auth pas encore exécuté).
+                    // Le profil n'existe pas encore (écriture Firestore en cours ou échouée).
                     // Ne rien faire : le listener se redéclenchera quand le profil sera créé.
                     GELogger.Debug("ProfileService", $"Snapshot inexistant pour uid {uid} — en attente du trigger.");
                     return;

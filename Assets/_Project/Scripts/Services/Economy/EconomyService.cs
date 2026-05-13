@@ -21,7 +21,8 @@ namespace GuildsAndEmpires.Services.Economy
     {
         // Pour un déploiement dans une région non-us-central1, utiliser :
         // FirebaseFunctions.GetInstance(FirebaseApp.DefaultInstance, "europe-west1")
-        private readonly FirebaseFunctions _functions = FirebaseFunctions.DefaultInstance;
+        private readonly FirebaseFunctions _functions =
+    FirebaseFunctions.GetInstance("us-central1");
 
         public async Task<ClaimDailyBonusResult> ClaimDailyBonusAsync(CancellationToken ct = default)
         {
