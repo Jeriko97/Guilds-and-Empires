@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Firebase.Functions;
@@ -59,8 +60,15 @@ namespace GuildsAndEmpires.Services.Economy
 
         private static ClaimDailyBonusResult ParseClaimResult(object data)
         {
-            if (data is not Dictionary<string, object> dict)
-                throw new EconomyException("internal", "Réponse serveur invalide.");
+            // Firebase Functions Unity SDK 13.x deserializes JSON objects as
+            // Dictionary<object, object>, not Dictionary<string, object>.
+            Dictionary<object, object> dict = data switch
+            {
+                Dictionary<object, object> d => d,
+                Dictionary<string, object> d => new Dictionary<object, object>(
+                    System.Linq.Enumerable.ToDictionary(d, kv => (object)kv.Key, kv => kv.Value)),
+                _ => throw new EconomyException("internal", "Réponse serveur invalide.")
+            };
 
             try
             {
