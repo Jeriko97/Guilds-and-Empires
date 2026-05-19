@@ -132,3 +132,43 @@ Remplacer le calcul actuel par :
 Vigilance à apporter à l'implémentation : edge cases comme un cycle
 qui termine pile au moment du login, ou des calculs qui donneraient
 un timestamp futur par arrondi flottant. Tests dédiés requis.
+
+---
+
+### TD-005 — Convention pattern obligatoire pour toutes les Cloud Functions
+
+**Identifié :** 2026-05-19 (ÉTAPE 5, design testabilité handlers)
+**Criticité actuelle :** N/A — convention architecturale, pas un bug
+**Composant :** toutes les Cloud Functions Phase 1+
+
+**Description :**
+Pattern à appliquer systématiquement à chaque nouvelle Cloud Function :
+
+```typescript
+// 1. Types d'API — source de vérité unique, exposés pour les tests
+//    et la future génération de bindings client (Unity → C#)
+export type {FunctionName}Request  = CallableRequest<DataType>;
+export type {FunctionName}Response = ResultType;
+
+// 2. Handler — logique métier, testé directement sans wrapper Firebase
+export async function {functionName}Handler(
+  request: {FunctionName}Request
+): Promise<{FunctionName}Response> {
+  // ... logique métier
+}
+
+// 3. Wrapper production — utilisé par le runtime Firebase uniquement
+export const {functionName} = onCall({ invoker: "public" }, {functionName}Handler);
+```
+
+**Pourquoi :**
+- Les tests importent `{functionName}Handler` directement avec un mock `CallableRequest`
+  sans dépendre de firebase-functions-test (qui crée des conflits d'init Admin SDK en v3)
+- Les types `Request/Response` exposés permettent aux mocks de rester en sync
+  avec la signature sans copier la déclaration
+- Prépare la génération future de types client (Unity → C# bindings via tooling)
+
+**Application immédiate :**
+`resolveLoginStateHandler` est la première occurrence. À appliquer à :
+startProductionSlot, collectProduction, acceptContract, deliverToContract,
+sellToMarket, upgradeInventoryCap, purchaseGuildCharter.
