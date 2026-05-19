@@ -23,6 +23,7 @@
 - `/global/marketState` : `prices`, `priceHistory`
 - `/global/activeWorldEvents/{eventId}` : `eventType`, `status`, `priceMultipliers`
 - `/global/contractPool/{contractId}` : `tier`, `rewardGold`, `rewardFavor`
+- `/rateLimits/{uid}_{action}` : `uid`, `action`, `lastCalledAt` — accès Admin SDK uniquement, jamais client
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

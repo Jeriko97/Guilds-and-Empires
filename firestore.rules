@@ -35,6 +35,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── Rate limits ──────────────────────────────────────────────────────────
+    // Lecture et écriture uniquement via Cloud Functions (service account Admin SDK).
+    match /rateLimits/{rateLimitId} {
+      allow read, write: if false;
+    }
+
     // ─── Refus par défaut ─────────────────────────────────────────────────────
     // Toute collection non listée ci-dessus est bloquée au client.
     match /{document=**} {
