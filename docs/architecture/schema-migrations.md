@@ -24,6 +24,9 @@
 - `/global/activeWorldEvents/{eventId}` : `eventType`, `status`, `priceMultipliers`
 - `/global/contractPool/{contractId}` : `tier`, `rewardGold`, `rewardFavor`
 - `/rateLimits/{uid}_{action}` : `uid`, `action`, `lastCalledAt` — accès Admin SDK uniquement, jamais client
+- `/players/{uid}/buildings/{buildingId}` — ajout de `lastProcessedAt: Timestamp | null` dans chaque `ProductionSlotState`
+  - **Pas de migration de données requise** : le fallback `lastProcessedAt ?? startedAt` dans resolveLoginState
+    gère les slots existants sans ce champ. Duplication one-shot possible au premier login post-déploiement (voir TD-003).
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

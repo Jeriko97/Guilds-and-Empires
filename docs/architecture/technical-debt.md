@@ -67,3 +67,32 @@ typage parfait sur l'ensemble de la base.
 Soit union type `Timestamp | FieldValue` sur les champs concernés,
 soit migration vers FirestoreDataConverter pour avoir une
 séparation propre entre type "read" et type "write".
+
+---
+
+### TD-003 — Duplication one-shot au premier resolveLoginState post-déploiement de lastProcessedAt
+
+**Identifié :** 2026-05-19 (correction bug duplication offline)
+**Criticité actuelle :** TRÈS FAIBLE
+**Composant :** `firebase/functions/src/login/resolveLoginState.ts`
+
+**Description :**
+Les slots existants avant l'introduction du champ `lastProcessedAt`
+n'ont pas ce champ dans Firestore. Au premier appel de resolveLoginState
+post-déploiement, le fallback `slot.lastProcessedAt ?? slot.startedAt`
+utilisera `startedAt` comme référence, calculant la totalité de la
+production depuis le début du slot plutôt que depuis la dernière collecte.
+
+**Impact actuel :**
+Négligeable en pre-alpha : ~0 vrais joueurs, ~0 documents affectés.
+La duplication est one-shot (au login suivant, lastProcessedAt existe
+et le calcul est correct).
+
+**Trigger de résolution :**
+Aucune action requise. À surveiller uniquement si des joueurs réels
+sont présents au moment du déploiement de ce changement.
+
+**Solution prévue :**
+Si dataset non-vide au moment du déploiement : script de migration
+one-shot qui initialise `lastProcessedAt = startedAt` sur tous les
+slots actifs existants.

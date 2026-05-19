@@ -114,13 +114,11 @@ export const resolveLoginState = onCall(
         const playerData = playerSnap.data() as PlayerDocument;
         requireSchemaVersion(playerData);
 
-        const buildings: BuildingDocument[] = buildingsSnap.docs.map(
-          (doc) => doc.data() as BuildingDocument
-        );
-
         // ── Calcul de production différée ───────────────────────────────────
-        // elapsed = serverTimestamp - slot.startedAt, calculé côté serveur.
+        // elapsed = now - lastProcessedAt (ou startedAt si premier calcul).
         // Le client ne fournit aucun paramètre temporel (Doctrine Anti-Cheat).
+        // startedAt n'est JAMAIS la référence de calcul après le premier traitement —
+        // sinon les cycles déjà comptés seraient recomptés à chaque login.
         const now = admin.firestore.Timestamp.now();
 
         // Copie de l'inventaire — on ne mute pas le document Firestore directement.
@@ -130,32 +128,50 @@ export const resolveLoginState = onCall(
           reconstructionKits:{ ...playerData.inventory.reconstructionKits },
         };
 
-        for (const building of buildings) {
-          for (const slot of building.slots) {
-            if (slot.recipeId === null || slot.startedAt === null) continue;
+        // Traitement des buildings : calcul de production + mise à jour des slots.
+        const buildings: BuildingDocument[] = [];
+
+        for (const buildingSnap of buildingsSnap.docs) {
+          const building = buildingSnap.data() as BuildingDocument;
+          let buildingModified = false;
+
+          const updatedSlots = building.slots.map((slot) => {
+            if (slot.recipeId === null || slot.startedAt === null) return slot;
 
             const recipe = RECIPES[slot.recipeId];
-            const elapsedMs = now.toMillis() - slot.startedAt.toMillis();
 
-            if (elapsedMs <= 0) continue;
+            // lastProcessedAt comme référence de calcul — fallback sur startedAt
+            // pour les slots qui n'ont pas encore été traités (migration one-shot, TD-003).
+            const referenceTimestamp = slot.lastProcessedAt ?? slot.startedAt;
+            const elapsedMs = now.toMillis() - referenceTimestamp.toMillis();
+
+            if (elapsedMs <= 0) return slot;
 
             const completedCycles = Math.floor(elapsedMs / recipe.durationMs);
-            if (completedCycles === 0) continue;
+            if (completedCycles === 0) return slot;
 
-            const rawYield = completedCycles * recipe.outputQty;
+            // Option B : lastProcessedAt mis à jour si completedCycles > 0,
+            // même si le yield est clampé à 0 par saturation d'inventaire.
+            // Production perdue à saturation = intentionnelle (mécanisme de check-in).
             const inventoryKey = RECIPE_TO_INVENTORY_KEY[slot.recipeId];
             const resource = inventory[inventoryKey];
-            const availableSpace = resource.cap - resource.quantity;
-            const actualYield = Math.min(rawYield, availableSpace);
+            const rawYield = completedCycles * recipe.outputQty;
+            const actualYield = Math.min(rawYield, resource.cap - resource.quantity);
 
-            // actualYield peut être 0 si le cap est atteint.
-            // Le slot reste actif et startedAt reste inchangé — décision D3.1.
-            // La prochaine collecte recalculera depuis la même référence absolue.
             inventory[inventoryKey] = {
               ...resource,
               quantity: resource.quantity + actualYield,
             };
+
+            buildingModified = true;
+            return { ...slot, lastProcessedAt: now };
+          });
+
+          if (buildingModified) {
+            tx.update(buildingSnap.ref, { slots: updatedSlots });
           }
+
+          buildings.push({ ...building, slots: updatedSlots });
         }
 
         // ── Écriture atomique — inventaire + lastLoginAt ────────────────────

@@ -94,14 +94,25 @@ export interface ProductionSlotState {
 
   /**
    * Posé une fois par startProductionSlot via serverTimestamp(). Jamais resetté.
-   * resolveLoginState calcule le yield comme :
-   *   floor((now - startedAt) / durationMs) * outputQty
-   * clampé par (inventory.cap - inventory.quantity).
-   *
-   * Pas de completedAt : la production tourne offline. Personne n'est présent
-   * pour écrire la complétion. Le serveur recalcule depuis startedAt à chaque collecte.
+   * Référence informative : depuis quand le slot tourne globalement.
+   * Le calcul différé utilise lastProcessedAt (pas startedAt) pour éviter la duplication.
    */
   startedAt: firestore.Timestamp | null;
+
+  /**
+   * Timestamp du dernier calcul de production qui a effectivement consommé des cycles.
+   * Sert de référence pour calculer le temps écoulé depuis la dernière collecte effective.
+   *
+   * Distinct de startedAt qui est informatif (depuis quand le slot tourne globalement).
+   * lastProcessedAt est calculatoire (depuis quand du temps non consommé s'accumule).
+   *
+   * Mis à jour si completedCycles > 0, même si le yield est clampé à 0 par le cap
+   * (Option B — production perdue à saturation est intentionnelle, pas récupérable).
+   *
+   * null = slot inactif (recipeId === null) ou premier calcul avant migration.
+   * Fallback : resolveLoginState utilise startedAt si lastProcessedAt est null.
+   */
+  lastProcessedAt: firestore.Timestamp | null;
 }
 
 export interface BuildingDocument {
