@@ -60,9 +60,16 @@ Assets/Firebase/Plugins/x86_64/*.so
 .claude/worktrees/
 
 # Firebase Functions
-functions/node_modules/
-functions/lib/
-functions/.env*
+firebase/functions/node_modules/
+firebase/functions/lib/
+firebase/functions/.env*
 firebase-debug.log
 
 UserSettings/
+
+# Outils repo ponctuels
+bfg.jar
+
+# Résidus Node à la racine
+package-lock.json
+package.json
