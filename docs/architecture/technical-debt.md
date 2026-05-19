@@ -96,3 +96,39 @@ sont présents au moment du déploiement de ce changement.
 Si dataset non-vide au moment du déploiement : script de migration
 one-shot qui initialise `lastProcessedAt = startedAt` sur tous les
 slots actifs existants.
+
+---
+
+### TD-004 — Drift de temps résiduel non conservé dans lastProcessedAt
+
+**Identifié :** 2026-05-19 (post-correction bug duplication offline)
+**Criticité actuelle :** TRÈS FAIBLE
+**Composant :** `firebase/functions/src/login/resolveLoginState.ts`
+
+**Description :**
+Le calcul actuel pose `lastProcessedAt = now` au lieu de
+`lastProcessedAt = referenceTimestamp + (completedCycles * durationMs)`.
+Le temps résiduel (elapsed modulo durationMs) est donc perdu à chaque
+calcul de production.
+
+**Impact actuel :**
+Drift toujours défavorable au joueur, jamais exploitable. Maximum
+(durationMs - 1ms) perdues par check-in. Pour Phase 1 avec cycles de
+20-60 minutes, perte moyenne acceptable.
+
+**Trigger de résolution :**
+Avant l'introduction de mécaniques sensibles au timing fin :
+- Buffs/boosts temporaires
+- LiveOps avec timers courts (< 5 minutes)
+- Multi-slots avec sync précise requise
+- Économie boostée par event mondial
+
+**Solution prévue :**
+Remplacer le calcul actuel par :
+  lastProcessedAt = Timestamp.fromMillis(
+    referenceTimestamp.toMillis() + (completedCycles * recipe.durationMs)
+  );
+
+Vigilance à apporter à l'implémentation : edge cases comme un cycle
+qui termine pile au moment du login, ou des calculs qui donneraient
+un timestamp futur par arrondi flottant. Tests dédiés requis.
