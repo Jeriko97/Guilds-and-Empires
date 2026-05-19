@@ -1,3 +1,11 @@
+/**
+ * @deprecated Cette fonction est une preuve de concept pré-spec.
+ * Elle sera supprimée à la fin de Phase 1 Vertical Slice quand son
+ * rôle sera couvert par les Cloud Functions définies dans le
+ * document phase-1-technical-implementation.md.
+ * Collection /profiles/{uid} : à NE PAS étendre ni réutiliser.
+ * Date prévue de suppression : fin Phase 1.
+ */
 import * as admin from "firebase-admin";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
