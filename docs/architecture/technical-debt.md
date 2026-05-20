@@ -229,3 +229,35 @@ synchronisées NTP. Le drift entre `Timestamp.now()` côté CF et ce qu'aurait
 
 **Pas de migration de schéma nécessaire :**
 La règle s'applique au code à écrire. Aucun document existant n'est affecté.
+
+---
+
+### TD-009 — ESLint non opérationnel dans le projet
+
+**Identifié :** 2026-05-20 (ÉTAPE 8, post-commit collectProduction)
+**Criticité actuelle :** FAIBLE
+**Composant :** `firebase/functions/`
+
+**Description :**
+Le repo contient un `.eslintrc.js` hérité de `firebase init`, mais
+les dépendances correspondantes (eslint-plugin-import,
+eslint-config-google, @typescript-eslint/*) ne figurent pas dans
+`package.json` et l'exécutable `node_modules/.bin/eslint` n'est pas
+présent. Aucun script `lint` n'est défini dans les scripts npm.
+
+**Impact actuel :**
+Les conventions stylistiques (TD-005 pattern, imports, naming) ne
+sont pas vérifiées automatiquement. Repose entièrement sur l'audit
+humain et sur la discipline de Claude Code. Risque de drift
+silencieux entre sessions.
+
+**Trigger de résolution :**
+Avant ÉTAPE 9 (décision founder).
+
+**Solution prévue :**
+Installer les dépendances eslint requises, valider la config
+`.eslintrc.js` actuelle (ou la simplifier vers une config
+TypeScript standard), ajouter `"lint": "eslint . --ext .ts"` aux
+scripts npm. Vérifier que les fichiers déjà commités passent le
+linter avant d'ajouter ça aux critères d'acceptation des tickets
+futurs.
