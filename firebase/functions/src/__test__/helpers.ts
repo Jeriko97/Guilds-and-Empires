@@ -43,6 +43,7 @@ export function makeRequest(uid: string, displayName?: string): CallableRequest<
     data: undefined,
     auth: {
       uid,
+      rawToken: "",
       token: {
         uid,
         name: displayName ?? "Test Player",
@@ -54,6 +55,7 @@ export function makeRequest(uid: string, displayName?: string): CallableRequest<
         sub: uid,
         iat: 0,
         exp: 0,
+        auth_time: 0,
       },
     },
     rawRequest: {} as never,
