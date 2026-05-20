@@ -7,14 +7,13 @@ admin.initializeApp();
 export { resolveLoginState } from "./login/resolveLoginState";
 
 // ── Production ────────────────────────────────────────────────────────────────
-export { startProductionSlot } from "./production/startProductionSlot";
+export { startProductionSlot }  from "./production/startProductionSlot";
+export { collectProduction }    from "./production/collectProduction";
 
 // ── Économie (legacy — pré-spec, à supprimer fin Phase 1) ────────────────────
 export { claimDailyBonus } from "./economy/claimDailyBonus";
 
 // ── À venir — Phase 1 Vertical Slice ─────────────────────────────────────────
-// export { collectProduction }      from "./production/collectProduction";
-// export { collectProduction }      from "./production/collectProduction";
 // export { acceptContract }         from "./contracts/acceptContract";
 // export { deliverToContract }      from "./contracts/deliverToContract";
 // export { sellToMarket }           from "./market/sellToMarket";

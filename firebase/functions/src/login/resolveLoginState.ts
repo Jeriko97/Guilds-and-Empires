@@ -5,7 +5,7 @@ import { logger } from "firebase-functions/logger";
 
 import { requireAuth, requireSchemaVersion } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
-import { RECIPES, RECIPE_TO_INVENTORY_KEY } from "../shared/recipes";
+import { processBuildingSlots } from "../shared/production";
 import { CURRENT_SCHEMA_VERSION } from "../shared/types";
 import type {
   PlayerDocument,
@@ -13,7 +13,6 @@ import type {
   ContractDocument,
   InventoryState,
   PlayerStateSnapshot,
-  RecipeId,
 } from "../shared/types";
 
 // ── Types d'API — source de vérité pour tests et bindings client ──────────────
@@ -120,8 +119,8 @@ export async function resolveLoginStateHandler(
       // sinon les cycles déjà comptés seraient recomptés à chaque login.
       const now = admin.firestore.Timestamp.now();
 
-      // Copie de l'inventaire — on ne mute pas le document Firestore directement.
-      const inventory: InventoryState = {
+      // Inventaire initial — sera chaîné à travers les buildings via processBuildingSlots.
+      let inventory: InventoryState = {
         logs:              { ...playerData.inventory.logs },
         planks:            { ...playerData.inventory.planks },
         reconstructionKits:{ ...playerData.inventory.reconstructionKits },
@@ -132,44 +131,18 @@ export async function resolveLoginStateHandler(
 
       for (const buildingSnap of buildingsSnap.docs) {
         const building = buildingSnap.data() as BuildingDocument;
-        let buildingModified = false;
 
-        const updatedSlots = building.slots.map((slot) => {
-          if (slot.recipeId === null || slot.startedAt === null) return slot;
+        const { updatedSlots, updatedInventory } = processBuildingSlots(building, inventory, now);
 
-          const recipe = RECIPES[slot.recipeId];
-
-          // lastProcessedAt comme référence de calcul — fallback sur startedAt
-          // pour les slots qui n'ont pas encore été traités (migration one-shot, TD-003).
-          const referenceTimestamp = slot.lastProcessedAt ?? slot.startedAt;
-          const elapsedMs = now.toMillis() - referenceTimestamp.toMillis();
-
-          if (elapsedMs <= 0) return slot;
-
-          const completedCycles = Math.floor(elapsedMs / recipe.durationMs);
-          if (completedCycles === 0) return slot;
-
-          // Option B : lastProcessedAt mis à jour si completedCycles > 0,
-          // même si le yield est clampé à 0 par saturation d'inventaire.
-          // Production perdue à saturation = intentionnelle (mécanisme de check-in).
-          const inventoryKey = RECIPE_TO_INVENTORY_KEY[slot.recipeId];
-          const resource = inventory[inventoryKey];
-          const rawYield = completedCycles * recipe.outputQty;
-          const actualYield = Math.min(rawYield, resource.cap - resource.quantity);
-
-          inventory[inventoryKey] = {
-            ...resource,
-            quantity: resource.quantity + actualYield,
-          };
-
-          buildingModified = true;
-          return { ...slot, lastProcessedAt: now };
-        });
-
+        // buildingModified ≡ au moins un slot a eu completedCycles > 0 (Option B incluse).
+        // Détecté par identité objet : processBuildingSlots pose `lastProcessedAt = now`
+        // (le même `now` injecté) uniquement dans ce cas.
+        const buildingModified = updatedSlots.some((s) => s.lastProcessedAt === now);
         if (buildingModified) {
           tx.update(buildingSnap.ref, { slots: updatedSlots });
         }
 
+        inventory = updatedInventory;
         buildings.push({ ...building, slots: updatedSlots });
       }
 
