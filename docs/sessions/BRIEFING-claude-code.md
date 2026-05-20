@@ -10,9 +10,12 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 ## État du repo (mise à jour : 2026-05-20)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : 3242421
-- 2/9 Cloud Functions complètes (resolveLoginState, startProductionSlot)
-- 22/22 tests verts contre Firebase Emulator
+- Dernier commit : d831364
+- 3/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
+  collectProduction)
+- 45/45 tests verts contre Firebase Emulator
+- Helper partagé : firebase/functions/src/shared/production.ts
+  (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
 - Java 21 requis (Eclipse Temurin)
 - Émulateur : firebase emulators:start --only firestore,auth
   --project demo-guilds-empires
@@ -31,7 +34,7 @@ Lire en priorité au démarrage :
 
 - docs/architecture/phase-1-technical-implementation.md (architecture)
 - docs/architecture/phase-1-decisions-log.md (décisions tranchées)
-- docs/architecture/technical-debt.md (TD-001 à TD-007)
+- docs/architecture/technical-debt.md (TD-001 à TD-009, TD-008 non ouverte)
 - docs/architecture/schema-migrations.md (schéma Firestore v1)
 - docs/design/phase-1-economy-values.md (valeurs économiques)
 - Dernier docs/sessions/*.md disponible
@@ -86,7 +89,7 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-ÉTAPE 8 : collectProduction
+ÉTAPE 9 : acceptContract
 
 Référence détaillée :
 docs/architecture/phase-1-technical-implementation.md section 2.

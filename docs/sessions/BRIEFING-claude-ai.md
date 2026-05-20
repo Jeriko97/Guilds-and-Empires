@@ -34,11 +34,12 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Phase : Phase 1 Vertical Slice
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 2/9 complètes (resolveLoginState +
-  startProductionSlot)
-- Tests : 22/22 verts
+- Cloud Functions : 3/9 complètes (resolveLoginState +
+  startProductionSlot + collectProduction)
+- Tests : 45/45 verts
 - Branche : feature/bootstrap-architecture
-- Dernier commit : 3242421
+- Dernier commit : d831364
+- Helper partagé : firebase/functions/src/shared/production.ts
 
 ## Documents de référence à demander au founder
 
@@ -72,15 +73,16 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 8 : collectProduction
+ÉTAPE 9 : acceptContract
 
 Référence : docs/architecture/phase-1-technical-implementation.md
 section 2.
 
 Particularités à anticiper :
-- Récolte d'un slot spécifique (vs récolte automatique à login)
-- Calcul des cycles disponibles via lastProcessedAt
-- Update du slot après récolte (lastProcessedAt = Timestamp.now())
-- Slot reste actif (recipeId NON resetté, startedAt inchangé)
-- Option B pour inventaire plein (perte sèche documentée)
-- TD-007 obligatoire (Timestamp.now dans l'array slots)
+- Lecture d'un contrat depuis /global/contractPool/{contractId}
+- Validation : contrat actif, favorRank suffisant pour le tier
+- Validation : pas déjà accepté par ce joueur
+- Validation : slots Priority non épuisés si tier == priority
+- Création du document /players/{uid}/contracts/{playerContractId}
+- Idempotency: uid + contractTemplateId
+- Transaction Firestore pour la mutation multi-document
