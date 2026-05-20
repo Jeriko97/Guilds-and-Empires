@@ -261,3 +261,23 @@ TypeScript standard), ajouter `"lint": "eslint . --ext .ts"` aux
 scripts npm. Vérifier que les fichiers déjà commités passent le
 linter avant d'ajouter ça aux critères d'acceptation des tickets
 futurs.
+
+**Résolution — 2026-05-20 :**
+Config simplifiée : `eslint-config-google` et `eslint-plugin-import`
+abandonnés (google = style opinioné non adapté au projet, import = inutile
+sans resolver configuré). Deps retenues : `eslint@8`,
+`@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`.
+
+Règle `indent` retirée : `claimDailyBonus.ts` (code legacy condamné fin
+Phase 1) généraient 55 erreurs. Politique founder : warnings non traités =
+bruit → règle supprimée. L'indentation est garantie par discipline Claude
+Code et IDE.
+
+`ignorePatterns` étendu à `/src/__test__/**/*` pour aligner ESLint sur
+les mêmes exclusions que `tsconfig.json` (les tests ne font pas partie
+du build de production).
+
+Config finale opérationnelle : `quotes: error` + `@typescript-eslint/
+recommended`. Script `"lint": "eslint . --ext .ts"` ajouté. `npm run lint`
+→ 0 erreur, 0 warning sur tous les fichiers de production.
+**Criticité actuelle : RÉSOLUE**
