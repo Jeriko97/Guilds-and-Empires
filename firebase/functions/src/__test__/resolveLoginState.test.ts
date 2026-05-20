@@ -24,12 +24,6 @@ beforeEach(async () => {
   await clearTestData();
 });
 
-afterAll(async () => {
-  // Ferme les connexions Admin SDK pour que Jest puisse quitter proprement.
-  const { getApps, deleteApp } = await import("firebase-admin/app");
-  await Promise.all(getApps().map(deleteApp));
-});
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("resolveLoginState", () => {

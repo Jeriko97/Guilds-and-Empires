@@ -5,7 +5,7 @@ import { logger } from "firebase-functions/logger";
 
 import { requireAuth, requireSchemaVersion } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
-import { RECIPES } from "../shared/recipes";
+import { RECIPES, RECIPE_TO_INVENTORY_KEY } from "../shared/recipes";
 import { CURRENT_SCHEMA_VERSION } from "../shared/types";
 import type {
   PlayerDocument,
@@ -30,16 +30,6 @@ const INITIAL_INVENTORY: InventoryState = {
   logs:              { quantity: 0, cap: 50 },
   planks:            { quantity: 0, cap: 30 },
   reconstructionKits:{ quantity: 0, cap: 10 },
-};
-
-/**
- * Mapping de RecipeId vers la clé correspondante dans InventoryState.
- * Nécessaire car 'reconstruction_kits' (snake_case Firestore) → 'reconstructionKits' (camelCase TS).
- */
-const RECIPE_TO_INVENTORY_KEY: Record<RecipeId, keyof InventoryState> = {
-  logs:              "logs",
-  planks:            "planks",
-  reconstruction_kits: "reconstructionKits",
 };
 
 // ── Handler — logique métier, testé directement sans wrapper Firebase ─────────

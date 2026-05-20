@@ -6,6 +6,7 @@ import type { PlayerDocument, RecipeId, ContractTier } from "./types";
 // Tableaux de référence pour les validations runtime (les types TS sont effacés à l'exécution).
 const VALID_RECIPE_IDS: RecipeId[] = ["logs", "planks", "reconstruction_kits"];
 const VALID_CONTRACT_TIERS: ContractTier[] = ["standard", "reinforced", "priority"];
+const VALID_SLOT_INDICES: Array<0 | 1 | 2> = [0, 1, 2];
 
 /**
  * Extrait l'uid depuis request.auth.
@@ -70,6 +71,31 @@ export function requireValidRecipeId(value: unknown): asserts value is RecipeId 
     throw new HttpsError(
       "invalid-argument",
       `recipeId invalide : '${value}'. Valeurs acceptées : ${VALID_RECIPE_IDS.join(", ")}.`
+    );
+  }
+}
+
+/**
+ * Vérifie que value est un index de slot valide (0, 1 ou 2).
+ * Throw si la valeur n'est pas exactement 0, 1 ou 2.
+ *
+ * Note : requirePositiveInteger ne convient pas — 0 est un slot valide mais pas un entier
+ * strictement positif. Ce validator accepte explicitement les trois valeurs entières autorisées.
+ *
+ * @param fieldName - Nom du champ affiché dans le message d'erreur (défaut : "slotIndex").
+ *
+ * @example
+ * requireValidSlotIndex(request.data.slotIndex);
+ * // slotIndex: 0 | 1 | 2 garanti après cet appel
+ */
+export function requireValidSlotIndex(
+  value: unknown,
+  fieldName = "slotIndex"
+): asserts value is 0 | 1 | 2 {
+  if (!VALID_SLOT_INDICES.includes(value as 0 | 1 | 2)) {
+    throw new HttpsError(
+      "invalid-argument",
+      `'${fieldName}' doit être 0, 1 ou 2. Valeur reçue : ${JSON.stringify(value)}.`
     );
   }
 }

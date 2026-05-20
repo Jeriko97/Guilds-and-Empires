@@ -27,6 +27,8 @@
 - `/players/{uid}/buildings/{buildingId}` — ajout de `lastProcessedAt: Timestamp | null` dans chaque `ProductionSlotState`
   - **Pas de migration de données requise** : le fallback `lastProcessedAt ?? startedAt` dans resolveLoginState
     gère les slots existants sans ce champ. Duplication one-shot possible au premier login post-déploiement (voir TD-003).
+  - **Note** : `startedAt` utilise `Timestamp.now()` à l'écriture (pas `serverTimestamp()`) car `FieldValue` est
+    interdit dans les éléments d'array Firestore. Voir TD-007.
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

@@ -201,3 +201,31 @@ Cloud Function `deleteCompletePlayer` qui itère sur
 `/players/{uid}/buildings` et `/players/{uid}/contracts` pour suppression
 explicite avant de supprimer le doc parent. À implémenter quand le
 besoin se présente.
+
+---
+
+### TD-007 — Convention : pas de FieldValue dans les arrays Firestore
+
+**Identifié :** 2026-05-20 (ÉTAPE 7, écriture des slots dans l'array buildings.slots)
+**Criticité actuelle :** CONVENTION
+**Composant :** Tous les handlers qui écrivent dans des arrays
+
+**Description :**
+Firestore interdit les sentinels FieldValue (`serverTimestamp`, `arrayUnion`, etc.)
+à l'intérieur d'éléments d'array. Seuls les champs de premier niveau ou les maps
+imbriquées acceptent ces sentinels. Toute tentative lève une erreur runtime :
+`FieldValue.serverTimestamp() cannot be used inside of an array`.
+
+**Convention adoptée :**
+Quand un champ Timestamp doit être écrit dans un array (par exemple
+`slots[].startedAt`), utiliser `admin.firestore.Timestamp.now()` au lieu de
+`admin.firestore.FieldValue.serverTimestamp()`.
+
+**Justification :**
+Les Cloud Functions s'exécutent sur l'infrastructure Google avec horloges
+synchronisées NTP. Le drift entre `Timestamp.now()` côté CF et ce qu'aurait
+écrit `serverTimestamp()` est de l'ordre de la microseconde. Aucun impact
+économique ni anti-cheat.
+
+**Pas de migration de schéma nécessaire :**
+La règle s'applique au code à écrire. Aucun document existant n'est affecté.
