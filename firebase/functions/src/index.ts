@@ -13,8 +13,10 @@ export { collectProduction }    from "./production/collectProduction";
 // ── Économie (legacy — pré-spec, à supprimer fin Phase 1) ────────────────────
 export { claimDailyBonus } from "./economy/claimDailyBonus";
 
+// ── Contrats ──────────────────────────────────────────────────────────────────
+export { acceptContract } from "./contracts/acceptContract";
+
 // ── À venir — Phase 1 Vertical Slice ─────────────────────────────────────────
-// export { acceptContract }         from "./contracts/acceptContract";
 // export { deliverToContract }      from "./contracts/deliverToContract";
 // export { sellToMarket }           from "./market/sellToMarket";
 // export { upgradeInventoryCap }    from "./upgrades/upgradeInventoryCap";

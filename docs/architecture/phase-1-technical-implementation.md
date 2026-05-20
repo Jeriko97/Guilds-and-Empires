@@ -94,7 +94,7 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
 
 ---
 
-### Market state global — `/global/marketState`
+### Market state global — `marketState/state` (singleton)
 
 ```typescript
 {
@@ -125,11 +125,11 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
 }
 ```
 
-**Migration-ready note :** En Phase 2, les vrais ordres atterrissent dans `/global/market/orderBook/{orderId}` — une subcollection propre. Le document `marketState` continue d'exister comme snapshot du prix courant (calculé depuis le carnet d'ordres). Aucun refactor du schéma existant.
+**Migration-ready note :** En Phase 2, les vrais ordres atterrissent dans `market/orderBook/{orderId}` — une subcollection du document `market` (top-level collection). Le document `marketState` continue d'exister comme snapshot du prix courant (calculé depuis le carnet d'ordres). Aucun refactor du schéma existant.
 
 ---
 
-### World events actifs — `/global/activeWorldEvents/{eventId}`
+### World events actifs — `activeWorldEvents/{eventId}`
 
 ```typescript
 {
@@ -158,7 +158,7 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
 
 ---
 
-### Contract pool global — `/global/contractPool/{contractId}`
+### Contract pool global — `contractPool/{contractId}`
 
 ```typescript
 {
@@ -385,17 +385,17 @@ service cloud.firestore {
 
     // ─── GLOBAL STATE ──────────────────────────────────────────────
     // Lecture authentifiée, écriture uniquement via Cloud Functions (service account)
-    match /global/marketState {
+    match /marketState/{document} {
       allow read: if request.auth != null;
       allow write: if false;
     }
 
-    match /global/activeWorldEvents/{eventId} {
+    match /activeWorldEvents/{eventId} {
       allow read: if request.auth != null;
       allow write: if false;
     }
 
-    match /global/contractPool/{contractId} {
+    match /contractPool/{contractId} {
       allow read: if request.auth != null;
       allow write: if false;
     }

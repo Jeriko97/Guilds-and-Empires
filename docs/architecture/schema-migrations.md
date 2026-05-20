@@ -20,9 +20,13 @@
 - `/players/{uid}/buildings/{buildingId}` : `buildingType`, `level`, `slots[]`
 - `/players/{uid}/contracts/{contractId}` : `contractTemplateId`, `tier`,
   `status`, `idempotencyKey`
-- `/global/marketState` : `prices`, `priceHistory`
-- `/global/activeWorldEvents/{eventId}` : `eventType`, `status`, `priceMultipliers`
-- `/global/contractPool/{contractId}` : `tier`, `rewardGold`, `rewardFavor`
+  - **Précision (acceptContract — ÉTAPE 9)** : `idempotencyKey` = `playerContractId`,
+    UUID généré côté serveur via `crypto.randomUUID()` au moment de l'acceptation.
+    Sert de clé d'idempotence pour `deliverToContract` (ÉTAPE 10).
+    Le document Firestore lui-même est stocké à l'ID = `playerContractId`.
+- `marketState/{docId}` : `prices`, `priceHistory`
+- `activeWorldEvents/{eventId}` : `eventType`, `status`, `priceMultipliers`
+- `contractPool/{contractId}` : `tier`, `rewardGold`, `rewardFavor`
 - `/rateLimits/{uid}_{action}` : `uid`, `action`, `lastCalledAt` — accès Admin SDK uniquement, jamais client
 - `/players/{uid}/buildings/{buildingId}` — ajout de `lastProcessedAt: Timestamp | null` dans chaque `ProductionSlotState`
   - **Pas de migration de données requise** : le fallback `lastProcessedAt ?? startedAt` dans resolveLoginState

@@ -125,7 +125,7 @@ export interface BuildingDocument {
 // ─── Document contrat — /players/{uid}/contracts/{contractId} ────────────────
 
 export interface ContractDocument {
-  /** Référence le template dans /global/contractPool/{contractTemplateId}. */
+  /** Référence le template dans contractPool/{contractTemplateId}. */
   contractTemplateId: string;
   tier: ContractTier;
   resourceType: RecipeId;
@@ -154,7 +154,7 @@ export interface ContractDocument {
   idempotencyKey: string;
 }
 
-// ─── Document marché global — /global/marketState ────────────────────────────
+// ─── Document marché global — marketState ────────────────────────────────────
 
 export interface ResourcePrice {
   currentPrice: number;
@@ -181,7 +181,7 @@ export interface MarketStateDocument {
   };
 }
 
-// ─── Document world event — /global/activeWorldEvents/{eventId} ──────────────
+// ─── Document world event — activeWorldEvents/{eventId} ─────────────────────
 
 export type WorldEventType =
   | "imperial_reconstruction_initiative";
@@ -217,7 +217,7 @@ export interface WorldEventDocument {
   triggerProcessed: boolean;
 }
 
-// ─── Document contract pool — /global/contractPool/{contractId} ──────────────
+// ─── Document contract pool — contractPool/{contractId} ─────────────────────
 
 export interface ContractPoolDocument {
   tier: ContractTier;

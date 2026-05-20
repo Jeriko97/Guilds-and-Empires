@@ -186,10 +186,24 @@ sellToMarket, upgradeInventoryCap, purchaseGuildCharter.
 explicitement les subcollections `/buildings/` et `/contracts/`. Cela
 fonctionne grâce au comportement cascade de l'Emulator Firestore.
 
+**Précision ajoutée — ÉTAPE 9 (2026-05-21) :**
+L'émulateur Firestore ne cascade-delete PAS les subcollections quand
+le doc parent est supprimé. Les subcollections `contracts` deviennent
+orphelines et persistent entre runs, contaminant les tests suivants.
+
+Workaround appliqué dans `acceptContract.test.ts` : `clearGlobalTestData`
+utilise `db.collectionGroup("contracts")` pour trouver et supprimer tous
+les contrats (y compris orphelins) avant que `clearTestData` supprime les
+docs parents. Ce pattern restera nécessaire pour tout test futur qui crée
+des docs dans des subcollections.
+
+La prod n'efface jamais de joueurs — impact nul en dehors des tests.
+
 **Impact actuel :**
-Nul. Le helper n'est utilisé que dans les tests d'intégration, qui
-tournent uniquement contre l'Emulator. La production n'efface jamais
-de joueurs.
+Nul en production. Contourné dans `acceptContract.test.ts`. Les tests
+`buildings` (collectProduction, startProductionSlot, resolveLoginState)
+ne sont pas affectés car leurs subcollections sont rechargées à chaque
+test avec des états frais.
 
 **Trigger de résolution :**
 Si un jour on a besoin d'effacer un joueur en production (RGPD,
@@ -197,10 +211,9 @@ demande utilisateur, modération), il faudra une Cloud Function
 dédiée qui supprime explicitement toutes les subcollections.
 
 **Solution prévue :**
-Cloud Function `deleteCompletePlayer` qui itère sur
-`/players/{uid}/buildings` et `/players/{uid}/contracts` pour suppression
-explicite avant de supprimer le doc parent. À implémenter quand le
-besoin se présente.
+Cloud Function `deleteCompletePlayer` qui utilise le même pattern
+`collectionGroup` pour itérer sur `contracts` et `buildings` avant
+de supprimer le doc parent. À implémenter quand le besoin se présente.
 
 ---
 
