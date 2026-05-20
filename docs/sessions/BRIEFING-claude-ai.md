@@ -29,16 +29,16 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-20)
+## État du projet (mise à jour : 2026-05-21)
 
 - Phase : Phase 1 Vertical Slice
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 3/9 complètes (resolveLoginState +
-  startProductionSlot + collectProduction)
-- Tests : 45/45 verts
+- Cloud Functions : 4/9 complètes (resolveLoginState +
+  startProductionSlot + collectProduction + acceptContract)
+- Tests : 64/64 verts (stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : d831364
+- Dernier commit : 4f97104
 - Helper partagé : firebase/functions/src/shared/production.ts
 
 ## Documents de référence à demander au founder
@@ -73,16 +73,22 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 9 : acceptContract
+ÉTAPE 10 : deliverToContract
 
 Référence : docs/architecture/phase-1-technical-implementation.md
 section 2.
 
 Particularités à anticiper :
-- Lecture d'un contrat depuis /global/contractPool/{contractId}
-- Validation : contrat actif, favorRank suffisant pour le tier
-- Validation : pas déjà accepté par ce joueur
-- Validation : slots Priority non épuisés si tier == priority
-- Création du document /players/{uid}/contracts/{playerContractId}
-- Idempotency: uid + contractTemplateId
+- Lecture du contrat /players/{uid}/contracts/{playerContractId}
+- Validation : contrat actif, non expiré, ressources suffisantes
+- Décrément inventory.reconstructionKits.quantity
+- Mise à jour quantityDelivered + status (active → completed
+  si quantityDelivered >= quantityRequired)
+- Crédit gold + imperialFavor sur le doc player
+- Recalcul favorRank si seuil franchi (responsabilité de
+  deliverToContract)
+- Side effect : flag firstContractCompleted à true si premier
+  contrat livré
+- Idempotency : idempotencyKey fournie par le client (UUID),
+  stockée dans le doc contrat
 - Transaction Firestore pour la mutation multi-document

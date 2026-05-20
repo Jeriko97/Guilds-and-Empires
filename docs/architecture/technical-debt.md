@@ -294,3 +294,52 @@ Config finale opérationnelle : `quotes: error` + `@typescript-eslint/
 recommended`. Script `"lint": "eslint . --ext .ts"` ajouté. `npm run lint`
 → 0 erreur, 0 warning sur tous les fichiers de production.
 **Criticité actuelle : RÉSOLUE**
+
+---
+
+### TD-010 — firestore.rules incomplet pour Phase 1
+
+**Identifié :** 2026-05-21 (ÉTAPE 9, audit chemins Firestore)
+**Criticité actuelle :** MOYENNE
+**Composant :** `firestore.rules`
+
+**Description :**
+Le fichier `firestore.rules` actuellement déployable couvre
+uniquement les collections legacy (profiles, transactionLogs,
+rateLimits) + un deny-all par défaut. Aucune règle n'est définie
+pour les collections Phase 1 :
+- `players/{uid}` et ses subcollections (buildings, contracts)
+- `marketState/{document}` (singleton state)
+- `contractPool/{contractId}`
+- `activeWorldEvents/{eventId}`
+
+Toutes les lectures client sur ces collections sont actuellement
+bloquées par le deny-all final.
+
+**Impact actuel :**
+Nul tant que le client Unity n'est pas branché au backend. Les
+Cloud Functions s'exécutent avec un service account Admin SDK
+qui bypasse les Security Rules — tests Emulator non affectés.
+
+**Trigger de résolution :**
+AVANT la première intégration Unity ↔ backend. Sans ces règles,
+le client Unity ne pourra rien lire (tous les reads échoueront
+silencieusement par deny-all).
+
+**Solution prévue :**
+Ticket dédié pour écrire les règles Phase 1 :
+- `match /players/{uid}` : allow read if request.auth.uid == uid,
+  write false
+- `match /players/{uid}/buildings/{buildingId}` : idem
+- `match /players/{uid}/contracts/{contractId}` : idem
+- `match /marketState/{document}` : allow read if request.auth
+  != null, write false (déjà documenté dans
+  phase-1-technical-implementation.md Section 3 corrigée ÉTAPE 9)
+- `match /contractPool/{contractId}` : idem
+- `match /activeWorldEvents/{eventId}` : idem
+
+La spec des règles à écrire est déjà documentée dans
+`phase-1-technical-implementation.md` Section 3. Le ticket
+consistera à transposer cette spec dans le fichier
+`firestore.rules` réel et à le déployer en staging pour
+validation.

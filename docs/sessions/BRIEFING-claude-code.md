@@ -7,13 +7,13 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-20)
+## État du repo (mise à jour : 2026-05-21)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : d831364
-- 3/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
-  collectProduction)
-- 45/45 tests verts contre Firebase Emulator
+- Dernier commit : 4f97104
+- 4/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
+  collectProduction, acceptContract)
+- 64/64 tests verts contre Firebase Emulator (stable sur 2 runs)
 - Helper partagé : firebase/functions/src/shared/production.ts
   (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
 - Java 21 requis (Eclipse Temurin)
@@ -89,7 +89,7 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-ÉTAPE 9 : acceptContract
+ÉTAPE 10 : deliverToContract
 
 Référence détaillée :
 docs/architecture/phase-1-technical-implementation.md section 2.
