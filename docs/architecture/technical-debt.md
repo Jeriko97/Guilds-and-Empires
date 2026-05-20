@@ -172,3 +172,32 @@ export const {functionName} = onCall({ invoker: "public" }, {functionName}Handle
 `resolveLoginStateHandler` est la première occurrence. À appliquer à :
 startProductionSlot, collectProduction, acceptContract, deliverToContract,
 sellToMarket, upgradeInventoryCap, purchaseGuildCharter.
+
+---
+
+### TD-006 — clearTestData repose sur le comportement cascade de l'Emulator
+
+**Identifié :** 2026-05-19 (ÉTAPE 5)
+**Criticité actuelle :** TRÈS FAIBLE
+**Composant :** `firebase/functions/src/__test__/helpers.ts`
+
+**Description :**
+`clearTestData` supprime le document `/players/{uid}` parent mais pas
+explicitement les subcollections `/buildings/` et `/contracts/`. Cela
+fonctionne grâce au comportement cascade de l'Emulator Firestore.
+
+**Impact actuel :**
+Nul. Le helper n'est utilisé que dans les tests d'intégration, qui
+tournent uniquement contre l'Emulator. La production n'efface jamais
+de joueurs.
+
+**Trigger de résolution :**
+Si un jour on a besoin d'effacer un joueur en production (RGPD,
+demande utilisateur, modération), il faudra une Cloud Function
+dédiée qui supprime explicitement toutes les subcollections.
+
+**Solution prévue :**
+Cloud Function `deleteCompletePlayer` qui itère sur
+`/players/{uid}/buildings` et `/players/{uid}/contracts` pour suppression
+explicite avant de supprimer le doc parent. À implémenter quand le
+besoin se présente.
