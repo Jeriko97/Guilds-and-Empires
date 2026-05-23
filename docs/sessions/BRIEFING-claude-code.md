@@ -7,13 +7,13 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-21)
+## État du repo (mise à jour : 2026-05-23)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : 4f97104
-- 4/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
-  collectProduction, acceptContract)
-- 64/64 tests verts contre Firebase Emulator (stable sur 2 runs)
+- Dernier commit : a417316
+- 5/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
+  collectProduction, acceptContract, deliverToContract)
+- 94/94 tests verts contre Firebase Emulator (stable sur 2 runs)
 - Helper partagé : firebase/functions/src/shared/production.ts
   (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
 - Java 21 requis (Eclipse Temurin)
@@ -66,7 +66,16 @@ Lire en priorité au démarrage :
 8. HttpsError typé : unauthenticated, resource-exhausted,
    invalid-argument, failed-precondition, not-found, internal.
 
-9. Commits atomiques par responsabilité.
+9. Helper computeFavorRank disponible dans shared/favorRank.ts
+   (seuils 50/200/350). À utiliser pour tout recalcul de favorRank
+   côté serveur. Ne pas dupliquer la logique de seuils inline.
+
+10. Tests concurrents : Promise.allSettled (jamais Promise.all) pour
+    éviter les uncaught rejections. Assertions exhaustives sur l'état
+    Firestore post-transaction obligatoires (décrément UNE seule fois,
+    crédit UNE seule fois).
+
+11. Commits atomiques par responsabilité.
 
 ## Méthode de travail attendue
 
@@ -89,10 +98,22 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-ÉTAPE 10 : deliverToContract
+ÉTAPE 11 : sellToMarket
 
 Référence détaillée :
 docs/architecture/phase-1-technical-implementation.md section 2.
+
+Particularités à anticiper :
+- Première CF qui lit /marketState/state (singleton de prix)
+- Server-authoritative absolu sur le prix appliqué (lu depuis
+  Firestore, jamais fourni par le client)
+- Rate limit anti-farming : 20 ventes / heure par uid
+- Validation quantity : > 0, <= inventory, <= seuil par transaction
+- Idempotency key fournie par le client (UUID)
+- Update inventory + gold dans la même transaction
+- Pas de favorRank affecté (la vente marché ne donne pas de favor)
+- Hors-scope ÉTAPE 11 : updateMarketPrices (scheduled CF, étape
+  ultérieure)
 
 Le founder enverra le ticket précis après ce briefing. Ne pas commencer
 à coder avant réception du ticket.
