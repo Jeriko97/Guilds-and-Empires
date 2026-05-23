@@ -14,10 +14,10 @@ export { collectProduction }    from "./production/collectProduction";
 export { claimDailyBonus } from "./economy/claimDailyBonus";
 
 // ── Contrats ──────────────────────────────────────────────────────────────────
-export { acceptContract } from "./contracts/acceptContract";
+export { acceptContract }     from "./contracts/acceptContract";
+export { deliverToContract }  from "./contracts/deliverToContract";
 
 // ── À venir — Phase 1 Vertical Slice ─────────────────────────────────────────
-// export { deliverToContract }      from "./contracts/deliverToContract";
 // export { sellToMarket }           from "./market/sellToMarket";
 // export { upgradeInventoryCap }    from "./upgrades/upgradeInventoryCap";
 // export { purchaseGuildCharter }   from "./guild/purchaseGuildCharter";
