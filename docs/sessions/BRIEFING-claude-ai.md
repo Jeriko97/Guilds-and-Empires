@@ -29,16 +29,17 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-21)
+## État du projet (mise à jour : 2026-05-23)
 
 - Phase : Phase 1 Vertical Slice
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 4/9 complètes (resolveLoginState +
-  startProductionSlot + collectProduction + acceptContract)
-- Tests : 64/64 verts (stable sur 2 runs)
+- Cloud Functions : 5/9 complètes (resolveLoginState +
+  startProductionSlot + collectProduction + acceptContract +
+  deliverToContract)
+- Tests : 94/94 verts (stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : 4f97104
+- Dernier commit : 84c16d1
 - Helper partagé : firebase/functions/src/shared/production.ts
 
 ## Documents de référence à demander au founder
@@ -73,22 +74,19 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 10 : deliverToContract
+ÉTAPE 11 : sellToMarket
 
 Référence : docs/architecture/phase-1-technical-implementation.md
 section 2.
 
 Particularités à anticiper :
-- Lecture du contrat /players/{uid}/contracts/{playerContractId}
-- Validation : contrat actif, non expiré, ressources suffisantes
-- Décrément inventory.reconstructionKits.quantity
-- Mise à jour quantityDelivered + status (active → completed
-  si quantityDelivered >= quantityRequired)
-- Crédit gold + imperialFavor sur le doc player
-- Recalcul favorRank si seuil franchi (responsabilité de
-  deliverToContract)
-- Side effect : flag firstContractCompleted à true si premier
-  contrat livré
-- Idempotency : idempotencyKey fournie par le client (UUID),
-  stockée dans le doc contrat
-- Transaction Firestore pour la mutation multi-document
+- Première CF qui lit /marketState/state (singleton de prix)
+- Server-authoritative absolu sur le prix appliqué (lu depuis
+  Firestore, jamais fourni par le client)
+- Rate limit anti-farming : 20 ventes / heure par uid
+- Validation quantity : > 0, <= inventory, <= seuil par transaction
+- Idempotency key fournie par le client (UUID)
+- Update inventory + gold dans la même transaction
+- Pas de favorRank affecté (la vente marché ne donne pas de favor)
+- Hors-scope ÉTAPE 11 : updateMarketPrices (scheduled CF, étape
+  ultérieure)
