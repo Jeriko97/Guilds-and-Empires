@@ -17,8 +17,10 @@ export { claimDailyBonus } from "./economy/claimDailyBonus";
 export { acceptContract }     from "./contracts/acceptContract";
 export { deliverToContract }  from "./contracts/deliverToContract";
 
+// ── Marché ────────────────────────────────────────────────────────────────────
+export { sellToMarket } from "./market/sellToMarket";
+
 // ── À venir — Phase 1 Vertical Slice ─────────────────────────────────────────
-// export { sellToMarket }           from "./market/sellToMarket";
 // export { upgradeInventoryCap }    from "./upgrades/upgradeInventoryCap";
 // export { purchaseGuildCharter }   from "./guild/purchaseGuildCharter";
 // export { updateMarketPrices }     from "./scheduled/updateMarketPrices";

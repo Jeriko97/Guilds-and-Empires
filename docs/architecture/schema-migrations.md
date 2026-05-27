@@ -33,6 +33,22 @@
     gère les slots existants sans ce champ. Duplication one-shot possible au premier login post-déploiement (voir TD-003).
   - **Note** : `startedAt` utilise `Timestamp.now()` à l'écriture (pas `serverTimestamp()`) car `FieldValue` est
     interdit dans les éléments d'array Firestore. Voir TD-007.
+- `/players/{uid}` — ajout de `marketSalesLastHour: Timestamp[]` (ÉTAPE 11)
+  - **Pas de migration de données requise** : le fallback `player.marketSalesLastHour ?? []` dans `sellToMarket`
+    gère les docs existants sans ce champ. Array vide = aucune vente enregistrée dans la fenêtre, comportement correct.
+  - **Note** : Timestamp array — TD-007 s'applique, `Timestamp.now()` utilisé (jamais `serverTimestamp()`).
+- `/players/{uid}/marketTrades/{idempotencyKey}` — trace immutable de vente marché (ÉTAPE 11)
+  - `uid: string` — propriétaire de la vente
+  - `resourceType: 'logs' | 'planks' | 'reconstructionKits'` — ressource vendue
+  - `quantity: number` — quantité vendue
+  - `priceApplied: number` — prix serveur au moment de la transaction (jamais fourni par le client)
+  - `goldEarned: number` — gold crédité (= priceApplied × quantity)
+  - `createdAt: Timestamp` — horodatage serveur
+  - **ID du document** = `idempotencyKey` fourni par le client (UUID). Garantit l'idempotence :
+    une clé existante avec même payload → résultat idempotent ; payload différent → `failed-precondition`.
+  - **Pas de `schemaVersion`** : trace immutable, jamais migrée.
+- `marketState/state` — ajout de `prices.reconstructionKits` et `priceHistory.reconstructionKits` (ÉTAPE 11)
+  - Extension du singleton de prix pour couvrir les trois ressources vendables.
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

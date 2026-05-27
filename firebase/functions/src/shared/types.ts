@@ -82,6 +82,12 @@ export interface PlayerDocument {
    * Déclenche l'event scripté Imperial Reconstruction Initiative.
    */
   firstContractCompleted: boolean;
+
+  /**
+   * Timestamps des ventes marché dans la fenêtre glissante d'une heure.
+   * Prunés en début de transaction sellToMarket. Absent = [] (pas de migration requise).
+   */
+  marketSalesLastHour?: firestore.Timestamp[];
 }
 
 // ─── Document bâtiment — /players/{uid}/buildings/{buildingId} ───────────────
@@ -170,6 +176,7 @@ export interface MarketStateDocument {
   prices: {
     logs: ResourcePrice;
     planks: ResourcePrice;
+    reconstructionKits: ResourcePrice;
   };
   /**
    * 3 derniers prix par ressource, FIFO. Précalculés par le serveur pour que le ticker
@@ -178,6 +185,7 @@ export interface MarketStateDocument {
   priceHistory: {
     logs: number[];
     planks: number[];
+    reconstructionKits: number[];
   };
 }
 
