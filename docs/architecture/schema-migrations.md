@@ -49,6 +49,24 @@
   - **Pas de `schemaVersion`** : trace immutable, jamais migrée.
 - `marketState/state` — ajout de `prices.reconstructionKits` et `priceHistory.reconstructionKits` (ÉTAPE 11)
   - Extension du singleton de prix pour couvrir les trois ressources vendables.
+- `/players/{uid}/inventory.{resource}.upgradesApplied: number` — tracking progression upgrade cap (ÉTAPE 12)
+  - Champ inline optionnel dans chaque `ResourceStack` (`logs`, `planks`, `reconstructionKits`).
+  - **Pas de migration de données requise** : le fallback `upgradesApplied ?? 0` dans `upgradeInventoryCap`
+    gère les docs existants sans ce champ. Absent = aucun upgrade acheté, comportement correct.
+  - Sémantique : `upgradesApplied` = nombre de paliers achetés définitivement (0, 1 ou 2).
+    Distinct de `cap` qui est la valeur effective (potentiellement boostée par buffs futurs).
+- `/players/{uid}/inventoryUpgrades/{idempotencyKey}` — trace immutable d'upgrade cap (ÉTAPE 12)
+  - `uid: string` — propriétaire de l'upgrade
+  - `resourceType: 'logs' | 'planks' | 'reconstructionKits'` — ressource upgradée
+  - `upgradeIndex: number` — palier acheté (0 ou 1)
+  - `goldSpent: number` — gold consommé (= coût du palier, server-authoritative)
+  - `capIncrease: number` — augmentation de cap appliquée (= montant du palier, server-authoritative)
+  - `createdAt: Timestamp` — horodatage serveur (`Timestamp.now()`, TD-007)
+  - **ID du document** = `idempotencyKey` fourni par le client (UUID). Garantit l'idempotence :
+    une clé existante avec même payload → résultat idempotent ; payload différent → `failed-precondition`.
+  - **Pas de `schemaVersion`** : trace immutable, jamais migrée.
+  - Couverture Phase 1 : Logs et Planks ont 2 paliers (index 0 et 1), reconstructionKits a 1 palier (index 0).
+    Coûts et montants définis dans `shared/inventoryUpgrades.ts` (TD-012 pour migration Remote Config).
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

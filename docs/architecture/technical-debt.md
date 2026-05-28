@@ -336,6 +336,35 @@ devra connaître les prix d'équilibre réels et les fourchettes de drift.
 
 ---
 
+### TD-012 — Coûts d'upgrade inventaire hardcodés dans shared/inventoryUpgrades.ts
+
+**Identifié :** 2026-05-29 (ÉTAPE 12)
+**Criticité actuelle :** FAIBLE
+**Composant :** `firebase/functions/src/shared/inventoryUpgrades.ts`
+
+**Description :**
+Les coûts et amounts d'upgrade sont hardcodés dans un fichier TypeScript. La décision documentée dans
+`phase-1-technical-implementation.md` section 5 prévoit pourtant Remote Config (override) + ScriptableObject
+(défaut) pour toutes les valeurs économiques pilotables LiveOps. Les upgrade costs sont explicitement listés
+comme "Remote Config uniquement" dans le tableau de doctrine technique.
+
+**Impact actuel :**
+Modifier les coûts requiert un redéploiement des Cloud Functions. Acceptable en pre-alpha solo sans joueurs,
+bloquant dès la première phase de balancing LiveOps.
+
+**Trigger de résolution :**
+Avant le premier playtest externe, ou dès qu'une 2e CF (typiquement purchaseGuildCharter ÉTAPE 13)
+nécessite des constantes économiques pilotables LiveOps — auquel cas la migration mutualise le travail
+tooling Remote Config.
+
+**Solution prévue :**
+1. Initialiser Remote Config côté backend (Firebase Admin SDK).
+2. Charger les valeurs au cold start des CF avec cache TTL.
+3. Fallback sur les constantes locales actuelles si Remote Config indisponible (offline-safe).
+4. Garder `shared/inventoryUpgrades.ts` comme défaut typé.
+
+---
+
 ### TD-010 — firestore.rules incomplet pour Phase 1
 
 **Identifié :** 2026-05-21 (ÉTAPE 9, audit chemins Firestore)
