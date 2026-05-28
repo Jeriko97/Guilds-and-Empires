@@ -497,9 +497,11 @@ describe("sellToMarket", () => {
     expect(idempotent.length).toBe(1);
 
     // Vérification critique : gold crédité UNE SEULE FOIS, inventory décrémenté UNE SEULE FOIS
+    // marketSalesLastHour contient UNE entrée : l'idempotent ne ré-écrit pas le tableau
     const playerSnap = await db.collection("players").doc(uid).get();
-    expect(playerSnap.data()!.gold).toBe(100);                      // 10 * 10, une fois
-    expect(playerSnap.data()!.inventory.logs.quantity).toBe(40);    // 50 - 10, une fois
+    expect(playerSnap.data()!.gold).toBe(100);                         // 10 * 10, une fois
+    expect(playerSnap.data()!.inventory.logs.quantity).toBe(40);       // 50 - 10, une fois
+    expect(playerSnap.data()!.marketSalesLastHour).toHaveLength(1);    // rate limit non doublé
   }, 30_000);
 
   it("21. Deux ventes concurrentes idempotencyKeys différents : si stock insuffisant → 1 commit + 1 failed-precondition", async () => {
@@ -525,9 +527,11 @@ describe("sellToMarket", () => {
     expect(failedReason.message).toBe("insufficient inventory");
 
     // Vérification critique : inventory décrémenté UNE SEULE FOIS, gold crédité UNE SEULE FOIS
+    // marketSalesLastHour contient UNE entrée : la vente échouée ne contribue pas au rate limit
     const playerSnap = await db.collection("players").doc(uid).get();
-    expect(playerSnap.data()!.inventory.logs.quantity).toBe(0);  // 10 - 10, une fois
-    expect(playerSnap.data()!.gold).toBe(100);                   // 10 * 10, une fois
+    expect(playerSnap.data()!.inventory.logs.quantity).toBe(0);       // 10 - 10, une fois
+    expect(playerSnap.data()!.gold).toBe(100);                        // 10 * 10, une fois
+    expect(playerSnap.data()!.marketSalesLastHour).toHaveLength(1);   // rate limit non doublé
   }, 30_000);
 
 });
