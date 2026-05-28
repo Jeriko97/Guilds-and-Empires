@@ -7,15 +7,18 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-23)
+## État du repo (mise à jour : 2026-05-28)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : a417316
-- 5/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
-  collectProduction, acceptContract, deliverToContract)
-- 94/94 tests verts contre Firebase Emulator (stable sur 2 runs)
+- Dernier commit : fcb4dc4
+- 7/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
+  collectProduction, acceptContract, deliverToContract, sellToMarket,
+  upgradeInventoryCap)
+- 135/135 tests verts contre Firebase Emulator (stable sur 2 runs)
 - Helper partagé : firebase/functions/src/shared/production.ts
   (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
+- Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
+  (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012 pour Remote Config)
 - Java 21 requis (Eclipse Temurin)
 - Émulateur : firebase emulators:start --only firestore,auth
   --project demo-guilds-empires
@@ -34,7 +37,7 @@ Lire en priorité au démarrage :
 
 - docs/architecture/phase-1-technical-implementation.md (architecture)
 - docs/architecture/phase-1-decisions-log.md (décisions tranchées)
-- docs/architecture/technical-debt.md (TD-001 à TD-009, TD-008 non ouverte)
+- docs/architecture/technical-debt.md (TD-001 à TD-012, TD-008 non ouverte)
 - docs/architecture/schema-migrations.md (schéma Firestore v1)
 - docs/design/phase-1-economy-values.md (valeurs économiques)
 - Dernier docs/sessions/*.md disponible
@@ -96,24 +99,39 @@ Lire en priorité au démarrage :
 7. Si rouge : analyser, proposer le fix, attendre validation,
    re-tester, commit
 
+## Patterns introduits (cumulatifs)
+
+- Double idempotency (ÉTAPE 12) : technique (subcollection) + métier
+  (upgradesApplied guard). Ordre canonique : technique AVANT métier.
+- Séparation upgradesApplied / cap : progression permanente vs valeur
+  effective (compatible buffs futurs sans migration).
+- `shared/inventoryUpgrades.ts` : constantes typées `as const` pour
+  coûts et montants d'upgrade. Cast `as readonly number[]` pour indexage.
+
 ## Prochaine étape
 
-ÉTAPE 11 : sellToMarket
+ÉTAPE 13 : purchaseGuildCharter
 
 Référence détaillée :
 docs/architecture/phase-1-technical-implementation.md section 2.
 
 Particularités à anticiper :
-- Première CF qui lit /marketState/state (singleton de prix)
-- Server-authoritative absolu sur le prix appliqué (lu depuis
-  Firestore, jamais fourni par le client)
-- Rate limit anti-farming : 20 ventes / heure par uid
-- Validation quantity : > 0, <= inventory, <= seuil par transaction
-- Idempotency key fournie par le client (UUID)
-- Update inventory + gold dans la même transaction
-- Pas de favorRank affecté (la vente marché ne donne pas de favor)
-- Hors-scope ÉTAPE 11 : updateMarketPrices (scheduled CF, étape
-  ultérieure)
+- Double condition cumulée : favorRank == "guild_charter_eligible"
+  ET gold >= 500 (les deux doivent être vérifiées dans la transaction)
+- Gold sink critique : 500g = dépense unique la plus élevée Phase 1
+- Flippe guildCharterUnlocked = true (boolean inline dans PlayerDocument)
+- Set guildCharterPurchasedAt = Timestamp.now() (TD-007)
+- Idempotency double :
+  1. Technique : sous-collection /players/{uid}/guildPurchases/{key}
+     (pattern cohérent avec marketTrades et inventoryUpgrades)
+  2. Métier : check guildCharterUnlocked === false avant mutation
+     (empêche double achat cross-device — pattern hybride ÉTAPE 12)
+- Factorisation FAVOR_THRESHOLDS : le seuil 350 ("guild_charter_eligible")
+  existe déjà dans shared/favorRank.ts. Ce handler doit consommer cette
+  constante — NE PAS dupliquer inline.
+- Constante coût 500g dans shared/guildCharter.ts (nouveau helper),
+  TD-012 Remote Config étendue à cette valeur
+- Pas de favorRank affecté, pas de side effect production/marché
 
-Le founder enverra le ticket précis après ce briefing. Ne pas commencer
-à coder avant réception du ticket.
+Le founder enverra le ticket précis. Ne pas commencer à coder avant
+réception du ticket.

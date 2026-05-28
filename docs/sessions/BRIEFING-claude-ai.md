@@ -29,18 +29,20 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-27)
+## État du projet (mise à jour : 2026-05-28)
 
 - Phase : Phase 1 Vertical Slice
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 6/9 complètes (resolveLoginState +
+- Cloud Functions : 7/9 complètes (resolveLoginState +
   startProductionSlot + collectProduction + acceptContract +
-  deliverToContract + sellToMarket)
-- Tests : 115/115 verts (stable sur 2 runs)
+  deliverToContract + sellToMarket + upgradeInventoryCap)
+- Tests : 135/135 verts (stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : c3d8369
+- Dernier commit : fcb4dc4
 - Helper partagé : firebase/functions/src/shared/production.ts
+- Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
+  (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012)
 
 ## Documents de référence à demander au founder
 
@@ -74,20 +76,20 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 12 : upgradeInventoryCap
+ÉTAPE 13 : purchaseGuildCharter
 
 Référence : docs/architecture/phase-1-technical-implementation.md
 section 2.
 
 Particularités à anticiper :
-- 1ère CF qui lit Remote Config pour les coûts d'upgrade (ou
-  hardcode temporaire à acter dans le ticket — décision founder)
-- Gold sink : check player.gold >= cost puis décrément en transaction
-- Validation upgradeIndex : pas déjà acheté pour ce tier →
-  failed-precondition
-- Idempotency : pattern à trancher dans le ticket (sous-collection
-  inventoryUpgrades cohérente avec marketTrades, ou flag inline)
-- Update inventory.{resource}.cap dans la même transaction
-- Pas de favorRank affecté
-- Hors-scope : Remote Config tooling si décision est de hardcoder
-  temporairement
+- Double condition cumulée : favorRank == "guild_charter_eligible"
+  ET gold >= 500 (les deux vérifiées dans la transaction)
+- Gold sink critique : 500g = dépense unique la plus élevée Phase 1
+- Flippe guildCharterUnlocked = true (boolean inline PlayerDocument)
+- Set guildCharterPurchasedAt = Timestamp.now()
+- Idempotency double : sous-collection guildPurchases/{key} +
+  flag inline guildCharterUnlocked (pattern hybride ÉTAPE 12)
+- Factorisation FAVOR_THRESHOLDS : seuil 350 existe dans
+  shared/favorRank.ts — à consommer, ne pas dupliquer inline
+- Constante coût 500g dans shared/guildCharter.ts (TD-012 étendue)
+- Pas de favorRank affecté, pas de side effect production/marché
