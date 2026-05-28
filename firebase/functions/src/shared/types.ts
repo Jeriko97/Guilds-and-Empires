@@ -32,6 +32,13 @@ export interface ResourceStack {
    * slot reste actif. Upgradable via upgradeInventoryCap (gold sink).
    */
   cap: number;
+  /**
+   * Nombre de paliers d'upgrade achetés de manière permanente.
+   * Absent = 0 (joueurs pré-alpha — fallback ?? 0 dans les handlers).
+   * `cap` reste la valeur effective (potentiellement boostée par des buffs futurs) ;
+   * `upgradesApplied` est la progression permanente irréversible.
+   */
+  upgradesApplied?: number;
 }
 
 /** Inventaire complet dénormalisé dans le document joueur. */

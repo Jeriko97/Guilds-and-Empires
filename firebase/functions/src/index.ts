@@ -20,8 +20,10 @@ export { deliverToContract }  from "./contracts/deliverToContract";
 // ── Marché ────────────────────────────────────────────────────────────────────
 export { sellToMarket } from "./market/sellToMarket";
 
+// ── Inventaire ────────────────────────────────────────────────────────────────
+export { upgradeInventoryCap } from "./inventory/upgradeInventoryCap";
+
 // ── À venir — Phase 1 Vertical Slice ─────────────────────────────────────────
-// export { upgradeInventoryCap }    from "./upgrades/upgradeInventoryCap";
-// export { purchaseGuildCharter }   from "./guild/purchaseGuildCharter";
-// export { updateMarketPrices }     from "./scheduled/updateMarketPrices";
+// export { purchaseGuildCharter }       from "./guild/purchaseGuildCharter";
+// export { updateMarketPrices }         from "./scheduled/updateMarketPrices";
 // export { processWorldEventLifecycle } from "./scheduled/processWorldEventLifecycle";
