@@ -29,17 +29,17 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-23)
+## État du projet (mise à jour : 2026-05-27)
 
 - Phase : Phase 1 Vertical Slice
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 5/9 complètes (resolveLoginState +
+- Cloud Functions : 6/9 complètes (resolveLoginState +
   startProductionSlot + collectProduction + acceptContract +
-  deliverToContract)
-- Tests : 94/94 verts (stable sur 2 runs)
+  deliverToContract + sellToMarket)
+- Tests : 115/115 verts (stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : 84c16d1
+- Dernier commit : c3d8369
 - Helper partagé : firebase/functions/src/shared/production.ts
 
 ## Documents de référence à demander au founder
@@ -74,19 +74,20 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 11 : sellToMarket
+ÉTAPE 12 : upgradeInventoryCap
 
 Référence : docs/architecture/phase-1-technical-implementation.md
 section 2.
 
 Particularités à anticiper :
-- Première CF qui lit /marketState/state (singleton de prix)
-- Server-authoritative absolu sur le prix appliqué (lu depuis
-  Firestore, jamais fourni par le client)
-- Rate limit anti-farming : 20 ventes / heure par uid
-- Validation quantity : > 0, <= inventory, <= seuil par transaction
-- Idempotency key fournie par le client (UUID)
-- Update inventory + gold dans la même transaction
-- Pas de favorRank affecté (la vente marché ne donne pas de favor)
-- Hors-scope ÉTAPE 11 : updateMarketPrices (scheduled CF, étape
-  ultérieure)
+- 1ère CF qui lit Remote Config pour les coûts d'upgrade (ou
+  hardcode temporaire à acter dans le ticket — décision founder)
+- Gold sink : check player.gold >= cost puis décrément en transaction
+- Validation upgradeIndex : pas déjà acheté pour ce tier →
+  failed-precondition
+- Idempotency : pattern à trancher dans le ticket (sous-collection
+  inventoryUpgrades cohérente avec marketTrades, ou flag inline)
+- Update inventory.{resource}.cap dans la même transaction
+- Pas de favorRank affecté
+- Hors-scope : Remote Config tooling si décision est de hardcoder
+  temporairement
