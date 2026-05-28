@@ -297,6 +297,45 @@ recommended`. Script `"lint": "eslint . --ext .ts"` ajouté. `npm run lint`
 
 ---
 
+### TD-011 — Seed des prix de marché dans les tests non aligné sur phase-1-economy-values.md
+
+**Identifié :** 2026-05-27 (ÉTAPE 11 post-audit)
+**Criticité actuelle :** FAIBLE
+**Composant :** `firebase/functions/src/__test__/sellToMarket.test.ts`
+(helper `createMarketState`)
+
+**Description :**
+Le seed `createMarketState()` dans les tests utilise des valeurs rondes
+synthétiques (logs=10, planks=25, reconstructionKits=50) qui ne reflètent
+ni les prix normaux ni les fourchettes documentées dans
+`phase-1-economy-values.md` (Logs=5 normal, Planks=12 normal). Pour
+`reconstructionKits`, le design intent n'est pas encore tranché : plancher
+fixe 20g (mentionné comme "soupape" dans la doc design) ? prix variable
+comme Logs/Planks ? vente directe interdite en Phase 1 ?
+
+**Impact actuel :**
+Nul tant que les assertions vérifient des invariants relatifs
+(`price * quantity === goldEarned`) plutôt que des valeurs métier absolues.
+Mais les tests passent sur des prix qui n'existeront jamais en production.
+
+**Trigger de résolution :**
+Avant l'implémentation de `updateMarketPrices` (étape ultérieure), qui
+devra connaître les prix d'équilibre réels et les fourchettes de drift.
+
+**Solution prévue :**
+1. Trancher le design intent pour `reconstructionKits` au marché
+   (3 options : A=plancher fixe non event-affected, B=variable comme
+   Logs/Planks, C=vente directe interdite Phase 1). Acter dans
+   decisions-log.
+2. Aligner les seeds de `createMarketState()` sur les valeurs officielles
+   ou les marquer explicitement `TEST_ONLY` avec commentaire renvoyant à
+   TD-011.
+3. Vérifier que les assertions des tests `sellToMarket` reposent sur des
+   invariants (`price * quantity === goldEarned`) plutôt que sur des
+   nombres absolus.
+
+---
+
 ### TD-010 — firestore.rules incomplet pour Phase 1
 
 **Identifié :** 2026-05-21 (ÉTAPE 9, audit chemins Firestore)

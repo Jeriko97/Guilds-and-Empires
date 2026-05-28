@@ -87,4 +87,14 @@ Ces valeurs définissent l'équilibre de toute l'économie Phase 1. Modifier l'u
 
 ---
 
-*Dernière mise à jour : 2026-05-19 — fin de session design Prompts 1-3B*
+---
+
+## 8. Décisions micro implémentation
+
+| # | Sujet | Décision | Rationale | Trigger de revue |
+|---|---|---|---|---|
+| D-ETAPE11 | Emplacement constantes market | `MAX_MARKET_SELL_QUANTITY`, `MARKET_SALES_RATE_LIMIT`, `MARKET_SALES_WINDOW_MS` dans `sellToMarket.ts` (pas `shared/market.ts`) | YAGNI cohérent avec `FAVOR_THRESHOLDS` en ÉTAPE 10 : aucune autre CF ne les réutilise encore. Même règle que pour favorRank.ts : factoriser à la première duplication réelle, pas par anticipation. | À migrer vers `shared/market.ts` si `updateMarketPrices` ou tout autre handler référence l'une de ces constantes. |
+
+---
+
+*Dernière mise à jour : 2026-05-27 — ÉTAPE 11 sellToMarket*
