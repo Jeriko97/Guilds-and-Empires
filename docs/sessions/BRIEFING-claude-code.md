@@ -10,7 +10,7 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 ## État du repo (mise à jour : 2026-05-29)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : 5c16b1a
+- Dernier commit : edfa473
 - 8/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
   upgradeInventoryCap, purchaseGuildCharter)
@@ -122,8 +122,23 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-ÉTAPE 14 : à définir (dernière CF Phase 1 ou premières intégrations Unity)
+ÉTAPE 14 : updateMarketPrices
 
-9/9 Cloud Functions Phase 1 Vertical Slice complètes après ÉTAPE 13.
-Prochaine décision founder : commencer l'intégration Unity côté client,
-ou implémenter updateMarketPrices / processWorldEventLifecycle.
+Référence détaillée :
+docs/architecture/phase-1-technical-implementation.md section 3.
+
+Particularités à anticiper :
+- 1ère Scheduled CF (functions.scheduler.onSchedule, every 5 minutes)
+- Recalcule les prix logs/planks/reconstructionKits dans /marketState/state
+- Algorithme : drift lent vers basePrice + bruit contrôlé (±5% max par
+  tick) + multiplicateurs des world events actifs
+- Tests Emulator : les Scheduled Functions ne sont pas triggerables
+  nativement par l'émulateur — tester le handler exporté directement
+  (pattern TD-005 adapté pour les Scheduled Functions)
+- Lecture activeWorldEvents pour appliquer les priceMultipliers
+- Premier consommateur potentiel pour aligner les seeds de prix tests
+  sur les valeurs économiques officielles (TD-011)
+- Pas de favorRank affecté, pas de player touché
+
+Le founder enverra le ticket précis. Ne pas commencer à coder avant
+réception du ticket.
