@@ -7,18 +7,22 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-28)
+## État du repo (mise à jour : 2026-05-29)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : fcb4dc4
-- 7/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
+- Dernier commit : 5c16b1a
+- 8/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
-  upgradeInventoryCap)
-- 135/135 tests verts contre Firebase Emulator (stable sur 2 runs)
+  upgradeInventoryCap, purchaseGuildCharter)
+- 149/149 tests verts contre Firebase Emulator (stable sur 2 runs)
 - Helper partagé : firebase/functions/src/shared/production.ts
   (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
   (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012 pour Remote Config)
+- Helper partagé : firebase/functions/src/shared/favorRank.ts
+  (FAVOR_THRESHOLDS as const — 50/200/350 — consommé par computeFavorRank et purchaseGuildCharter)
+- Helper partagé : firebase/functions/src/shared/guildCharter.ts
+  (GUILD_CHARTER_COST=500, GUILD_CHARTER_FAVOR_THRESHOLD — TD-012 étendue)
 - Java 21 requis (Eclipse Temurin)
 - Émulateur : firebase emulators:start --only firestore,auth
   --project demo-guilds-empires
@@ -107,31 +111,19 @@ Lire en priorité au démarrage :
   effective (compatible buffs futurs sans migration).
 - `shared/inventoryUpgrades.ts` : constantes typées `as const` pour
   coûts et montants d'upgrade. Cast `as readonly number[]` pour indexage.
+- FAVOR_THRESHOLDS factorisé (ÉTAPE 13) : seuils 50/200/350 dans
+  `shared/favorRank.ts`. Re-export ciblé via `shared/guildCharter.ts`.
+  Trigger : 2e consommateur du seuil 350 (D-ETAPE13).
+- V5 — ordre checks économiques : prérequis sémantique (favor) AVANT
+  transaction (gold). Cohérent avec UX : l'erreur explicative passe en premier.
+- Snapshot analytique dans le ledger (ÉTAPE 13) : favorAtPurchase +
+  favorRankAtPurchase dans guildPurchases. Permet analytics "âge de
+  promotion Phase 2" sans relire l'historique.
 
 ## Prochaine étape
 
-ÉTAPE 13 : purchaseGuildCharter
+ÉTAPE 14 : à définir (dernière CF Phase 1 ou premières intégrations Unity)
 
-Référence détaillée :
-docs/architecture/phase-1-technical-implementation.md section 2.
-
-Particularités à anticiper :
-- Double condition cumulée : favorRank == "guild_charter_eligible"
-  ET gold >= 500 (les deux doivent être vérifiées dans la transaction)
-- Gold sink critique : 500g = dépense unique la plus élevée Phase 1
-- Flippe guildCharterUnlocked = true (boolean inline dans PlayerDocument)
-- Set guildCharterPurchasedAt = Timestamp.now() (TD-007)
-- Idempotency double :
-  1. Technique : sous-collection /players/{uid}/guildPurchases/{key}
-     (pattern cohérent avec marketTrades et inventoryUpgrades)
-  2. Métier : check guildCharterUnlocked === false avant mutation
-     (empêche double achat cross-device — pattern hybride ÉTAPE 12)
-- Factorisation FAVOR_THRESHOLDS : le seuil 350 ("guild_charter_eligible")
-  existe déjà dans shared/favorRank.ts. Ce handler doit consommer cette
-  constante — NE PAS dupliquer inline.
-- Constante coût 500g dans shared/guildCharter.ts (nouveau helper),
-  TD-012 Remote Config étendue à cette valeur
-- Pas de favorRank affecté, pas de side effect production/marché
-
-Le founder enverra le ticket précis. Ne pas commencer à coder avant
-réception du ticket.
+9/9 Cloud Functions Phase 1 Vertical Slice complètes après ÉTAPE 13.
+Prochaine décision founder : commencer l'intégration Unity côté client,
+ou implémenter updateMarketPrices / processWorldEventLifecycle.

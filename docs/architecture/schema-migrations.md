@@ -67,6 +67,19 @@
   - **Pas de `schemaVersion`** : trace immutable, jamais migrée.
   - Couverture Phase 1 : Logs et Planks ont 2 paliers (index 0 et 1), reconstructionKits a 1 palier (index 0).
     Coûts et montants définis dans `shared/inventoryUpgrades.ts` (TD-012 pour migration Remote Config).
+- `/players/{uid}/guildPurchases/{idempotencyKey}` — trace immutable d'achat Guild Charter (ÉTAPE 13)
+  - `uid: string` — propriétaire de l'achat
+  - `goldSpent: number` — gold consommé (= `GUILD_CHARTER_COST` = 500, server-authoritative)
+  - `favorAtPurchase: number` — snapshot de `imperialFavor` au moment de l'achat (analytics)
+  - `favorRankAtPurchase: FavorRank` — snapshot de `favorRank` au moment de l'achat (analytics)
+  - `createdAt: Timestamp` — horodatage serveur (`Timestamp.now()`, TD-007)
+  - **ID du document** = `idempotencyKey` fourni par le client (UUID). Garantit l'idempotence :
+    une clé existante avec même uid → résultat idempotent (`alreadyPurchased: true`) ;
+    uid différent dans le record → `failed-precondition` (défense en profondeur).
+  - **Pas de `schemaVersion`** : trace immutable, jamais migrée.
+  - Achat unique par joueur : le flag `player.guildCharterUnlocked` empêche tout double achat cross-device.
+    Le ledger assure l'audit trail économique et l'analytics "âge de promotion Phase 2".
+  - Coût défini dans `shared/guildCharter.ts` (TD-012 étendue pour migration Remote Config).
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

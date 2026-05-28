@@ -94,7 +94,8 @@ Ces valeurs définissent l'équilibre de toute l'économie Phase 1. Modifier l'u
 | # | Sujet | Décision | Rationale | Trigger de revue |
 |---|---|---|---|---|
 | D-ETAPE11 | Emplacement constantes market | `MAX_MARKET_SELL_QUANTITY`, `MARKET_SALES_RATE_LIMIT`, `MARKET_SALES_WINDOW_MS` dans `sellToMarket.ts` (pas `shared/market.ts`) | YAGNI cohérent avec `FAVOR_THRESHOLDS` en ÉTAPE 10 : aucune autre CF ne les réutilise encore. Même règle que pour favorRank.ts : factoriser à la première duplication réelle, pas par anticipation. | À migrer vers `shared/market.ts` si `updateMarketPrices` ou tout autre handler référence l'une de ces constantes. |
+| D-ETAPE13 | Factorisation FAVOR_THRESHOLDS | Extraction des seuils favor (50, 200, 350) depuis les magic numbers inline de `computeFavorRank` vers `shared/favorRank.ts` comme constante exportée `FAVOR_THRESHOLDS as const`. `shared/guildCharter.ts` ré-exporte `GUILD_CHARTER_FAVOR_THRESHOLD = FAVOR_THRESHOLDS.guild_charter_eligible` pour éviter le couplage direct du handler à `favorRank.ts`. | Trigger YAGNI activé : `purchaseGuildCharter` est le 2e consommateur du seuil 350 après `computeFavorRank` (ÉTAPE 10). | À surveiller si Phase 2 modifie ces seuils — un seul point de modification dans `shared/favorRank.ts`. |
 
 ---
 
-*Dernière mise à jour : 2026-05-27 — ÉTAPE 11 sellToMarket*
+*Dernière mise à jour : 2026-05-29 — ÉTAPE 13 purchaseGuildCharter*
