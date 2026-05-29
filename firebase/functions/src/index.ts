@@ -26,8 +26,8 @@ export { upgradeInventoryCap } from "./inventory/upgradeInventoryCap";
 // ── Guild Charter ─────────────────────────────────────────────────────────────
 export { purchaseGuildCharter } from "./guildCharter/purchaseGuildCharter";
 
+// ── Scheduled ─────────────────────────────────────────────────────────────────
+export { updateMarketPrices } from "./market/updateMarketPrices";
+
 // ── À venir — Phase 1 Vertical Slice ─────────────────────────────────────────
-// export { updateMarketPrices }         from "./scheduled/updateMarketPrices";
-// export { processWorldEventLifecycle } from "./scheduled/processWorldEventLifecycle";
-// export { updateMarketPrices }         from "./scheduled/updateMarketPrices";
 // export { processWorldEventLifecycle } from "./scheduled/processWorldEventLifecycle";
