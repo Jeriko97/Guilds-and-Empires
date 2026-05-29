@@ -13,7 +13,7 @@ export type EventMultiplier = {
   multiplier: number;
   status: "active" | "decaying";
   endsAt: firestore.Timestamp;
-  decayEndsAt: firestore.Timestamp;
+  decayEndsAt: firestore.Timestamp | null;
 };
 
 export type Trend = "rising" | "stable" | "falling";
@@ -30,7 +30,9 @@ function effectiveMultiplierForEvent(
 ): number {
   if (event.status === "active") return event.multiplier;
   const endsAtMs      = event.endsAt.toMillis();
-  const decayEndsAtMs = event.decayEndsAt.toMillis();
+  // decayEndsAt non-null garanti par le guard status === decaying ci-dessus
+  // (le schéma ne le pose qu'à l'expiration)
+  const decayEndsAtMs = event.decayEndsAt!.toMillis();
   const nowMs         = now.toMillis();
   const progress      = Math.min(1, Math.max(0, (nowMs - endsAtMs) / (decayEndsAtMs - endsAtMs)));
   return event.multiplier - (event.multiplier - 1) * progress;
