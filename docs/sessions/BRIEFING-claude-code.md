@@ -7,14 +7,14 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-29)
+## État du repo (mise à jour : 2026-05-30)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : edfa473
-- 8/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
+- Dernier commit : 042deb5
+- 9/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
-  upgradeInventoryCap, purchaseGuildCharter)
-- 149/149 tests verts contre Firebase Emulator (stable sur 2 runs)
+  upgradeInventoryCap, purchaseGuildCharter, updateMarketPrices)
+- 179/179 tests verts contre Firebase Emulator (stable sur 2 runs)
 - Helper partagé : firebase/functions/src/shared/production.ts
   (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
@@ -23,6 +23,10 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   (FAVOR_THRESHOLDS as const — 50/200/350 — consommé par computeFavorRank et purchaseGuildCharter)
 - Helper partagé : firebase/functions/src/shared/guildCharter.ts
   (GUILD_CHARTER_COST=500, GUILD_CHARTER_FAVOR_THRESHOLD — TD-012 étendue)
+- Helper partagé : firebase/functions/src/shared/marketPrices.ts
+  (MARKET_PRICE_BOUNDS — basePrices 5/12/20, fourchettes — résolution TD-011)
+- Helper partagé : firebase/functions/src/shared/computeMarketPrice.ts
+  (computeMarketPrice, computeTrend, EventMultiplier — helper pur, testé sans emulator)
 - Java 21 requis (Eclipse Temurin)
 - Émulateur : firebase emulators:start --only firestore,auth
   --project demo-guilds-empires
@@ -119,26 +123,22 @@ Lire en priorité au démarrage :
 - Snapshot analytique dans le ledger (ÉTAPE 13) : favorAtPurchase +
   favorRankAtPurchase dans guildPurchases. Permet analytics "âge de
   promotion Phase 2" sans relire l'historique.
+- Scheduled CF pattern (ÉTAPE 14) : TD-005 adapté — handler exporté
+  `updateMarketPricesHandler(random?, now?)` testé directement, wrapper
+  `onSchedule` non triggerable par l'emulator. random et now injectés.
+- Guard active vs decaying events (ÉTAPE 14) : pour active, `decayEndsAt`
+  est null en Firestore (schéma correct). Le guard ne bloque que les
+  decaying sans timestamps. Placeholder `decayEndsAt ?? endsAt` pour active.
+- Helper pur computeMarketPrice (ÉTAPE 14) : testé sans emulator dans
+  `__test__/computeMarketPrice.test.ts`. Import admin uniquement pour Timestamp.
+- Fail loudly / fail silently (ÉTAPE 14) : marketState absent → log+return.
+  marketState corrompu (struct incomplète) → throw Error (D-ETAPE14c).
 
 ## Prochaine étape
 
-ÉTAPE 14 : updateMarketPrices
-
-Référence détaillée :
-docs/architecture/phase-1-technical-implementation.md section 3.
-
-Particularités à anticiper :
-- 1ère Scheduled CF (functions.scheduler.onSchedule, every 5 minutes)
-- Recalcule les prix logs/planks/reconstructionKits dans /marketState/state
-- Algorithme : drift lent vers basePrice + bruit contrôlé (±5% max par
-  tick) + multiplicateurs des world events actifs
-- Tests Emulator : les Scheduled Functions ne sont pas triggerables
-  nativement par l'émulateur — tester le handler exporté directement
-  (pattern TD-005 adapté pour les Scheduled Functions)
-- Lecture activeWorldEvents pour appliquer les priceMultipliers
-- Premier consommateur potentiel pour aligner les seeds de prix tests
-  sur les valeurs économiques officielles (TD-011)
-- Pas de favorRank affecté, pas de player touché
+Phase 1 Vertical Slice : 9/9 Cloud Functions complètes.
+Prochaine décision founder : soit processWorldEventLifecycle (scheduled),
+soit intégration Unity ↔ backend (TD-010 Security Rules).
 
 Le founder enverra le ticket précis. Ne pas commencer à coder avant
 réception du ticket.

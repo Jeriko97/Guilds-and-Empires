@@ -29,25 +29,29 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-29)
+## État du projet (mise à jour : 2026-05-30)
 
-- Phase : Phase 1 Vertical Slice
+- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ (9/9)**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 8/9 complètes (resolveLoginState +
+- Cloud Functions : 9/9 complètes (resolveLoginState +
   startProductionSlot + collectProduction + acceptContract +
   deliverToContract + sellToMarket + upgradeInventoryCap +
-  purchaseGuildCharter)
-- Tests : 149/149 verts (stable sur 2 runs)
+  purchaseGuildCharter + updateMarketPrices)
+- Tests : 179/179 verts (stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : edfa473
+- Dernier commit : 042deb5
 - Helper partagé : firebase/functions/src/shared/production.ts
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
   (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012)
 - Helper partagé : firebase/functions/src/shared/favorRank.ts
-  (FAVOR_THRESHOLDS as const — 50/200/350 — TD-ETAPE13)
+  (FAVOR_THRESHOLDS as const — 50/200/350)
 - Helper partagé : firebase/functions/src/shared/guildCharter.ts
   (GUILD_CHARTER_COST=500, GUILD_CHARTER_FAVOR_THRESHOLD — TD-012 étendue)
+- Helper partagé : firebase/functions/src/shared/marketPrices.ts
+  (MARKET_PRICE_BOUNDS — basePrices 5/12/20, fourchettes — TD-011 résolu)
+- Helper partagé : firebase/functions/src/shared/computeMarketPrice.ts
+  (computeMarketPrice, computeTrend, EventMultiplier — helper pur)
 
 ## Documents de référence à demander au founder
 
@@ -56,7 +60,7 @@ Au début de chaque session, demander que ces docs soient attachés :
 1. docs/architecture/phase-1-decisions-log.md
 2. docs/architecture/phase-1-technical-implementation.md
 3. docs/design/phase-1-economy-values.md
-4. docs/architecture/technical-debt.md (TD-001 à TD-007)
+4. docs/architecture/technical-debt.md
 5. docs/architecture/schema-migrations.md
 6. docs/references/guilds-empires-vision-v1.md
 7. Le dernier docs/sessions/*.md disponible
@@ -81,21 +85,7 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 14 : updateMarketPrices
-
-Référence : docs/architecture/phase-1-technical-implementation.md
-section 3.
-
-Particularités à anticiper :
-- 1ère Scheduled CF (functions.scheduler.onSchedule, every 5 min)
-- Recalcule les prix logs/planks/reconstructionKits dans
-  /marketState/state
-- Algorithme : drift lent vers basePrice + bruit contrôlé (±5%
-  max par tick) + multiplicateurs des world events actifs
-- Tests Emulator : les Scheduled Functions ne sont pas triggerables
-  nativement par l'émulateur — tester le handler exporté directement
-  (pattern TD-005 adapté)
-- Lecture activeWorldEvents pour appliquer les priceMultipliers
-- Premier consommateur potentiel pour aligner les seeds de prix tests
-  sur les valeurs économiques officielles (TD-011)
-- Pas de favorRank affecté, pas de player touché
+Phase 1 backend complète (9/9 CF). Prochaines étapes à arbitrer :
+TD-010 firestore.rules (critique avant intégration Unity), intégration
+Unity ↔ backend, ou processWorldEventLifecycle (2e scheduled CF).
+À trancher au démarrage de la prochaine session claude.ai.
