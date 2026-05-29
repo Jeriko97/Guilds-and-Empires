@@ -81,6 +81,12 @@
     Le ledger assure l'audit trail économique et l'analytics "âge de promotion Phase 2".
   - Coût défini dans `shared/guildCharter.ts` (TD-012 étendue pour migration Remote Config).
 
+**Note ÉTAPE 14 :** `marketState/state` est désormais mis à jour périodiquement par la Scheduled CF
+`updateMarketPrices` (toutes les 5 minutes). Aucun changement de schéma — les champs `lastUpdatedAt`,
+`prices.{resource}.{currentPrice,basePrice,trend}` et `priceHistory.{resource}[]` existaient déjà.
+L'algorithme de drift, les basePrices officiels (logs=5, planks=12, kits=20) et les fourchettes sont
+définis dans `shared/marketPrices.ts` (résolution TD-011).
+
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction
 `claimDailyBonus` (preuve de concept pré-spec). Elle sera supprimée
