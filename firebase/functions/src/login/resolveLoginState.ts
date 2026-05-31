@@ -70,7 +70,7 @@ export async function resolveLoginStateHandler(
         tx.get(buildingsRef),
       ]);
 
-      // ── Premier login : création du document joueur ─────────────────────
+      // ── Premier login : création du document joueur + seed Sawmill ─────
       if (!playerSnap.exists) {
         const displayName = request.auth?.token.name ?? "Marchand";
         const now = admin.firestore.Timestamp.now();
@@ -89,6 +89,19 @@ export async function resolveLoginStateHandler(
           firstContractCompleted: false,
         });
 
+        // Littéral unique partagé entre le write Firestore et le snapshot retourné.
+        // Slots null = inactifs ; TD-007 non concernée (aucun Timestamp dans l'array).
+        const sawmill: BuildingDocument = {
+          buildingType: "sawmill",
+          level: 1,
+          slots: [
+            { slotIndex: 0, recipeId: null, startedAt: null, lastProcessedAt: null },
+            { slotIndex: 1, recipeId: null, startedAt: null, lastProcessedAt: null },
+            { slotIndex: 2, recipeId: null, startedAt: null, lastProcessedAt: null },
+          ],
+        };
+        tx.set(buildingsRef.doc("sawmill_0"), sawmill);
+
         // Le snapshot retourné approxime les timestamps avec now().
         // L'écart avec le serverTimestamp() stocké est négligeable au premier login.
         const playerForSnapshot: PlayerDocument = {
@@ -105,7 +118,7 @@ export async function resolveLoginStateHandler(
           firstContractCompleted: false,
         };
 
-        return { playerForSnapshot, buildings: [] as BuildingDocument[] };
+        return { playerForSnapshot, buildings: [sawmill] };
       }
 
       // ── Joueur existant ─────────────────────────────────────────────────
