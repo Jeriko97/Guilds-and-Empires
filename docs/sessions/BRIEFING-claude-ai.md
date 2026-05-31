@@ -29,18 +29,27 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-30)
+## État du projet (mise à jour : 2026-05-31)
 
-- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ (9/9)**
+- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ (9/9) + client Unity bootstrap opérationnel**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
-- Client : Unity 6 (pas encore connecté au backend)
-- Cloud Functions : 9/9 complètes (resolveLoginState +
-  startProductionSlot + collectProduction + acceptContract +
-  deliverToContract + sellToMarket + upgradeInventoryCap +
-  purchaseGuildCharter + updateMarketPrices)
-- Tests : 179/179 verts (stable sur 2 runs)
+- Client : **Unity 6 connecté au backend (ÉTAPE 16 complète)**
+- Cloud Functions : 9/9 complètes + Security Rules Phase 1 (TD-010 résolue)
+- Tests : 201/201 verts (179 handlers + 22 security rules, stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : 5b3a370
+- Dernier commit : 4d0a6d6
+
+### Client Unity opérationnel (ÉTAPE 16)
+
+- `IPlayerService` + `FirebasePlayerService` : appel resolveLoginState, parsing C#, doctrine C3
+- `PlayerStateSnapshot` : modèle complet (gold, favor, inventory, favorRank, etc.)
+- `DebugScreenController` : UI Toolkit, cycle de vie C9
+- `AppBootstrap` : auth anonyme + enregistrement IPlayerService + activation DebugScreen
+- **⚠️ Wiring manuel Unity requis** : créer GameObject DebugScreen dans Boot.unity
+  (voir session log 2026-05-31-etape-16-unity-bootstrap.md pour instructions exactes)
+
+### Backend Firebase
+
 - Helper partagé : firebase/functions/src/shared/production.ts
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
   (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012)
@@ -85,12 +94,10 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 15 : TD-010 firestore.rules (critique avant toute intégration
-Unity ↔ backend). Spec complète dans
-`phase-1-technical-implementation.md` Section 3.
+**Validation founder ÉTAPE 16** : lancer Unity en Play mode, confirmer que le DebugScreen
+affiche le PlayerState (gold=0, favorRank=local_supplier, etc.).
+⚠️ Wiring manuel Unity requis avant de pouvoir tester (voir session log).
 
-Alternatives à arbitrer si TD-010 différée :
-- Intégration Unity ↔ backend (bloquée par TD-010)
-- processWorldEventLifecycle (2e scheduled CF, hors critique Phase 1)
-
-À trancher au démarrage de la prochaine session claude.ai.
+Après validation :
+- ÉTAPE 17 : premier écran gameplay à définir (production, contrats, ou marché)
+- App Check Unity (différé ÉTAPE 16) — à planifier si déploiement staging imminente

@@ -10,27 +10,40 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 ## État du repo (mise à jour : 2026-05-31)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : d88f7c4
+- Dernier commit : 4d0a6d6
+- **ÉTAPE 16 COMPLETE** : Premier client Unity opérationnel
+  Auth anonyme → resolveLoginState → DebugScreen UI Toolkit
 - 9/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
   upgradeInventoryCap, purchaseGuildCharter, updateMarketPrices)
 - 201/201 tests verts contre Firebase Emulator (179 handlers + 22 rules, stable sur 2 runs)
 - **TD-010 RÉSOLUE** : firestore.rules Phase 1 + @firebase/rules-unit-testing@5.0.1
-- Helper partagé : firebase/functions/src/shared/production.ts
-  (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
-- Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
-  (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012 pour Remote Config)
-- Helper partagé : firebase/functions/src/shared/favorRank.ts
-  (FAVOR_THRESHOLDS as const — 50/200/350 — consommé par computeFavorRank et purchaseGuildCharter)
-- Helper partagé : firebase/functions/src/shared/guildCharter.ts
-  (GUILD_CHARTER_COST=500, GUILD_CHARTER_FAVOR_THRESHOLD — TD-012 étendue)
-- Helper partagé : firebase/functions/src/shared/marketPrices.ts
-  (MARKET_PRICE_BOUNDS — basePrices 5/12/20, fourchettes — résolution TD-011)
-- Helper partagé : firebase/functions/src/shared/computeMarketPrice.ts
-  (computeMarketPrice, computeTrend, EventMultiplier — helper pur, testé sans emulator)
+
+### Couche client Unity (Assets/_Project/)
+
+- `ServiceLocator` (static) — Register/Resolve/TryResolve
+- `MainThreadDispatcher` — ConcurrentQueue<Action> drainé dans Update
+- `FirebaseBootstrap` — CheckAndFixDependencies + PersistenceEnabled = true
+- `AppBootstrap` — pipeline 7 steps (Firebase + anon auth + services + DebugScreen)
+- `IPlayerService` + `FirebasePlayerService` — appel resolveLoginState, parsing, C6
+- `PlayerStateSnapshot` — modèle C# complet (gold, favor, inventory, favorRank, etc.)
+- `DebugScreenController` — UI Toolkit, cycle de vie C9, aucun Firebase en UI
+- `DebugScreen.uxml` + `DebugScreen.uss` — layouts et styles debug
+
+**⚠️ Wiring manuel Unity requis** (voir session log 2026-05-31-etape-16) :
+Créer GameObject "DebugScreen" avec UIDocument + DebugScreenController dans Boot.unity,
+désactiver le GO, assigner dans AppBootstrap._debugScreen.
+
+### Backend Firebase (firebase/functions/src/)
+
+- Helper partagé : shared/production.ts (processBuildingSlots)
+- Helper partagé : shared/inventoryUpgrades.ts (INVENTORY_UPGRADE_COSTS/AMOUNTS)
+- Helper partagé : shared/favorRank.ts (FAVOR_THRESHOLDS 50/200/350)
+- Helper partagé : shared/guildCharter.ts (GUILD_CHARTER_COST=500)
+- Helper partagé : shared/marketPrices.ts (MARKET_PRICE_BOUNDS)
+- Helper partagé : shared/computeMarketPrice.ts (helper pur testé sans emulator)
 - Java 21 requis (Eclipse Temurin)
-- Émulateur : firebase emulators:start --only firestore,auth
-  --project demo-guilds-empires
+- Émulateur : firebase emulators:start --only firestore,auth --project demo-guilds-empires
 - Tests : npm run test:emulator (depuis firebase/functions/)
 
 ## Skills à activer (Claude Code)
@@ -135,11 +148,20 @@ Lire en priorité au démarrage :
 - Fail loudly / fail silently (ÉTAPE 14) : marketState absent → log+return.
   marketState corrompu (struct incomplète) → throw Error (D-ETAPE14c).
 
+## Patterns Unity client établis (ÉTAPE 16)
+
+- **Doctrine C3** : aucun SDK Firebase (Auth/Firestore/Functions) dans les classes UI.
+  UI → IService → FirebaseXxxService (seule classe qui importe Firebase.*).
+- **Doctrine C9** : `OnEnable` crée CTS + lance async ; `OnDisable` annule CTS.
+  Pas de callback fantôme, pas de fuite mémoire.
+- **D-ETAPE16-002** : ServiceLocator static existant réutilisé (pas MonoBehaviour).
+- **D-ETAPE16-003** : Auth anonyme directement dans AppBootstrap step 4 (pas IAuthService).
+  Trigger de refactor = introduction email/Google/Apple Sign-In.
+- **Parsing Firebase Functions** : `Dictionary<object, object>` (pas `<string, object>`).
+  Voir `PlayerStateSnapshot.Parse` + `EconomyService.ParseClaimResult` pour les deux patterns.
+- **UID dans snapshot** : injecté par le service après auth (pas récupéré dans l'UI).
+
 ## Prochaine étape
 
-ÉTAPE 16 : Intégration Unity ↔ backend.
-TD-010 résolue — les Security Rules sont en place.
-Le finding CRITICAL "No Firestore Security Rules" est fermé.
-
-Le founder enverra le ticket précis. Ne pas commencer à coder avant
-réception du ticket.
+ÉTAPE 17 : validation founder (Play mode Unity, confirmer DebugScreen affiche PlayerState),
+puis premier écran gameplay (production, contrats, ou marché — à définir avec le founder).
