@@ -101,4 +101,4 @@ Ces valeurs définissent l'équilibre de toute l'économie Phase 1. Modifier l'u
 
 ---
 
-*Dernière mise à jour : 2026-05-29 — ÉTAPE 14 updateMarketPrices*
+*Dernière mise à jour : 2026-05-30 — ÉTAPE 14 updateMarketPrices*

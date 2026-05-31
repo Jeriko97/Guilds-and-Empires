@@ -40,7 +40,7 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   purchaseGuildCharter + updateMarketPrices)
 - Tests : 179/179 verts (stable sur 2 runs)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : 042deb5
+- Dernier commit : 5b3a370
 - Helper partagé : firebase/functions/src/shared/production.ts
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
   (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012)
@@ -85,7 +85,12 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-Phase 1 backend complète (9/9 CF). Prochaines étapes à arbitrer :
-TD-010 firestore.rules (critique avant intégration Unity), intégration
-Unity ↔ backend, ou processWorldEventLifecycle (2e scheduled CF).
+ÉTAPE 15 : TD-010 firestore.rules (critique avant toute intégration
+Unity ↔ backend). Spec complète dans
+`phase-1-technical-implementation.md` Section 3.
+
+Alternatives à arbitrer si TD-010 différée :
+- Intégration Unity ↔ backend (bloquée par TD-010)
+- processWorldEventLifecycle (2e scheduled CF, hors critique Phase 1)
+
 À trancher au démarrage de la prochaine session claude.ai.

@@ -10,7 +10,7 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 ## État du repo (mise à jour : 2026-05-30)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : 042deb5
+- Dernier commit : 5b3a370
 - 9/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
   upgradeInventoryCap, purchaseGuildCharter, updateMarketPrices)
@@ -136,9 +136,9 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-Phase 1 Vertical Slice : 9/9 Cloud Functions complètes.
-Prochaine décision founder : soit processWorldEventLifecycle (scheduled),
-soit intégration Unity ↔ backend (TD-010 Security Rules).
+ÉTAPE 15 : TD-010 firestore.rules — Phase 1 backend complet (9/9 CF).
+Spec des règles dans `phase-1-technical-implementation.md` Section 3.
+Critique avant toute intégration Unity ↔ backend.
 
 Le founder enverra le ticket précis. Ne pas commencer à coder avant
 réception du ticket.
