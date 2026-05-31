@@ -75,7 +75,7 @@ Ces valeurs définissent l'équilibre de toute l'économie Phase 1. Modifier l'u
 
 | Finding | Sévérité | Statut | Traité par |
 |---|---|---|---|
-| No Firestore Security Rules | CRITICAL | **Open** | Défini en Prompt 3B — à implémenter avant tout PR économique |
+| No Firestore Security Rules | CRITICAL | **Resolved (ÉTAPE 15)** | `firestore.rules` Phase 1 + 22 tests `@firebase/rules-unit-testing`. |
 | `AddGoldAsync` client-side | CRITICAL | **Open** | Remplacé par architecture Cloud Functions (Prompt 3B) |
 | App Check non configuré | HIGH | **Open** | Setup décidé en D4.2 — à implémenter |
 | No `MainThreadDispatcher` | HIGH | **Open** | Pattern défini en Prompt 3B — à créer en priorité |
@@ -98,7 +98,8 @@ Ces valeurs définissent l'équilibre de toute l'économie Phase 1. Modifier l'u
 | D-ETAPE14 | Statut marché reconstructionKits | Option A — plancher fixe 20g, non affecté par drift/noise. Event multipliers peuvent booster temporairement. | Cohérent avec doc design ("soupape, pas canal principal"). Évite un 3e marché dynamique Phase 1. | Phase 2 si introduction d'un vrai marché Kits. |
 | D-ETAPE14b | Algorithme drift prix marché | Ordre : drift → bruit → clamp intermédiaire → event multipliers → floor de sécurité → arrondi. Pas de ceiling Phase 1 (l'event peut faire dépasser le max, c'est voulu pour la visibilité du boost). Constants DRIFT_FACTOR=0.1, NOISE_AMPLITUDE=0.05. | Convergence douce vers basePrice. Bruit appliqué avant events pour respecter la hiérarchie sémantique. | Si playtest montre instabilité, ajuster DRIFT_FACTOR avant tout autre paramètre. |
 | D-ETAPE14c | Tolérance états marketState | Inexistant → log + return gracieux. Corrompu (structure incomplète) → throw Error. | Fail loudly sur état corrompu (scheduled CF sans surveillance) vs fail silently sur premier déploiement (cas légitime). | Si introduction d'un mécanisme d'init automatique de marketState, retirer la tolérance "inexistant". |
+| D-ETAPE15 | Test des Security Rules | Suite dédiée `firestore.rules.test.ts` via `@firebase/rules-unit-testing`, séparée des tests handlers (Admin SDK bypasse les rules). Quadruplet complet sur collections sensibles + couverture exhaustive du schéma Phase 1 incluant les 3 subcollections post-ÉTAPE 9. Dimension query (collection.get()) couverte séparément de get() document (section F). | Rules non testées = fausse sécurité, finding CRITICAL. Subcollections récentes absentes de la spec historique = risque d'oubli au deny-all. | À étendre si Phase 2 ajoute des collections (orderBook, factions, etc.). |
 
 ---
 
-*Dernière mise à jour : 2026-05-30 — ÉTAPE 14 updateMarketPrices*
+*Dernière mise à jour : 2026-05-31 — ÉTAPE 15 firestore.rules Phase 1*
