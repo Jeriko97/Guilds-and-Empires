@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="debug-screen" class="debug-screen">
+        <ui:Label name="title-label" text="Guilds &amp; Empires — Debug" class="title" />
+        <ui:Label name="status-label" text="Connexion…" class="status" />
+        <ui:ScrollView name="content-scroll" class="content-scroll">
+            <ui:VisualElement name="content-container" class="content-container" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

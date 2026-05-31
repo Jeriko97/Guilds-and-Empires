@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Firebase.Auth;
 using GuildsAndEmpires.Core.Config;
 using GuildsAndEmpires.Core.Lifecycle;
 using GuildsAndEmpires.Core.Logging;
@@ -9,6 +10,8 @@ using GuildsAndEmpires.Core.Threading;
 using GuildsAndEmpires.Services;
 using GuildsAndEmpires.Services.Economy;
 using GuildsAndEmpires.Services.Firebase;
+using GuildsAndEmpires.Services.Player;
+using GuildsAndEmpires.UI;
 using GuildsAndEmpires.UI.Screens;
 
 namespace GuildsAndEmpires.Core.Bootstrap
@@ -45,6 +48,10 @@ namespace GuildsAndEmpires.Core.Bootstrap
         [Header("Core Managers")]
         [SerializeField] private GameLifecycleManager _lifecycleManager;
         [SerializeField] private ScreenManager _screenManager;
+
+        [Header("Debug")]
+        [Tooltip("Activated after successful boot to display the PlayerState debug screen.")]
+        [SerializeField] private DebugScreenController _debugScreen;
 
         /// <summary>Current state of the initialization pipeline. Checked by late-initialising systems.</summary>
         public static AppState State { get; private set; } = AppState.Initializing;
@@ -117,17 +124,36 @@ namespace GuildsAndEmpires.Core.Bootstrap
                 GELogger.Warning("Bootstrap", "Firebase unavailable offline — starting in limited mode.");
             }
 
-            // --- Step 4: App services ----------------------------------------------------------
+            // --- Step 4: Anonymous sign-in -----------------------------------------------------
+            // Requis avant tout appel à resolveLoginState. Réutilise la session existante si
+            // l'utilisateur s'est déjà connecté lors d'une session précédente.
+            if (firebaseReady)
+            {
+                var existingUser = FirebaseAuth.DefaultInstance.CurrentUser;
+                if (existingUser != null)
+                {
+                    GELogger.Info("Bootstrap", $"Session existante — uid: {existingUser.UserId.Substring(0, 8)}…");
+                }
+                else
+                {
+                    var authResult = await FirebaseAuth.DefaultInstance.SignInAnonymouslyAsync();
+                    ct.ThrowIfCancellationRequested();
+                    GELogger.Info("Bootstrap", $"Connecté anonymement — uid: {authResult.User.UserId.Substring(0, 8)}…");
+                }
+            }
+
+            // --- Step 5: App services ----------------------------------------------------------
             // Enregistrés seulement si Firebase est prêt (les services dépendent du SDK).
             // En mode offline dégradé, les services ne sont pas disponibles.
             if (firebaseReady)
             {
                 ServiceLocator.Register<IProfileService>(new ProfileService());
                 ServiceLocator.Register<IEconomyService>(new EconomyService());
+                ServiceLocator.Register<IPlayerService>(new FirebasePlayerService());
                 GELogger.Debug("Bootstrap", "App services registered.");
             }
 
-            // --- Step 5: Remote Config ---------------------------------------------------------
+            // --- Step 6: Remote Config ---------------------------------------------------------
             // Non-fatal. ScriptableObject defaults are pre-loaded so values are always valid.
             // Skipped when EnvironmentConfig.SkipRemoteConfig is set (editor debug override).
             if (firebaseReady && !(_environmentConfig?.SkipRemoteConfig ?? false))
@@ -137,12 +163,19 @@ namespace GuildsAndEmpires.Core.Bootstrap
                 await rcBootstrap.FetchAndActivateAsync(ct, rcTimeout);
             }
 
-            // --- Step 6: Ready -----------------------------------------------------------------
+            // --- Step 7: Ready -----------------------------------------------------------------
             State = firebaseReady ? AppState.Ready : AppState.OfflineReady;
             GELogger.Info("Bootstrap", $"Init complete — {State}");
 
             // Signal the screen layer. ScreenManager decides which screen to show first.
             _screenManager?.OnBootReady(State);
+
+            // Debug screen — activated only when Firebase is ready and IPlayerService is registered.
+            // Starts inactive in the scene so OnEnable doesn't fire before services are available.
+            if (firebaseReady && _debugScreen != null)
+            {
+                MainThreadDispatcher.Post(() => _debugScreen.gameObject.SetActive(true));
+            }
         }
 
         private void OnDestroy()
