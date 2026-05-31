@@ -31,22 +31,27 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 
 ## État du projet (mise à jour : 2026-05-31)
 
-- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ (9/9) + client Unity bootstrap opérationnel**
+- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + client Unity login de bout en bout confirmé**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
-- Client : **Unity 6 connecté au backend (ÉTAPE 16 complète)**
-- Cloud Functions : 9/9 complètes + Security Rules Phase 1 (TD-010 résolue)
+- Client : **Unity 6 connecté au backend — ÉTAPE 16 FERMÉE**
+- Cloud Functions : **9/9 déployées sur guildsandempires-ca543** + Security Rules Phase 1
 - Tests : 201/201 verts (179 handlers + 22 security rules, stable sur 2 runs)
+- Projet Firebase : **unique** — `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : 4d0a6d6
+- Dernier commit : hash final session ÉTAPE 16
 
-### Client Unity opérationnel (ÉTAPE 16)
+### Résultat ÉTAPE 16 (confirmé founder)
+
+Login de bout en bout en Play mode Unity :
+`gold 0 | imperialFavor 0 | favorRank local_supplier | logs cap 50 | planks cap 30 | kits cap 10`
+Document `/players/{uid}` créé au premier login. Console : resolveLoginState OK.
+
+### Client Unity
 
 - `IPlayerService` + `FirebasePlayerService` : appel resolveLoginState, parsing C#, doctrine C3
 - `PlayerStateSnapshot` : modèle complet (gold, favor, inventory, favorRank, etc.)
-- `DebugScreenController` : UI Toolkit, cycle de vie C9
+- `DebugScreenController` : UI Toolkit, cycle de vie C9, aucun Firebase en UI
 - `AppBootstrap` : auth anonyme + enregistrement IPlayerService + activation DebugScreen
-- **⚠️ Wiring manuel Unity requis** : créer GameObject DebugScreen dans Boot.unity
-  (voir session log 2026-05-31-etape-16-unity-bootstrap.md pour instructions exactes)
 
 ### Backend Firebase
 
@@ -92,12 +97,15 @@ Au début de chaque session, demander que ces docs soient attachés :
 - Au-dessus de 70% : réponses courtes et opérationnelles uniquement
 - Le founder a le droit de me dire "court uniquement" si je dérive
 
+## Points d'attention actifs
+
+- **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
+  À implémenter avant déploiement non-solo.
+- **TD-013** : migration Node.js 20 → 22 avant 2026-10-30 (simple, low-risk).
+- **Canvas pré-alpha** dans Boot.unity : `AuthUIController` + `ProfileUIController` actifs
+  sur un Canvas uGUI legacy. Inoffensif mais génère du bruit (ProfileService tente un
+  Observe sur `/profiles/{uid}` introuvable). À désactiver avant ÉTAPE 17.
+
 ## Prochaine étape attendue
 
-**Validation founder ÉTAPE 16** : lancer Unity en Play mode, confirmer que le DebugScreen
-affiche le PlayerState (gold=0, favorRank=local_supplier, etc.).
-⚠️ Wiring manuel Unity requis avant de pouvoir tester (voir session log).
-
-Après validation :
-- ÉTAPE 17 : premier écran gameplay à définir (production, contrats, ou marché)
-- App Check Unity (différé ÉTAPE 16) — à planifier si déploiement staging imminente
+ÉTAPE 17 : premier écran gameplay (production, contrats, ou marché — à définir avec le founder).

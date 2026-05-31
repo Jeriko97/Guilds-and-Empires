@@ -10,9 +10,13 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 ## État du repo (mise à jour : 2026-05-31)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : 4d0a6d6
-- **ÉTAPE 16 COMPLETE** : Premier client Unity opérationnel
-  Auth anonyme → resolveLoginState → DebugScreen UI Toolkit
+- Dernier commit : voir hash final session ÉTAPE 16
+- **ÉTAPE 16 FERMÉE** — Login de bout en bout Unity → backend confirmé
+  Auth anonyme → resolveLoginState → PlayerState affiché (gold 0, rank local_supplier)
+- **9 CF Phase 1 + firestore.rules déployées sur guildsandempires-ca543**
+- Projet Firebase unique : `guildsandempires-ca543` (pas de dev/staging/prod séparés)
+- App Check : Open (CF publiquement appelables — acceptable pré-alpha, D-ETAPE16-005)
+- TD-013 ouverte : migration Node.js 20 → 22 avant 2026-10-30
 - 9/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
   upgradeInventoryCap, purchaseGuildCharter, updateMarketPrices)
@@ -163,5 +167,5 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-ÉTAPE 17 : validation founder (Play mode Unity, confirmer DebugScreen affiche PlayerState),
-puis premier écran gameplay (production, contrats, ou marché — à définir avec le founder).
+ÉTAPE 17 : premier écran gameplay (production, contrats, ou marché — à définir avec le founder).
+ÉTAPE 16 est entièrement fermée — login de bout en bout confirmé en Play mode Unity.

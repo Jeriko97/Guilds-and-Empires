@@ -331,6 +331,34 @@ LiveOps — auquel cas la migration mutualise le travail tooling Remote Config.
 
 ---
 
+### TD-013 — Migration Node.js 20 → 22 pour les Cloud Functions
+
+**Identifié :** 2026-05-31 (ÉTAPE 16, warning lors du déploiement sur guildsandempires-ca543)
+**Criticité actuelle :** FAIBLE
+**Composant :** `firebase/functions` — runtime déclaré dans `firebase.json`
+
+**Description :**
+Node.js 20 a été déprécié le 2026-04-30 et sera décommissionné le 2026-10-30.
+Après cette date, `firebase deploy --only functions` sera bloqué tant que le
+runtime n'aura pas été migré.
+
+**Impact actuel :**
+Aucun sur le fonctionnement des CF. Warning visible à chaque `firebase deploy`.
+Date de décommissionnement : **2026-10-30**.
+
+**Trigger de résolution :**
+Avant le 2026-10-30. Recommandé avant la prochaine session de déploiement prod
+pour ne pas accumuler les warnings et s'habituer à les ignorer.
+
+**Solution prévue :**
+1. Dans `firebase.json`, mettre `"runtime": "nodejs22"`.
+2. Dans `firebase/functions/package.json`, mettre `"engines": { "node": "22" }`.
+3. `firebase deploy --only functions` — vérifier que les 9 CF se redéploient sans erreur.
+4. Aucun changement de code CF attendu (Node 20 → 22 est une mise à jour mineure
+   sans breaking changes sur les APIs utilisées par ce projet).
+
+---
+
 ## TD Résolues
 
 ### TD-010 — firestore.rules incomplet pour Phase 1

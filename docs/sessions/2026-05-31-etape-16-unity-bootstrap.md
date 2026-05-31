@@ -131,7 +131,32 @@ enfant de `<ui:UXML>` (ou assigner via le UIDocument's PanelSettings).
 - D-ETAPE16-003 : Auth anonyme directement dans AppBootstrap (pas IAuthService)
 - D-ETAPE16-004 : UID injecté dans PlayerStateSnapshot par le service (pas par l'UI)
 
+## Résultat final — validé founder
+
+**Login de bout en bout confirmé en Play mode Unity.**
+
+Écran affiché : `gold 0 | imperialFavor 0 | favorRank local_supplier | logs cap 50 | planks cap 30 | kits cap 10 | upgradesApplied 0`.
+Console Unity : `[PlayerService] resolveLoginState OK`.
+Document `/players/{uid}` créé au premier login comme prévu par le handler (bloc `!playerSnap.exists`).
+
+### Déploiement cloud (post-audit)
+
+`resolveLoginState` n'était pas déployée — seul `claimDailyBonus` (pré-alpha) existait sur
+`guildsandempires-ca543`. Déploiement des 9 CF Phase 1 + `firestore.rules` ÉTAPE 15
+effectué en cours de session : `firebase deploy --only functions,firestore:rules`.
+
+Projet unique confirmé : `guildsandempires-ca543` (pas de dev/staging/prod séparés).
+App Check non configuré — acceptable pré-alpha, noté D-ETAPE16-005.
+TD-013 ouverte : migration Node.js 20 → 22 avant le 2026-10-30.
+
+### Commits de clôture
+
+- `2f4c9cc` — feat(client): add IPlayerService, PlayerStateSnapshot model, and FirebasePlayerService
+- `4d0a6d6` — feat(client): add DebugScreen UI Toolkit and wire anonymous auth in AppBootstrap
+- `bd78e96` — docs: add session log ETAPE 16, update decisions log and briefings
+- `d1fb9e5` — docs: log D-ETAPE16-005 App Check deferred + deploy Phase 1 functions
+- `[hash clôture]` — docs: close ETAPE 16 — first end-to-end Unity login
+
 ## Prochaine étape
 
-Validation founder (Play mode Unity → DebugScreen affiche PlayerState).
-Puis ÉTAPE 17 : premier écran gameplay (production, contrats, ou marché — à définir).
+ÉTAPE 17 : premier écran gameplay (production, contrats, ou marché — à définir avec le founder).
