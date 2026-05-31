@@ -87,6 +87,11 @@
 L'algorithme de drift, les basePrices officiels (logs=5, planks=12, kits=20) et les fourchettes sont
 définis dans `shared/marketPrices.ts` (résolution TD-011).
 
+**Note ÉTAPE 16.5 :** `resolveLoginState` seede un building Sawmill (`sawmill_0`, 3 slots null)
+au premier login (`!playerSnap.exists`), second write de la même transaction que la création du
+player. Pas de migration de données : s'applique aux nouveaux joueurs uniquement ; les players
+existants sans building ne sont pas rétro-seedés (acceptable pré-alpha, ~0 joueur — cf. TD-003).
+
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction
 `claimDailyBonus` (preuve de concept pré-spec). Elle sera supprimée
