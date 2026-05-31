@@ -3,46 +3,54 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── Profils joueurs ─────────────────────────────────────────────────────
-    // Le client peut lire son propre profil (pour l'affichage en temps réel).
-    //
-    // create : autorisé uniquement depuis Unity après le signup Firebase Auth.
-    //   - gold DOIT être 0 à la création (pas d'inflation client-side possible)
-    //   - level DOIT être 1
-    //   - schemaVersion DOIT être 1
-    //
-    // update / delete : INTERDITS au client.
-    //   Toute mutation économique (gold, level) passe par la Cloud Function
-    //   claimDailyBonus (Admin SDK, contourne ces règles).
-    match /profiles/{uid} {
-      allow read:   if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null
-                    && request.auth.uid == uid
-                    && request.resource.data.gold == 0
-                    && request.resource.data.level == 1
-                    && request.resource.data.schemaVersion == 1;
-      allow update: if false;
-      allow delete: if false;
+    // ─── PLAYER DATA ───────────────────────────────────────────────────────────
+    // Lecture : propriétaire uniquement (request.auth.uid == uid).
+    // Écriture client : INTERDITE. Toutes les mutations passent par Admin SDK (CF).
+    match /players/{uid} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+
+      match /buildings/{buildingId} {
+        allow read:  if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+      match /contracts/{contractId} {
+        allow read:  if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+      match /marketTrades/{tradeId} {
+        allow read:  if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+      match /inventoryUpgrades/{upgradeId} {
+        allow read:  if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+      match /guildPurchases/{purchaseId} {
+        allow read:  if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
     }
 
-    // ─── Logs d'idempotency ───────────────────────────────────────────────────
-    // Enregistre chaque transaction traitée (nonce → résultat).
-    // Le client peut lire ses propres logs (pour debug/UI), jamais écrire.
-    match /transactionLogs/{nonce} {
-      allow read:  if request.auth != null
-                   && resource != null
-                   && resource.data.uid == request.auth.uid;
+    // ─── GLOBAL STATE ──────────────────────────────────────────────────────────
+    // Lecture : tout utilisateur authentifié (ticker marché, events, contrats).
+    // Écriture client : INTERDITE. Seules les Cloud Functions (Admin SDK) écrivent.
+    match /marketState/{document} {
+      allow read:  if request.auth != null;
+      allow write: if false;
+    }
+    match /activeWorldEvents/{eventId} {
+      allow read:  if request.auth != null;
+      allow write: if false;
+    }
+    match /contractPool/{contractId} {
+      allow read:  if request.auth != null;
       allow write: if false;
     }
 
-    // ─── Rate limits ──────────────────────────────────────────────────────────
-    // Lecture et écriture uniquement via Cloud Functions (service account Admin SDK).
-    match /rateLimits/{rateLimitId} {
-      allow read, write: if false;
-    }
-
-    // ─── Refus par défaut ─────────────────────────────────────────────────────
-    // Toute collection non listée ci-dessus est bloquée au client.
+    // ─── FALLBACK DENY-ALL ─────────────────────────────────────────────────────
+    // Couvre les collections legacy (profiles, transactionLogs, rateLimits)
+    // et toute collection non listée ci-dessus.
     match /{document=**} {
       allow read, write: if false;
     }
