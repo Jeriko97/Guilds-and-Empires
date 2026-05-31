@@ -7,14 +7,15 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-30)
+## État du repo (mise à jour : 2026-05-31)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : 5b3a370
+- Dernier commit : d88f7c4
 - 9/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
   upgradeInventoryCap, purchaseGuildCharter, updateMarketPrices)
-- 179/179 tests verts contre Firebase Emulator (stable sur 2 runs)
+- 201/201 tests verts contre Firebase Emulator (179 handlers + 22 rules, stable sur 2 runs)
+- **TD-010 RÉSOLUE** : firestore.rules Phase 1 + @firebase/rules-unit-testing@5.0.1
 - Helper partagé : firebase/functions/src/shared/production.ts
   (processBuildingSlots — utilisé par resolveLoginState et collectProduction)
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
@@ -136,9 +137,9 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-ÉTAPE 15 : TD-010 firestore.rules — Phase 1 backend complet (9/9 CF).
-Spec des règles dans `phase-1-technical-implementation.md` Section 3.
-Critique avant toute intégration Unity ↔ backend.
+ÉTAPE 16 : Intégration Unity ↔ backend.
+TD-010 résolue — les Security Rules sont en place.
+Le finding CRITICAL "No Firestore Security Rules" est fermé.
 
 Le founder enverra le ticket précis. Ne pas commencer à coder avant
 réception du ticket.
