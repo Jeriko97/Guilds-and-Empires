@@ -251,14 +251,22 @@ export interface ContractPoolDocument {
 // ─── Type de retour des Cloud Functions ──────────────────────────────────────
 
 /**
+ * BuildingDocument enrichi avec l'id Firestore du document (clé de la
+ * subcollection buildings). Utilisé dans la réponse des Cloud Functions
+ * uniquement — ne modifie pas la forme du document stocké.
+ * Le client Unity utilise cet id pour appeler startProductionSlot.
+ */
+export type PlayerStateBuilding = BuildingDocument & { id: string };
+
+/**
  * Snapshot complet retourné par resolveLoginState (et les autres fonctions
  * qui mutent le state). Donne au client Unity l'état mis à jour en un seul
  * aller-retour — évite un second read Firestore après l'appel.
  */
 export interface PlayerStateSnapshot {
   player: PlayerDocument;
-  /** Tous les bâtiments du joueur avec l'état courant de leurs slots. */
-  buildings: BuildingDocument[];
+  /** Tous les bâtiments du joueur avec l'état courant de leurs slots et leur id Firestore. */
+  buildings: PlayerStateBuilding[];
   /**
    * Contrats avec status 'active' uniquement. Les contrats completed/expired
    * sont exclus pour garder le payload minimal.

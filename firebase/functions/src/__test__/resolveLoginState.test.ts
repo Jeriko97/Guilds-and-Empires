@@ -99,6 +99,7 @@ describe("resolveLoginState", () => {
 
     expect(result.buildings).toHaveLength(1);
     const b = result.buildings[0];
+    expect(b.id).toBe("sawmill_0");
     expect(b.buildingType).toBe("sawmill");
     expect(b.level).toBe(1);
     expect(b.slots).toHaveLength(3);
@@ -122,6 +123,7 @@ describe("resolveLoginState", () => {
     // Deuxième login — joueur existant, aucune recréation du building.
     const result2 = await resolveLoginStateHandler(makeRequest(uid));
     expect(result2.buildings).toHaveLength(1);
+    expect(result2.buildings[0].id).toBe("sawmill_0");
     expect(result2.buildings[0].buildingType).toBe("sawmill");
 
     // La subcollection ne contient qu'un seul doc après le 2e appel.

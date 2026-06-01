@@ -10,6 +10,7 @@ import { CURRENT_SCHEMA_VERSION } from "../shared/types";
 import type {
   PlayerDocument,
   BuildingDocument,
+  PlayerStateBuilding,
   ContractDocument,
   InventoryState,
   PlayerStateSnapshot,
@@ -23,6 +24,10 @@ export type ResolveLoginStateResponse = PlayerStateSnapshot;
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const RATE_LIMIT_SECONDS = 5;
+
+/** Id Firestore du building de départ. Source unique partagée entre le write
+ *  et la réponse — les deux ne peuvent jamais diverger. */
+const STARTER_SAWMILL_ID = "sawmill_0";
 
 /** Valeurs initiales de l'inventaire à la création du joueur. */
 const INITIAL_INVENTORY: InventoryState = {
@@ -100,7 +105,7 @@ export async function resolveLoginStateHandler(
             { slotIndex: 2, recipeId: null, startedAt: null, lastProcessedAt: null },
           ],
         };
-        tx.set(buildingsRef.doc("sawmill_0"), sawmill);
+        tx.set(buildingsRef.doc(STARTER_SAWMILL_ID), sawmill);
 
         // Le snapshot retourné approxime les timestamps avec now().
         // L'écart avec le serverTimestamp() stocké est négligeable au premier login.
@@ -118,7 +123,7 @@ export async function resolveLoginStateHandler(
           firstContractCompleted: false,
         };
 
-        return { playerForSnapshot, buildings: [sawmill] };
+        return { playerForSnapshot, buildings: [{ id: STARTER_SAWMILL_ID, ...sawmill }] };
       }
 
       // ── Joueur existant ─────────────────────────────────────────────────
@@ -140,7 +145,7 @@ export async function resolveLoginStateHandler(
       };
 
       // Traitement des buildings : calcul de production + mise à jour des slots.
-      const buildings: BuildingDocument[] = [];
+      const buildings: PlayerStateBuilding[] = [];
 
       for (const buildingSnap of buildingsSnap.docs) {
         const building = buildingSnap.data() as BuildingDocument;
@@ -156,7 +161,7 @@ export async function resolveLoginStateHandler(
         }
 
         inventory = updatedInventory;
-        buildings.push({ ...building, slots: updatedSlots });
+        buildings.push({ id: buildingSnap.id, ...building, slots: updatedSlots });
       }
 
       // ── Écriture atomique — inventaire + lastLoginAt ────────────────────
