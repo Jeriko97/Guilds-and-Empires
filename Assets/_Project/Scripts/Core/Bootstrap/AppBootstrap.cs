@@ -7,8 +7,6 @@ using GuildsAndEmpires.Core.Config;
 using GuildsAndEmpires.Core.Lifecycle;
 using GuildsAndEmpires.Core.Logging;
 using GuildsAndEmpires.Core.Threading;
-using GuildsAndEmpires.Services;
-using GuildsAndEmpires.Services.Economy;
 using GuildsAndEmpires.Services.Firebase;
 using GuildsAndEmpires.Services.Player;
 using GuildsAndEmpires.UI;
@@ -24,7 +22,7 @@ namespace GuildsAndEmpires.Core.Bootstrap
     ///   2. Core services registered in ServiceLocator (LifecycleManager, ScreenManager)
     ///   3. Network reachability checked (informational — Firebase handles offline via persistence)
     ///   4. Firebase SDK initialized, Firestore offline persistence enabled
-    ///   5. App services registered (IProfileService, IEconomyService) — Firebase required
+    ///   5. App services registered (IPlayerService) — Firebase required
     ///   6. Remote Config fetched and activated (non-fatal, falls back to ScriptableObject defaults)
     ///   7. AppState set to Ready or OfflineReady
     ///   8. ScreenManager.OnBootReady() called — first screen is pushed here
@@ -147,8 +145,6 @@ namespace GuildsAndEmpires.Core.Bootstrap
             // En mode offline dégradé, les services ne sont pas disponibles.
             if (firebaseReady)
             {
-                ServiceLocator.Register<IProfileService>(new ProfileService());
-                ServiceLocator.Register<IEconomyService>(new EconomyService());
                 ServiceLocator.Register<IPlayerService>(new FirebasePlayerService());
                 GELogger.Debug("Bootstrap", "App services registered.");
             }
