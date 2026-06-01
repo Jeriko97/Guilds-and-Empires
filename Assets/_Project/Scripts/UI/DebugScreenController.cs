@@ -124,9 +124,18 @@ namespace GuildsAndEmpires.UI
             AddField("upgradesApplied",  snapshot.Player.Inventory.ReconstructionKits.UpgradesApplied.ToString());
 
             AddSection("Contexte");
-            AddField("buildings",         snapshot.BuildingCount.ToString());
             AddField("activeContracts",   snapshot.ActiveContractCount.ToString());
             AddField("displayName",       snapshot.Player.DisplayName);
+
+            foreach (var b in snapshot.Buildings)
+            {
+                AddSection($"Building — {b.Id} ({b.BuildingType} lv{b.Level})");
+                foreach (var s in b.Slots)
+                    AddField($"slot[{s.SlotIndex}]",
+                             s.RecipeId != null
+                                 ? $"{s.RecipeId} @ {s.StartedAtMs}ms"
+                                 : "idle");
+            }
         }
 
         // ── Helpers UI ────────────────────────────────────────────────────────
