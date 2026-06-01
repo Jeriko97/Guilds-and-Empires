@@ -102,9 +102,7 @@ Au début de chaque session, demander que ces docs soient attachés :
 - **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
   À implémenter avant déploiement non-solo.
 - **TD-013** : migration Node.js 20 → 22 avant 2026-10-30 (simple, low-risk).
-- **Canvas pré-alpha** dans Boot.unity : `AuthUIController` + `ProfileUIController` actifs
-  sur un Canvas uGUI legacy. Inoffensif mais génère du bruit (ProfileService tente un
-  Observe sur `/profiles/{uid}` introuvable). À désactiver avant ÉTAPE 17.
+- **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
