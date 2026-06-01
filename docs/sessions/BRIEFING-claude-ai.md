@@ -29,28 +29,42 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-05-31)
+## État du projet (mise à jour : 2026-06-01)
 
-- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + client Unity login de bout en bout confirmé**
+- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + client Unity ÉTAPE 17 EN COURS**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
-- Client : **Unity 6 connecté au backend — ÉTAPE 16 FERMÉE**
+- Client : **Unity 6 — ÉTAPE 17 en cours** (17.0 + 17.A-1 + 17.A-2 fermés)
 - Cloud Functions : **9/9 déployées sur guildsandempires-ca543** + Security Rules Phase 1
-- Tests : 201/201 verts (179 handlers + 22 security rules, stable sur 2 runs)
+- Tests : 204/204 verts (stable sur 2 runs, émulateur chaud)
 - Projet Firebase : **unique** — `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : hash final session ÉTAPE 16
+- Dernier commit : `923b8d8` (+ push)
 
-### Résultat ÉTAPE 16 (confirmé founder)
+### Sous-étapes ÉTAPE 17 fermées
 
-Login de bout en bout en Play mode Unity :
-`gold 0 | imperialFavor 0 | favorRank local_supplier | logs cap 50 | planks cap 30 | kits cap 10`
-Document `/players/{uid}` créé au premier login. Console : resolveLoginState OK.
+**17.0 — Nettoyage legacy client** : suppression stack POC auth/profile/economy
+(7 fichiers .cs + metas), Canvas uGUI retiré de Boot.unity, AppBootstrap allégé.
+
+**17.A-1 — buildingId server-authoritative** : `PlayerStateBuilding = BuildingDocument & { id: string }`
+côté CF. `STARTER_SAWMILL_ID` constant partagé entre write et réponse. Déployé sur
+`guildsandempires-ca543`.
+
+**17.A-2 — Parsing BuildingSnapshot/SlotSnapshot + DebugScreen** : chaîne complète
+CF → buildingId → slots → timestamps → DebugScreen prouvée live en Play.
+DebugScreen affiche `Building — sawmill_0 (sawmill lv1)` + `slot[0/1/2] idle`.
+
+### Reste sur ÉTAPE 17
+
+- **17.A-3** : `startProductionSlot` via ProductionScreen (premier écran gameplay)
+- **17.B** : `collectProduction`
 
 ### Client Unity
 
 - `IPlayerService` + `FirebasePlayerService` : appel resolveLoginState, parsing C#, doctrine C3
-- `PlayerStateSnapshot` : modèle complet (gold, favor, inventory, favorRank, etc.)
-- `DebugScreenController` : UI Toolkit, cycle de vie C9, aucun Firebase en UI
+- `PlayerStateSnapshot` : modèle complet avec `IReadOnlyList<BuildingSnapshot> Buildings`
+- `BuildingSnapshot` / `SlotSnapshot` : id Firestore, buildingType, level, slots (recipeId, timestamps)
+- `ParseTimestampMs` : helper canonique Timestamp Firebase (voir « Doctrine Timestamp » ci-dessous)
+- `DebugScreenController` : UI Toolkit, affiche building id + slots, cycle de vie C9
 - `AppBootstrap` : auth anonyme + enregistrement IPlayerService + activation DebugScreen
 
 ### Backend Firebase
@@ -66,6 +80,16 @@ Document `/players/{uid}` créé au premier login. Console : resolveLoginState O
   (MARKET_PRICE_BOUNDS — basePrices 5/12/20, fourchettes — TD-011 résolu)
 - Helper partagé : firebase/functions/src/shared/computeMarketPrice.ts
   (computeMarketPrice, computeTrend, EventMultiplier — helper pur)
+
+### Doctrine Timestamp wire Unity (réf. D-ETAPE17.A-2)
+
+Les `Timestamp` Firestore arrivent dans `HttpsCallableResult.Data` avec les clés
+**`"_seconds"` / `"_nanoseconds"` AVEC underscore** (champs internes de
+`@google-cloud/firestore`, sérialisés via `Object.entries` sans `toJSON()`).
+
+**`ParseTimestampMs(object raw)`** dans `PlayerStateSnapshot.cs` est la SOURCE DE
+VÉRITÉ unique : `null → 0L` ; formule `_seconds * 1000L + _nanoseconds / 1_000_000L`.
+Ne jamais créer un second parser pour les CFs futures (contrats, marché, upgrades).
 
 ## Documents de référence à demander au founder
 
@@ -102,8 +126,10 @@ Au début de chaque session, demander que ces docs soient attachés :
 - **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
   À implémenter avant déploiement non-solo.
 - **TD-013** : migration Node.js 20 → 22 avant 2026-10-30 (simple, low-risk).
+- **TD-014** : test resolveLoginState "CRITIQUE" flaky (sleep réel 6s). À corriger
+  avant 17.A-3 ou toute intégration CI.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
-ÉTAPE 17 : premier écran gameplay (production, contrats, ou marché — à définir avec le founder).
+ÉTAPE 17.A-3 : `startProductionSlot` via ProductionScreen (premier écran gameplay).
