@@ -201,12 +201,14 @@ export const resolveLoginState = functions.https.onCall(
  * slot disponible (recipeId == null), inventaire input suffisant.
  * Idempotency: uid + buildingId + slotIndex + recipeId (évite double-start).
  */
+// NOTE (réconcilié 17.A-3) : retourne building + inventory mis à jour (pas void) —
+// permet au client de rendre l'état post-start sans second resolveLoginState.
 export const startProductionSlot = functions.https.onCall(
   async (request: CallableRequest<{
     buildingId: string;
     slotIndex: 0 | 1 | 2;
     recipeId: 'logs' | 'planks' | 'reconstruction_kits';
-  }>): Promise<void> => { /* ... */ }
+  }>): Promise<{ building: BuildingDocument; inventory: InventoryState }> => { /* ... */ }
 );
 
 /**
