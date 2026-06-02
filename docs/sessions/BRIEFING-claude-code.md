@@ -7,12 +7,13 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-05-31)
+## État du repo (mise à jour : 2026-06-02)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : voir hash final session ÉTAPE 16
+- Dernier commit : voir `git log` — dernier commit code : d1c7590 (feat: ProductionScreen)
 - **ÉTAPE 16 FERMÉE** — Login de bout en bout Unity → backend confirmé
   Auth anonyme → resolveLoginState → PlayerState affiché (gold 0, rank local_supplier)
+- **ÉTAPE 17 en cours (17.0 + 17.A-1 + 17.A-2 + 17.A-3 fermés)**
 - **9 CF Phase 1 + firestore.rules déployées sur guildsandempires-ca543**
 - Projet Firebase unique : `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - App Check : Open (CF publiquement appelables — acceptable pré-alpha, D-ETAPE16-005)
@@ -23,20 +24,52 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - 201/201 tests verts contre Firebase Emulator (179 handlers + 22 rules, stable sur 2 runs)
 - **TD-010 RÉSOLUE** : firestore.rules Phase 1 + @firebase/rules-unit-testing@5.0.1
 
+### Sous-étapes ÉTAPE 17 fermées
+
+- **17.0** : Nettoyage legacy client — suppression stack POC auth/profile/economy
+  (`AuthUIController`, `ProfileService`, `IEconomyService`, `EconomyService`, Canvas uGUI).
+  AppBootstrap nettoyé. Doctrine : services par domaine, pas de service fourre-tout.
+- **17.A-1** : buildingId server-authoritative dans resolveLoginState.
+  `PlayerStateBuilding = BuildingDocument & { id: string }`. Client Unity ne reconstruit
+  jamais l'id depuis une convention — toujours `BuildingSnapshot.Id` (D-ETAPE17.A-1).
+- **17.A-2** : `ParseTimestampMs` canonique — clés `_seconds`/`_nanoseconds` (underscore),
+  `null → 0L`, formule `sec * 1000L + nano / 1_000_000L`. SOURCE DE VÉRITÉ unique.
+  Validé en Play : DebugScreen affiche `sawmill_0 (sawmill lv1)`, slots idle.
+- **17.A-3** : ProductionScreen via `ScreenManager.SetRoot`. `startProductionSlot` retourne
+  `{building: BuildingDocument; inventory: InventoryState}` (pas void). `IProductionService` /
+  `FirebaseProductionService` sur patron `FirebasePlayerService`. `recipeId` figé `"logs"`.
+  `ParseTimestampMs` passé `internal` pour réutilisation. DebugScreen conservé, inactif.
+  Validé en Play : 3 slots idle → slot 0 « Logs en cours », 0 erreur console.
+
+### Reste sur ÉTAPE 17
+
+- **17.B** : collectProduction (prochain jalon)
+
+### Points d'attention
+
+- **TD-014** : test `resolveLoginState` avec `sleep(6000)` → flaky en CI.
+  À corriger EN TOUT PREMIER au démarrage de 17.B.
+
 ### Couche client Unity (Assets/_Project/)
 
 - `ServiceLocator` (static) — Register/Resolve/TryResolve
 - `MainThreadDispatcher` — ConcurrentQueue<Action> drainé dans Update
 - `FirebaseBootstrap` — CheckAndFixDependencies + PersistenceEnabled = true
-- `AppBootstrap` — pipeline 7 steps (Firebase + anon auth + services + DebugScreen)
+- `AppBootstrap` — pipeline 7 steps (Firebase + anon auth + services + ScreenManager.SetRoot)
+  Step 5 : enregistre `IPlayerService` + `IProductionService`. Step 7 : `ScreenManager.SetRoot(_productionScreen)`.
 - `IPlayerService` + `FirebasePlayerService` — appel resolveLoginState, parsing, C6
+- `IProductionService` + `FirebaseProductionService` — appel startProductionSlot, parsing, C6
+  Patron identique à FirebasePlayerService (GetHttpsCallable → CallAsync → Parse → exceptions).
 - `PlayerStateSnapshot` — modèle C# complet (gold, favor, inventory, favorRank, etc.)
-- `DebugScreenController` — UI Toolkit, cycle de vie C9, aucun Firebase en UI
-- `DebugScreen.uxml` + `DebugScreen.uss` — layouts et styles debug
-
-**⚠️ Wiring manuel Unity requis** (voir session log 2026-05-31-etape-16) :
-Créer GameObject "DebugScreen" avec UIDocument + DebugScreenController dans Boot.unity,
-désactiver le GO, assigner dans AppBootstrap._debugScreen.
+- `ProductionResult` — `{ BuildingSnapshot Building; InventoryState Inventory }` + `Parse(data, buildingId)`
+  Réutilise `PlayerStateSnapshot.ParseTimestampMs` (internal) — source unique préservée.
+- `ScreenManager` (MonoBehaviour, `-80`) — stack Push/Pop/Replace/SetRoot, C3 conforme
+- `BaseScreen` (abstract MonoBehaviour) — Show/Hide via `gameObject.SetActive`, `OnShow`/`OnHide`
+- `ProductionScreen : BaseScreen` — C9 (CTS OnEnable/OnDisable), C3 (ServiceLocator),
+  liste slots sawmill, bouton « Produire Logs » (idle) / label « Logs en cours » (actif)
+- `DebugScreenController` — UI Toolkit, C9, inactif en runtime (remplacé par ProductionScreen via SetRoot)
+- `DebugScreen.uxml` + `DebugScreen.uss` — layouts et styles debug (en scène, GO inactif)
+- `ProductionScreen.uxml` + `ProductionScreen.uss` — layouts et styles production
 
 ### Backend Firebase (firebase/functions/src/)
 
@@ -162,10 +195,17 @@ Lire en priorité au démarrage :
 - **D-ETAPE16-003** : Auth anonyme directement dans AppBootstrap step 4 (pas IAuthService).
   Trigger de refactor = introduction email/Google/Apple Sign-In.
 - **Parsing Firebase Functions** : `Dictionary<object, object>` (pas `<string, object>`).
-  Voir `PlayerStateSnapshot.Parse` + `EconomyService.ParseClaimResult` pour les deux patterns.
+  Voir `PlayerStateSnapshot.Parse` + `ProductionResult.Parse` pour les deux patterns.
+  `ParseTimestampMs` est `internal` dans `PlayerStateSnapshot` — source unique, ne jamais dupliquer.
 - **UID dans snapshot** : injecté par le service après auth (pas récupéré dans l'UI).
+- **Handlers métier retournent l'état mis à jour** (D-ETAPE17.A-3) : `startProductionSlot`
+  retourne `{building, inventory}` — le client rend directement, zéro re-`resolveLoginState`.
+  `resolveLoginState` = chargement initial uniquement. Patron à reproduire en 17.B+.
+- **Navigation ScreenManager** : `SetRoot(screen)` pour premier écran post-boot.
+  `BaseScreen` activé/désactivé via `gameObject.SetActive` (pas USS display, pas UIDocument.enabled).
+  `_screenContainer` non câblé (pas d'Instantiate pour l'instant).
 
 ## Prochaine étape
 
-ÉTAPE 17 : premier écran gameplay (production, contrats, ou marché — à définir avec le founder).
-ÉTAPE 16 est entièrement fermée — login de bout en bout confirmé en Play mode Unity.
+**TD-014 (diagnostic)** puis **ÉTAPE 17.B collectProduction**.
+17.A-3 entièrement fermée — premier écran gameplay + navigation ScreenManager prouvés en Play.
