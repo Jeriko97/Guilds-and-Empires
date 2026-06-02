@@ -9,6 +9,7 @@ using GuildsAndEmpires.Core.Logging;
 using GuildsAndEmpires.Core.Threading;
 using GuildsAndEmpires.Services.Firebase;
 using GuildsAndEmpires.Services.Player;
+using GuildsAndEmpires.Services.Production;
 using GuildsAndEmpires.UI;
 using GuildsAndEmpires.UI.Screens;
 
@@ -47,8 +48,12 @@ namespace GuildsAndEmpires.Core.Bootstrap
         [SerializeField] private GameLifecycleManager _lifecycleManager;
         [SerializeField] private ScreenManager _screenManager;
 
+        [Header("Screens")]
+        [Tooltip("First gameplay screen. Pushed via ScreenManager.SetRoot after boot.")]
+        [SerializeField] private BaseScreen _productionScreen;
+
         [Header("Debug")]
-        [Tooltip("Activated after successful boot to display the PlayerState debug screen.")]
+        [Tooltip("Debug screen — stays inactive at runtime, re-activatable manually.")]
         [SerializeField] private DebugScreenController _debugScreen;
 
         /// <summary>Current state of the initialization pipeline. Checked by late-initialising systems.</summary>
@@ -146,6 +151,7 @@ namespace GuildsAndEmpires.Core.Bootstrap
             if (firebaseReady)
             {
                 ServiceLocator.Register<IPlayerService>(new FirebasePlayerService());
+                ServiceLocator.Register<IProductionService>(new FirebaseProductionService());
                 GELogger.Debug("Bootstrap", "App services registered.");
             }
 
@@ -166,11 +172,11 @@ namespace GuildsAndEmpires.Core.Bootstrap
             // Signal the screen layer. ScreenManager decides which screen to show first.
             _screenManager?.OnBootReady(State);
 
-            // Debug screen — activated only when Firebase is ready and IPlayerService is registered.
-            // Starts inactive in the scene so OnEnable doesn't fire before services are available.
-            if (firebaseReady && _debugScreen != null)
+            // First gameplay screen — via ScreenManager.SetRoot (pas d'activation ad-hoc).
+            // DebugScreen reste en scène, inactif, ré-activable manuellement en Inspector.
+            if (firebaseReady && _productionScreen != null && _screenManager != null)
             {
-                MainThreadDispatcher.Post(() => _debugScreen.gameObject.SetActive(true));
+                MainThreadDispatcher.Post(() => _screenManager.SetRoot(_productionScreen));
             }
         }
 

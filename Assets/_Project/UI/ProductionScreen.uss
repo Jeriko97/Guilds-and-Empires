@@ -1,0 +1,83 @@
+.production-screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(18, 18, 24);
+    padding: 24px;
+    flex-direction: column;
+}
+
+.title {
+    font-size: 20px;
+    color: rgb(220, 200, 140);
+    margin-bottom: 12px;
+    -unity-font-style: bold;
+}
+
+.status {
+    font-size: 14px;
+    color: rgb(180, 180, 180);
+    margin-bottom: 20px;
+}
+
+.status--loading {
+    color: rgb(160, 200, 255);
+}
+
+.status--error {
+    color: rgb(255, 100, 100);
+}
+
+.status--success {
+    color: rgb(100, 220, 100);
+}
+
+/* ── Slots ────────────────────────────────────────────────────────────── */
+
+.slots-container {
+    flex-direction: column;
+}
+
+.slot-card {
+    background-color: rgb(28, 28, 38);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 10px;
+    flex-direction: column;
+}
+
+.slot-header {
+    font-size: 13px;
+    color: rgb(140, 160, 200);
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.slot-active-label {
+    font-size: 14px;
+    color: rgb(100, 220, 100);
+}
+
+.slot-produce-btn {
+    background-color: rgb(60, 100, 60);
+    color: rgb(220, 255, 220);
+    border-color: rgb(80, 140, 80);
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 8px 16px;
+    font-size: 13px;
+    -unity-font-style: bold;
+    cursor: link;
+}
+
+.slot-produce-btn:hover {
+    background-color: rgb(70, 120, 70);
+}
+
+.slot-produce-btn:disabled {
+    background-color: rgb(40, 60, 40);
+    color: rgb(120, 160, 120);
+    border-color: rgb(50, 80, 50);
+}

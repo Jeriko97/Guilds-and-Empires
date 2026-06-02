@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="ProductionScreen.uss" />
+    <ui:VisualElement name="production-screen" class="production-screen">
+        <ui:Label name="title-label" text="Sawmill" class="title" />
+        <ui:Label name="status-label" text="Chargement…" class="status status--loading" />
+        <ui:VisualElement name="slots-container" class="slots-container" />
+    </ui:VisualElement>
+</ui:UXML>
