@@ -189,7 +189,7 @@ namespace GuildsAndEmpires.Models
         /// Ne jamais créer un second parser ; toutes les CFs futures réutilisent ce helper.
         /// </summary>
         /// <returns>Epoch ms, ou 0L si le timestamp est null (slot inactif).</returns>
-        private static long ParseTimestampMs(object raw)
+        internal static long ParseTimestampMs(object raw)
         {
             if (raw == null) return 0L;
             if (raw is Dictionary<object, object> ts)
