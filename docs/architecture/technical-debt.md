@@ -359,46 +359,6 @@ pour ne pas accumuler les warnings et s'habituer à les ignorer.
 
 ---
 
-### TD-014 — Test resolveLoginState "CRITIQUE" dépend d'un sleep réel (6s)
-
-**Identifié :** 2026-06-01 (ÉTAPE 17.A-1)
-**Criticité actuelle :** MEDIUM
-**Composant :** `firebase/functions/src/__test__/resolveLoginState.test.ts`
-
-**Description :**
-Le test "CRITIQUE — deux logins successifs ne dupliquent pas la production"
-contourne le rate limit (fenêtre 5s) via un sleep réel :
-`await new Promise((resolve) => setTimeout(resolve, 6000))`.
-Conséquence : flaky sur émulateur froid (échec au 1er run, vert au 2e).
-Viole la doctrine anti-sleep établie à l'ÉTAPE 10.
-
-D'autres tests échouent également au cold start dans le même lot, à
-investiguer lors de la même correction :
-- **upgradeInventoryCap** (test 20) et **sellToMarket** (tests 20-21) :
-  race condition dans les tests de concurrence — possiblement liée au
-  timing emulateur froid.
-- **collectProduction** : `PERMISSION_DENIED` dans des tests qui
-  utilisent l'Admin SDK (qui bypasse les Security Rules) — comportement
-  anormal, cause inconnue à ce stade.
-
-**Impact actuel :**
-Faux négatifs au 1er run à froid. Le label "tests verts" dépend
-implicitement d'un émulateur déjà chaud. Bloquant pour une intégration CI
-naïve (qui part toujours d'un état froid).
-
-**Trigger de résolution :**
-Prochaine modification sérieuse de la suite Jest backend (ex. ajout de
-tests pour `startProductionSlot` en 17.A-3), ou avant toute intégration CI.
-
-**Solution prévue :**
-Remplacer le sleep par la suppression déterministe du doc
-`/rateLimits/{uid}_resolveLoginState` entre les deux appels — pattern
-identique au test "Deuxième login : Sawmill non recréée" (introduit en
-ÉTAPE 16.5), qui supprime le doc rateLimits via `db.collection("rateLimits").doc(...).delete()`
-sans aucun sleep.
-
----
-
 ## TD Résolues
 
 ### TD-010 — firestore.rules incomplet pour Phase 1
@@ -435,3 +395,31 @@ Les tests `updateMarketPrices` utilisent les basePrices officiels (5/12/20)
 comme seeds. Les tests `sellToMarket` existants conservent leurs valeurs
 synthétiques (invariants relatifs `price*quantity === goldEarned` restent
 corrects indépendamment des valeurs absolues).
+
+---
+
+### TD-014 — Tests resolveLoginState/collectProduction dépendaient de sleeps réels
+
+**Identifié :** 2026-06-01 (ÉTAPE 17.A-1)
+**Composant :** `resolveLoginState.test.ts` + `collectProduction.test.ts`
+
+**RÉSOLU 2026-06-08 :** Les deux sleeps réels remplacés par la suppression déterministe du
+doc `/rateLimits/{uid}_{action}` via Admin SDK (patron ÉTAPE 16.5, test "Deuxième login :
+Sawmill non recréée") :
+- resolveLoginState (test CRITIQUE) : `setTimeout(6000)` → `delete ${uid}_resolveLoginState`
+- collectProduction (test 13 "Idempotence faible") : `setTimeout(7000)` → `delete ${uid}_collectProduction`
+  (2e sleep découvert au diagnostic, hors périmètre initial, soldé dans le même lot)
+Commentaires de scénario mis à jour (elapsed 7s → 0s). Timeout Jest 20000 retiré (test 13).
+`grep "setTimeout(resolve" src/__test__/` = 0. Validation : 204/204 à chaud + 2 cycles à froid
+consécutifs (émulateur tué/relancé) 204/204 → déterminisme prouvé. Commit : b63e497.
+
+**Disposition des autres échecs cold-start cités à l'ouverture (non reproductibles, n=1) :**
+- collectProduction PERMISSION_DENIED : **faux signal**. Les messages venaient de
+  `firestore.rules.test.ts` (client SDK rules-unit-testing testant les refus = attendu),
+  mal attribués à collectProduction dans la sortie Jest globale `--runInBand`. collectProduction
+  utilise l'Admin SDK (bypass rules), ses 14 tests passent sans DENIED. Aucune TD distincte.
+- upgradeInventoryCap (test 20) / sellToMarket (tests 20-21) : flakes de latence Firestore au
+  cold-start (Promise.allSettled concurrents), non reproductibles. Pas de correction préventive
+  d'un défaut non reproductible. Remède réel à la mise en place CI : warm-up déterministe de
+  l'émulateur (attente active "All emulators ready" + un read jetable avant la suite, patron
+  ÉTAPE 10) — dans le harness CI, pas dans les tests.

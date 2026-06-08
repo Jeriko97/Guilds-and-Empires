@@ -29,16 +29,16 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-06-01)
+## État du projet (mise à jour : 2026-06-08)
 
 - Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + client Unity ÉTAPE 17 EN COURS**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
-- Client : **Unity 6 — ÉTAPE 17 en cours** (17.0 + 17.A-1 + 17.A-2 fermés)
+- Client : **Unity 6 — ÉTAPE 17 en cours** (17.0 + 17.A-1 + 17.A-2 + 17.A-3 fermés)
 - Cloud Functions : **9/9 déployées sur guildsandempires-ca543** + Security Rules Phase 1
-- Tests : 204/204 verts (stable sur 2 runs, émulateur chaud)
+- Tests : 204/204 verts (stable : 2 cycles à froid + chaud, émulateur tué/relancé)
 - Projet Firebase : **unique** — `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : `923b8d8` (+ push)
+- Dernier commit : voir ci-dessous
 
 ### Sous-étapes ÉTAPE 17 fermées
 
@@ -53,19 +53,29 @@ côté CF. `STARTER_SAWMILL_ID` constant partagé entre write et réponse. Dépl
 CF → buildingId → slots → timestamps → DebugScreen prouvée live en Play.
 DebugScreen affiche `Building — sawmill_0 (sawmill lv1)` + `slot[0/1/2] idle`.
 
+**17.A-3 — ProductionScreen via ScreenManager.SetRoot** : `startProductionSlot` retourne
+`{ building: BuildingDocument; inventory: InventoryState }` (pas void). `IProductionService` /
+`FirebaseProductionService` sur patron `FirebasePlayerService`. `recipeId` figé `"logs"`.
+`ParseTimestampMs` passé `internal` pour réutilisation. DebugScreen désormais inactif en
+runtime (remplacé par ProductionScreen via SetRoot). Validé en Play : 3 slots idle → slot 0
+"Logs en cours", 0 erreur console.
+
 ### Reste sur ÉTAPE 17
 
-- **17.A-3** : `startProductionSlot` via ProductionScreen (premier écran gameplay)
-- **17.B** : `collectProduction`
+- **17.B** : `collectProduction` (câblage client)
 
 ### Client Unity
 
 - `IPlayerService` + `FirebasePlayerService` : appel resolveLoginState, parsing C#, doctrine C3
+- `IProductionService` + `FirebaseProductionService` : appel startProductionSlot, parsing C#,
+  patron identique à FirebasePlayerService (GetHttpsCallable → CallAsync → Parse → exceptions)
 - `PlayerStateSnapshot` : modèle complet avec `IReadOnlyList<BuildingSnapshot> Buildings`
 - `BuildingSnapshot` / `SlotSnapshot` : id Firestore, buildingType, level, slots (recipeId, timestamps)
-- `ParseTimestampMs` : helper canonique Timestamp Firebase (voir « Doctrine Timestamp » ci-dessous)
-- `DebugScreenController` : UI Toolkit, affiche building id + slots, cycle de vie C9
-- `AppBootstrap` : auth anonyme + enregistrement IPlayerService + activation DebugScreen
+- `ProductionResult` : `{ BuildingSnapshot Building; InventoryState Inventory }` + `Parse(data, buildingId)`
+- `ParseTimestampMs` : helper canonique Timestamp Firebase, `internal`, source unique (voir « Doctrine Timestamp »)
+- `ProductionScreen : BaseScreen` : C9, C3, liste slots sawmill, bouton "Produire Logs" / label actif
+- `DebugScreenController` : UI Toolkit, C9, inactif en runtime (remplacé par ProductionScreen)
+- `AppBootstrap` : auth anonyme + enregistrement IPlayerService + IProductionService + SetRoot(ProductionScreen)
 
 ### Backend Firebase
 
@@ -126,10 +136,8 @@ Au début de chaque session, demander que ces docs soient attachés :
 - **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
   À implémenter avant déploiement non-solo.
 - **TD-013** : migration Node.js 20 → 22 avant 2026-10-30 (simple, low-risk).
-- **TD-014** : test resolveLoginState "CRITIQUE" flaky (sleep réel 6s). À corriger
-  avant 17.A-3 ou toute intégration CI.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
-ÉTAPE 17.A-3 : `startProductionSlot` via ProductionScreen (premier écran gameplay).
+ÉTAPE 17.B — collectProduction (câblage client).
