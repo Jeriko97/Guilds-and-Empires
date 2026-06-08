@@ -340,8 +340,8 @@ describe("collectProduction", () => {
 
   it("13. Idempotence faible — 2e appel (après rate limit) collecte {} car lastProcessedAt=now", async () => {
     // Appel 1 : collecte 1 log, pose lastProcessedAt=now1.
-    // Attente de 7s (RATE_LIMIT_SECONDS=6 — marge de 1s).
-    // Appel 2 : elapsed ≈ 7s << LOG_DURATION_MS (20 min) → 0 cycles → collected={}.
+    // Le rate limit est neutralisé via Admin SDK (suppression du doc rateLimits).
+    // Appel 2 : elapsed ≈ 0s << LOG_DURATION_MS (20 min) → 0 cycles → collected={}.
     // Garantie : NOT une garantie d'idempotence forte — c'est le comportement attendu
     // du temps qui passe. Un second appel immédiat ne peut pas double-créditer.
     const uid = "collect-prod-13";
@@ -364,10 +364,10 @@ describe("collectProduction", () => {
     );
     expect(result1.collected.logs).toBe(1);
 
-    // Attente fenêtre rate limit (RATE_LIMIT_SECONDS=6s + 1s de marge).
-    await new Promise<void>((resolve) => setTimeout(resolve, 7000));
+    // Neutralise le rate limit pour permettre un second appel immédiat.
+    await db.collection("rateLimits").doc(`${uid}_collectProduction`).delete();
 
-    // Appel 2 — elapsed ≈ 7s depuis lastProcessedAt → 0 cycles → no-op.
+    // Appel 2 — elapsed ≈ 0s depuis lastProcessedAt → 0 cycles → no-op.
     const result2 = await collectProductionHandler(
       makeCollectRequest(uid, { buildingId: "sawmill_0" })
     );
@@ -377,7 +377,7 @@ describe("collectProduction", () => {
     // Inventaire : toujours 1 log — le 2e appel n'a rien crédité.
     const playerSnap = await db.collection("players").doc(uid).get();
     expect(playerSnap.data()?.inventory.logs.quantity).toBe(1);
-  }, 20000); // timeout élevé : 7s d'attente intentionnelle
+  });
 
   it("14. Rate limit — 2e appel en < 6s → resource-exhausted", async () => {
     // checkRateLimit : cooldown par uid par action (TD-001 : non-atomique, toléré).

@@ -278,8 +278,8 @@ describe("resolveLoginState", () => {
     const result1 = await resolveLoginStateHandler(makeRequest(uid));
     expect(result1.player.inventory.logs.quantity).toBe(1);
 
-    // Attente nécessaire pour passer la fenêtre de rate limit (5s).
-    await new Promise((resolve) => setTimeout(resolve, 6000));
+    // Neutralise le rate limit pour permettre un second appel immédiat (pattern D-ETAPE16.5).
+    await db.collection("rateLimits").doc(`${uid}_resolveLoginState`).delete();
 
     // Login 2 — aucun cycle supplémentaire depuis le login 1 (< 20 min).
     const result2 = await resolveLoginStateHandler(makeRequest(uid));
