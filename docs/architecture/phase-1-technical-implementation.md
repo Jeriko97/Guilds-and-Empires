@@ -217,11 +217,18 @@ export const startProductionSlot = functions.https.onCall(
  * Le client ne passe que buildingId — jamais un amount, jamais un elapsed.
  * Rate limit: 10 appels / min par uid.
  * Side effect: si production continue et cap atteint, slot reste actif mais yield = 0.
+ * Renvoie l'état mis à jour (building sans id Firestore — injecté par le service client,
+ * D-ETAPE16-004) ainsi que collected/discarded. Aligné sur startProductionSlot (17.B-0).
  */
 export const collectProduction = functions.https.onCall(
   async (request: CallableRequest<{
     buildingId: string;
-  }>): Promise<{ collected: Record<string, number> }> => { /* ... */ }
+  }>): Promise<{
+    collected: Partial<Record<ResourceKey, number>>;
+    discarded: Partial<Record<ResourceKey, number>>;
+    building:  BuildingDocument;
+    inventory: InventoryState;
+  }> => { /* ... */ }
 );
 
 // ─── CONTRATS ─────────────────────────────────────────────────────────────────
