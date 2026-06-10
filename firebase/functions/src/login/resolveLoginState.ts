@@ -136,6 +136,7 @@ export async function resolveLoginStateHandler(
       // startedAt n'est JAMAIS la référence de calcul après le premier traitement —
       // sinon les cycles déjà comptés seraient recomptés à chaque login.
       const now = admin.firestore.Timestamp.now();
+      const createTimestamp = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
 
       // Inventaire initial — sera chaîné à travers les buildings via processBuildingSlots.
       let inventory: InventoryState = {
@@ -150,13 +151,10 @@ export async function resolveLoginStateHandler(
       for (const buildingSnap of buildingsSnap.docs) {
         const building = buildingSnap.data() as BuildingDocument;
 
-        const { updatedSlots, updatedInventory } = processBuildingSlots(building, inventory, now);
+        const { updatedSlots, updatedInventory, hasProcessedCycles } = processBuildingSlots(building, inventory, now, createTimestamp);
 
         // buildingModified ≡ au moins un slot a eu completedCycles > 0 (Option B incluse).
-        // Détecté par identité objet : processBuildingSlots pose `lastProcessedAt = now`
-        // (le même `now` injecté) uniquement dans ce cas.
-        const buildingModified = updatedSlots.some((s) => s.lastProcessedAt === now);
-        if (buildingModified) {
+        if (hasProcessedCycles) {
           tx.update(buildingSnap.ref, { slots: updatedSlots });
         }
 

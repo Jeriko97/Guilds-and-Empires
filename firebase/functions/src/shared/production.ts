@@ -10,6 +10,7 @@ export type ProcessBuildingResult = {
   updatedInventory: InventoryState;
   collected: Partial<Record<ResourceKey, number>>;
   discarded: Partial<Record<ResourceKey, number>>;
+  hasProcessedCycles: boolean;
 };
 
 /**
@@ -25,6 +26,7 @@ export function processBuildingSlots(
   building: BuildingDocument,
   inventory: InventoryState,
   now: firestore.Timestamp,
+  createTimestamp: (ms: number) => firestore.Timestamp,
 ): ProcessBuildingResult {
 
   const updatedInventory: InventoryState = {
@@ -35,6 +37,8 @@ export function processBuildingSlots(
 
   const collected: Partial<Record<ResourceKey, number>> = {};
   const discarded: Partial<Record<ResourceKey, number>> = {};
+
+  let hasProcessedCycles = false;
 
   const updatedSlots: ProductionSlotState[] = building.slots.map((slot) => {
     if (slot.recipeId === null || slot.startedAt === null) return { ...slot };
@@ -67,8 +71,12 @@ export function processBuildingSlots(
     collected[inventoryKey] = (collected[inventoryKey] ?? 0) + actualYield;
     discarded[inventoryKey] = (discarded[inventoryKey] ?? 0) + discardedYield;
 
-    return { ...slot, lastProcessedAt: now };
+    hasProcessedCycles = true;
+    const newLastProcessedAt = createTimestamp(
+      referenceTimestamp.toMillis() + completedCycles * recipe.durationMs,
+    );
+    return { ...slot, lastProcessedAt: newLastProcessedAt };
   });
 
-  return { updatedSlots, updatedInventory, collected, discarded };
+  return { updatedSlots, updatedInventory, collected, discarded, hasProcessedCycles };
 }

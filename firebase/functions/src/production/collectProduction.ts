@@ -98,10 +98,11 @@ export async function collectProductionHandler(
         // ── Calcul de production différée ─────────────────────────────────
         // `now` injecté ici (call site) — jamais dans le helper (testabilité).
         const now = admin.firestore.Timestamp.now();
+        const createTimestamp = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
 
         let processResult: ProcessBuildingResult;
         try {
-          processResult = processBuildingSlots(buildingData, playerData.inventory, now);
+          processResult = processBuildingSlots(buildingData, playerData.inventory, now, createTimestamp);
         } catch (helperErr) {
           // Error standard du helper (recipe inconnue = corruption data) → internal.
           throw new HttpsError(
@@ -110,12 +111,10 @@ export async function collectProductionHandler(
           );
         }
 
-        const { updatedSlots, updatedInventory, collected, discarded } = processResult;
+        const { updatedSlots, updatedInventory, collected, discarded, hasProcessedCycles } = processResult;
 
         // Optimisation : skip des écritures si aucun cycle complété.
-        // Même détection que resolveLoginState : identité objet sur `now`.
-        const anySlotProcessed = updatedSlots.some((s) => s.lastProcessedAt === now);
-        if (anySlotProcessed) {
+        if (hasProcessedCycles) {
           tx.update(playerRef,   { inventory: updatedInventory });
           tx.update(buildingRef, { slots: updatedSlots });
         }
