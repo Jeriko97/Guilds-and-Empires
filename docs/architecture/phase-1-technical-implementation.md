@@ -342,7 +342,8 @@ resolveLoginState():
 
   Pour chaque building:
     Pour chaque slot où recipeId != null ET startedAt != null:
-      elapsed = now - slot.startedAt              // serveur calcule, jamais le client
+      reference = slot.lastProcessedAt ?? slot.startedAt  // serveur calcule, jamais le client
+      elapsed = now - reference
       recipe = getRecipeConfig(recipeId)          // depuis Remote Config / cache CF
       completedCycles = floor(elapsed / recipe.durationMs)
       rawYield = completedCycles * recipe.outputQty
@@ -353,8 +354,9 @@ resolveLoginState():
       inventory[recipe.output].quantity += actualYield
 
       // Production continue : le slot reste actif
-      // startedAt N'EST PAS reset — il sert de référence absolue
-      // Le prochain collectProduction recalculera depuis le même startedAt
+      // startedAt N'EST JAMAIS reset — référence absolue de départ
+      // lastProcessedAt avance de N cycles (résiduel préservé) — TD-004
+      slot.lastProcessedAt = reference + completedCycles × durationMs
 
   player.lastLoginAt = now
   write /players/{uid}                            // 1 write

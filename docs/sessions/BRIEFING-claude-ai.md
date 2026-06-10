@@ -35,10 +35,10 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
 - Client : **Unity 6 — ÉTAPE 17 en cours** (17.0 + 17.A-1 + 17.A-2 + 17.A-3 fermés)
 - Cloud Functions : **9/9 déployées sur guildsandempires-ca543** + Security Rules Phase 1
-- Tests : 204/204 verts (stable : 2 cycles à froid + chaud, émulateur tué/relancé)
+- Tests : 207/207 verts (stable : 2 cycles à froid + chaud, émulateur tué/relancé)
 - Projet Firebase : **unique** — `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : `8ffcbf7` (docs: resolve TD-014 and sync briefing)
+- Dernier commit : voir bas de section
 
 ### Sous-étapes ÉTAPE 17 fermées
 
@@ -60,9 +60,18 @@ DebugScreen affiche `Building — sawmill_0 (sawmill lv1)` + `slot[0/1/2] idle`.
 runtime (remplacé par ProductionScreen via SetRoot). Validé en Play : 3 slots idle → slot 0
 "Logs en cours", 0 erreur console.
 
+### Sous-étapes ÉTAPE 17.B backend fermées
+
+**17.B-0 — Enrichissement collectProduction** : `{ collected, discarded }` → `{ collected, discarded, building, inventory }`.
+Aligné sur `startProductionSlot` (doctrine 17.A-3). Commits : `7f3d41b` (code) + `8e19fdb` (docs).
+
+**TD-004 — Résiduel préservé** : `lastProcessedAt = reference + completedCycles × durationMs`.
+Factory `createTimestamp` injectée comme 4e param (helper pur). Flag `hasProcessedCycles`
+remplace le détecteur `=== now`. 3 tests dédiés. Commit : `4b7d66a`.
+
 ### Reste sur ÉTAPE 17
 
-- **17.B** : `collectProduction` (câblage client)
+- **17.B-1 + 17.B-2** : câblage client `collectProduction` (IProductionService, FirebaseProductionService, ProductionScreen)
 
 ### Client Unity
 
@@ -79,6 +88,9 @@ runtime (remplacé par ProductionScreen via SetRoot). Validé en Play : 3 slots 
 
 ### Backend Firebase
 
+- `collectProduction` : renvoie `{ collected, discarded, building, inventory }` (17.B-0)
+- `processBuildingSlots` : helper pur, 4 params (`building, inventory, now, createTimestamp`),
+  retourne `hasProcessedCycles: boolean`. `lastProcessedAt = reference + N×durationMs` (TD-004).
 - Helper partagé : firebase/functions/src/shared/production.ts
 - Helper partagé : firebase/functions/src/shared/inventoryUpgrades.ts
   (INVENTORY_UPGRADE_COSTS, INVENTORY_UPGRADE_AMOUNTS — TD-012)
@@ -140,4 +152,4 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ## Prochaine étape attendue
 
-ÉTAPE 17.B — collectProduction (câblage client).
+ÉTAPE 17.B-1 + 17.B-2 — câblage client `collectProduction` (Unity).

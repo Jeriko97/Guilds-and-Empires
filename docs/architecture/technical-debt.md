@@ -99,42 +99,6 @@ slots actifs existants.
 
 ---
 
-### TD-004 — Drift de temps résiduel non conservé dans lastProcessedAt
-
-**Identifié :** 2026-05-19 (post-correction bug duplication offline)
-**Criticité actuelle :** TRÈS FAIBLE
-**Composant :** `firebase/functions/src/login/resolveLoginState.ts`
-
-**Description :**
-Le calcul actuel pose `lastProcessedAt = now` au lieu de
-`lastProcessedAt = referenceTimestamp + (completedCycles * durationMs)`.
-Le temps résiduel (elapsed modulo durationMs) est donc perdu à chaque
-calcul de production.
-
-**Impact actuel :**
-Drift toujours défavorable au joueur, jamais exploitable. Maximum
-(durationMs - 1ms) perdues par check-in. Pour Phase 1 avec cycles de
-20-60 minutes, perte moyenne acceptable.
-
-**Trigger de résolution :**
-Avant l'introduction de mécaniques sensibles au timing fin :
-- Buffs/boosts temporaires
-- LiveOps avec timers courts (< 5 minutes)
-- Multi-slots avec sync précise requise
-- Économie boostée par event mondial
-
-**Solution prévue :**
-Remplacer le calcul actuel par :
-  lastProcessedAt = Timestamp.fromMillis(
-    referenceTimestamp.toMillis() + (completedCycles * recipe.durationMs)
-  );
-
-Vigilance à apporter à l'implémentation : edge cases comme un cycle
-qui termine pile au moment du login, ou des calculs qui donneraient
-un timestamp futur par arrondi flottant. Tests dédiés requis.
-
----
-
 ### TD-005 — Convention pattern obligatoire pour toutes les Cloud Functions
 
 **Identifié :** 2026-05-19 (ÉTAPE 5, design testabilité handlers)
@@ -423,3 +387,19 @@ consécutifs (émulateur tué/relancé) 204/204 → déterminisme prouvé. Commi
   d'un défaut non reproductible. Remède réel à la mise en place CI : warm-up déterministe de
   l'émulateur (attente active "All emulators ready" + un read jetable avant la suite, patron
   ÉTAPE 10) — dans le harness CI, pas dans les tests.
+
+---
+
+### TD-004 — Drift de temps résiduel non conservé dans lastProcessedAt
+
+**Identifié :** 2026-05-19 (post-correction bug duplication offline)
+**Composant :** `firebase/functions/src/shared/production.ts`
+
+**RÉSOLU 2026-06-08 (ÉTAPE 17.B backend) :** `processBuildingSlots` corrigé pour
+préserver le résiduel : `lastProcessedAt = createTimestamp(referenceTimestamp.toMillis() + completedCycles * durationMs)`
+au lieu de `now`. Factory `createTimestamp: (ms: number) => firestore.Timestamp`
+injectée comme 4e paramètre (helper reste pur — pas d'`import * as admin`). Détecteur
+d'écriture par identité d'objet (`=== now`) remplacé par flag explicite
+`hasProcessedCycles: boolean` dans `ProcessBuildingResult`. Commit : 4b7d66a.
+3 tests dédiés ajoutés (8, 9, 10) — résiduel préservé, cycle exact, Option B perte sèche.
+207/207 verts, 2 cycles à froid.
