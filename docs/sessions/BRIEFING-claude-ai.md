@@ -38,7 +38,7 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Tests : 207/207 verts (stable : 2 cycles à froid + chaud, émulateur tué/relancé)
 - Projet Firebase : **unique** — `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : voir bas de section
+- Dernier commit : `7646360` (docs: resolve TD-004, log 17.B backend session, sync briefing)
 
 ### Sous-étapes ÉTAPE 17 fermées
 
