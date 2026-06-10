@@ -7,7 +7,7 @@ import { requireAuth, requireSchemaVersion } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { processBuildingSlots } from "../shared/production";
 import type { ProcessBuildingResult, ResourceKey } from "../shared/production";
-import type { PlayerDocument, BuildingDocument } from "../shared/types";
+import type { PlayerDocument, BuildingDocument, InventoryState } from "../shared/types";
 
 // ── Types d'API — source de vérité pour tests et bindings client ──────────────
 
@@ -19,6 +19,8 @@ export type CollectProductionRequest  = CallableRequest<CollectProductionData>;
 export type CollectProductionResponse = {
   collected: Partial<Record<ResourceKey, number>>;
   discarded: Partial<Record<ResourceKey, number>>;
+  building:  BuildingDocument;
+  inventory: InventoryState;
 };
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -90,7 +92,7 @@ export async function collectProductionHandler(
         // Validation 6 — aucun slot actif → no-op valide, pas d'erreur.
         const hasActiveSlot = buildingData.slots.some((s) => s.recipeId !== null);
         if (!hasActiveSlot) {
-          return { collected: {}, discarded: {} };
+          return { collected: {}, discarded: {}, building: buildingData, inventory: playerData.inventory };
         }
 
         // ── Calcul de production différée ─────────────────────────────────
@@ -118,7 +120,8 @@ export async function collectProductionHandler(
           tx.update(buildingRef, { slots: updatedSlots });
         }
 
-        return { collected, discarded };
+        const updatedBuilding: BuildingDocument = { ...buildingData, slots: updatedSlots };
+        return { collected, discarded, building: updatedBuilding, inventory: updatedInventory };
       }
     );
 

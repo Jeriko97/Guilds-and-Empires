@@ -73,6 +73,12 @@ describe("collectProduction", () => {
     expect(result.collected.logs).toBe(3);
     expect(result.discarded.logs ?? 0).toBe(0);
 
+    // building et inventory dans le retour direct — aucun re-fetch nécessaire.
+    expect(result.building).toBeDefined();
+    expect(result.building).not.toHaveProperty("id");
+    expect(result.building.slots[0].recipeId).toBe("logs"); // slot reste actif
+    expect(result.inventory.logs.quantity).toBe(3);         // reflète collected
+
     // Slot toujours actif en Firestore.
     const buildingSnap = await db
       .collection("players").doc(uid)
@@ -249,6 +255,12 @@ describe("collectProduction", () => {
 
     expect(result.collected).toEqual({});
     expect(result.discarded).toEqual({});
+
+    // building et inventory présents même en no-op.
+    expect(result.building).toBeDefined();
+    expect(result.building).not.toHaveProperty("id");
+    expect(result.building.slots).toHaveLength(3);
+    expect(result.inventory).toBeDefined();
 
     // Aucune mutation Firestore — inventaire inchangé.
     const inventoryAfter = (await db.collection("players").doc(uid).get()).data()?.inventory;
