@@ -29,16 +29,15 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-06-08)
+## État du projet (mise à jour : 2026-06-18)
 
-- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + client Unity ÉTAPE 17 EN COURS**
+- Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + boucle production câblée client (produce + collect)**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)
-- Client : **Unity 6 — ÉTAPE 17 en cours** (17.0 + 17.A-1 + 17.A-2 + 17.A-3 fermés)
+- Client : **Unity 6 — ÉTAPE 17.B fermée** (17.0 + 17.A-1 + 17.A-2 + 17.A-3 + 17.B fermés)
 - Cloud Functions : **9/9 déployées sur guildsandempires-ca543** + Security Rules Phase 1
-- Tests : 207/207 verts (stable : 2 cycles à froid + chaud, émulateur tué/relancé)
+- Tests : 207/207 verts (backend ; client = 0 test automatisé)
 - Projet Firebase : **unique** — `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - Branche : feature/bootstrap-architecture
-- Dernier commit : `7646360` (docs: resolve TD-004, log 17.B backend session, sync briefing)
 
 ### Sous-étapes ÉTAPE 17 fermées
 
@@ -60,7 +59,7 @@ DebugScreen affiche `Building — sawmill_0 (sawmill lv1)` + `slot[0/1/2] idle`.
 runtime (remplacé par ProductionScreen via SetRoot). Validé en Play : 3 slots idle → slot 0
 "Logs en cours", 0 erreur console.
 
-### Sous-étapes ÉTAPE 17.B backend fermées
+### Sous-étapes ÉTAPE 17.B fermées
 
 **17.B-0 — Enrichissement collectProduction** : `{ collected, discarded }` → `{ collected, discarded, building, inventory }`.
 Aligné sur `startProductionSlot` (doctrine 17.A-3). Commits : `7f3d41b` (code) + `8e19fdb` (docs).
@@ -69,9 +68,18 @@ Aligné sur `startProductionSlot` (doctrine 17.A-3). Commits : `7f3d41b` (code) 
 Factory `createTimestamp` injectée comme 4e param (helper pur). Flag `hasProcessedCycles`
 remplace le détecteur `=== now`. 3 tests dédiés. Commit : `4b7d66a`.
 
+**17.B-1 — Couche service collectProduction client** : `CollectProductionAsync(buildingId, ct)` →
+`CollectProductionResult { Building, Inventory, Collected, Discarded }`. Extraction de
+`ProductionParsingHelpers` (helpers partagés). `ParseTimestampMs` single-source préservée.
+TD-015 ouverte. Commits : `1d1f1e9` (refactor) + `3af4212` (feat) + `c5d9d14` (docs).
+
+**17.B-2 — Bouton « Collecter »** : bouton global au bâtiment dans ProductionScreen,
+visible si ≥1 slot actif, C9 (souscription balancée OnEnable/OnDisable), CollectAsync
+miroir de ProduceSlotAsync. Commit : `24467cd`.
+
 ### Reste sur ÉTAPE 17
 
-- **17.B-1 + 17.B-2** : câblage client `collectProduction` (IProductionService, FirebaseProductionService, ProductionScreen)
+Slice production complète câblée. ÉTAPE 17 full closure éventuelle après arbitrage prochaine slice.
 
 ### Client Unity
 
@@ -81,8 +89,10 @@ remplace le détecteur `=== now`. 3 tests dédiés. Commit : `4b7d66a`.
 - `PlayerStateSnapshot` : modèle complet avec `IReadOnlyList<BuildingSnapshot> Buildings`
 - `BuildingSnapshot` / `SlotSnapshot` : id Firestore, buildingType, level, slots (recipeId, timestamps)
 - `ProductionResult` : `{ BuildingSnapshot Building; InventoryState Inventory }` + `Parse(data, buildingId)`
+- `CollectProductionResult` : `{ Building, Inventory, Collected, Discarded }` + `Parse(data, buildingId)`
+- `ProductionParsingHelpers` : helpers de parsing partagés (`internal`), délégués par ProductionResult et CollectProductionResult
 - `ParseTimestampMs` : helper canonique Timestamp Firebase, `internal`, source unique (voir « Doctrine Timestamp »)
-- `ProductionScreen : BaseScreen` : C9, C3, liste slots sawmill, bouton "Produire Logs" / label actif
+- `ProductionScreen : BaseScreen` : C9, C3, liste slots sawmill, bouton "Produire Logs" + bouton global "Collecter"
 - `DebugScreenController` : UI Toolkit, C9, inactif en runtime (remplacé par ProductionScreen)
 - `AppBootstrap` : auth anonyme + enregistrement IPlayerService + IProductionService + SetRoot(ProductionScreen)
 
@@ -148,8 +158,9 @@ Au début de chaque session, demander que ces docs soient attachés :
 - **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
   À implémenter avant déploiement non-solo.
 - **TD-013** : migration Node.js 20 → 22 avant 2026-10-30 (simple, low-risk).
+- **TD-015** : helpers de parsing dupliqués (PlayerStateSnapshot ↔ ProductionParsingHelpers) — TRÈS FAIBLE. À résoudre quand PlayerStateSnapshot sera prochainement touché.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
-ÉTAPE 17.B-1 + 17.B-2 — câblage client `collectProduction` (Unity).
+À trancher avec le founder — prochaine slice client : marché / contrats / chaîne production complète.

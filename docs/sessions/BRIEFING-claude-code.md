@@ -7,21 +7,20 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-06-02)
+## État du repo (mise à jour : 2026-06-18)
 
 - Branche active : feature/bootstrap-architecture
-- Dernier commit : voir `git log` — dernier commit code : d1c7590 (feat: ProductionScreen)
 - **ÉTAPE 16 FERMÉE** — Login de bout en bout Unity → backend confirmé
   Auth anonyme → resolveLoginState → PlayerState affiché (gold 0, rank local_supplier)
-- **ÉTAPE 17 en cours (17.0 + 17.A-1 + 17.A-2 + 17.A-3 fermés)**
-- **9 CF Phase 1 + firestore.rules déployées sur guildsandempires-ca543**
+- **ÉTAPE 17.B FERMÉE — boucle production câblée client (produce + collect)**
+- **9/9 CF Phase 1 + firestore.rules déployées sur guildsandempires-ca543**
 - Projet Firebase unique : `guildsandempires-ca543` (pas de dev/staging/prod séparés)
 - App Check : Open (CF publiquement appelables — acceptable pré-alpha, D-ETAPE16-005)
 - TD-013 ouverte : migration Node.js 20 → 22 avant 2026-10-30
 - 9/9 Cloud Functions complètes (resolveLoginState, startProductionSlot,
   collectProduction, acceptContract, deliverToContract, sellToMarket,
   upgradeInventoryCap, purchaseGuildCharter, updateMarketPrices)
-- 201/201 tests verts contre Firebase Emulator (179 handlers + 22 rules, stable sur 2 runs)
+- 207/207 tests verts contre Firebase Emulator (185 handlers + 22 rules, stable sur 2 runs)
 - **TD-010 RÉSOLUE** : firestore.rules Phase 1 + @firebase/rules-unit-testing@5.0.1
 
 ### Sous-étapes ÉTAPE 17 fermées
@@ -40,15 +39,26 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   `FirebaseProductionService` sur patron `FirebasePlayerService`. `recipeId` figé `"logs"`.
   `ParseTimestampMs` passé `internal` pour réutilisation. DebugScreen conservé, inactif.
   Validé en Play : 3 slots idle → slot 0 « Logs en cours », 0 erreur console.
+- **17.B-0** : collectProduction enrichi — `{ collected, discarded }` → `{ collected, discarded,
+  building, inventory }`. Aligné sur startProductionSlot (doctrine 17.A-3).
+- **TD-004 RÉSOLUE** : résiduel préservé dans lastProcessedAt — factory `createTimestamp` injectée
+  en 4e param de `processBuildingSlots`, flag `hasProcessedCycles` explicit.
+- **17.B-1** : `CollectProductionAsync(buildingId, ct)` → `CollectProductionResult { Building,
+  Inventory, Collected, Discarded }`. Extraction `ProductionParsingHelpers` (helpers partagés,
+  internal). `ParseTimestampMs` single-source préservée. TD-015 ouverte.
+- **17.B-2** : bouton global « Collecter » dans ProductionScreen — visible si ≥1 slot actif,
+  C9 (souscription balancée OnEnable/OnDisable), CollectAsync miroir de ProduceSlotAsync.
+  Validé en Play : tap Collecter → collectProduction OK, « Rien à récolter » (no-op correct).
 
 ### Reste sur ÉTAPE 17
 
-- **17.B** : collectProduction (prochain jalon)
+Slice production complète câblée. Prochaine slice client à arbitrer (marché / contrats / chaîne complète).
 
 ### Points d'attention
 
-- **TD-014** : test `resolveLoginState` avec `sleep(6000)` → flaky en CI.
-  À corriger EN TOUT PREMIER au démarrage de 17.B.
+- **TD-014 RÉSOLUE** : sleeps remplacés par suppression déterministe du doc rateLimits.
+- **TD-015** : helpers de parsing dupliqués (PlayerStateSnapshot ↔ ProductionParsingHelpers) —
+  TRÈS FAIBLE. À résoudre quand PlayerStateSnapshot sera prochainement touché.
 
 ### Couche client Unity (Assets/_Project/)
 
@@ -61,12 +71,17 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - `IProductionService` + `FirebaseProductionService` — appel startProductionSlot, parsing, C6
   Patron identique à FirebasePlayerService (GetHttpsCallable → CallAsync → Parse → exceptions).
 - `PlayerStateSnapshot` — modèle C# complet (gold, favor, inventory, favorRank, etc.)
+- `ProductionParsingHelpers` (internal static) — helpers partagés (RequireDict/GetValue/GetString/GetLong +
+  ParseBuilding/ParseSlot/ParseInventory/ParseResourceStack). Délégués par ProductionResult et CollectProductionResult.
 - `ProductionResult` — `{ BuildingSnapshot Building; InventoryState Inventory }` + `Parse(data, buildingId)`
-  Réutilise `PlayerStateSnapshot.ParseTimestampMs` (internal) — source unique préservée.
+  Délègue à ProductionParsingHelpers. `ParseTimestampMs` source unique préservée (internal, PlayerStateSnapshot).
+- `CollectProductionResult` — `{ Building; Inventory; IReadOnlyDictionary<string,int> Collected; Discarded }` + `Parse(data, buildingId)`
+  Même patron que ProductionResult. Collected/Discarded = map ResourceKey → (int)GetLong (long boxé wire).
 - `ScreenManager` (MonoBehaviour, `-80`) — stack Push/Pop/Replace/SetRoot, C3 conforme
 - `BaseScreen` (abstract MonoBehaviour) — Show/Hide via `gameObject.SetActive`, `OnShow`/`OnHide`
-- `ProductionScreen : BaseScreen` — C9 (CTS OnEnable/OnDisable), C3 (ServiceLocator),
-  liste slots sawmill, bouton « Produire Logs » (idle) / label « Logs en cours » (actif)
+- `ProductionScreen : BaseScreen` — C9 (CTS OnEnable/OnDisable + souscription clicked balancée),
+  C3 (ServiceLocator), liste slots sawmill, bouton « Produire Logs » (idle) / label « Logs en cours »
+  (actif), bouton global « Collecter » (visible si ≥1 slot actif, CollectAsync miroir ProduceSlotAsync)
 - `DebugScreenController` — UI Toolkit, C9, inactif en runtime (remplacé par ProductionScreen via SetRoot)
 - `DebugScreen.uxml` + `DebugScreen.uss` — layouts et styles debug (en scène, GO inactif)
 - `ProductionScreen.uxml` + `ProductionScreen.uss` — layouts et styles production
@@ -207,5 +222,5 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape
 
-**TD-014 (diagnostic)** puis **ÉTAPE 17.B collectProduction**.
-17.A-3 entièrement fermée — premier écran gameplay + navigation ScreenManager prouvés en Play.
+À trancher avec le founder — prochaine slice client : marché / contrats / chaîne production complète.
+17.B entièrement fermée — boucle production (produce + collect) prouvée en Play.
