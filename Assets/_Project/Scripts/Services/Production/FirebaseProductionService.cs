@@ -71,6 +71,49 @@ namespace GuildsAndEmpires.Services.Production
             }
         }
 
+        public async Task<CollectProductionResult> CollectProductionAsync(
+            string buildingId,
+            CancellationToken ct = default)
+        {
+            GELogger.Debug("ProductionService", $"collectProduction — building:{buildingId}");
+
+            var callable = _functions.GetHttpsCallable("collectProduction");
+            var payload  = new Dictionary<string, object>
+            {
+                { "buildingId", buildingId },
+            };
+
+            HttpsCallableResult rawResult;
+            try
+            {
+                rawResult = await callable.CallAsync(payload);
+            }
+            catch (FunctionsException ex)
+            {
+                GELogger.Warning("ProductionService", $"collectProduction [{ex.ErrorCode}]: {ex.Message}");
+                throw new ProductionServiceException(MapErrorMessage(ex.ErrorCode), ex);
+            }
+            catch (Exception ex) when (ct.IsCancellationRequested)
+            {
+                GELogger.Debug("ProductionService", "collectProduction — annulé.");
+                throw new OperationCanceledException(ct);
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                var result = CollectProductionResult.Parse(rawResult.Data, buildingId);
+                GELogger.Info("ProductionService", $"collectProduction OK — building:{buildingId}");
+                return result;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                GELogger.Error("ProductionService", $"Parsing réponse échoué: {ex.Message}");
+                throw new ProductionServiceException("Réponse serveur invalide.", ex);
+            }
+        }
+
         // ── FunctionsErrorCode → message joueur (doctrine C6) ─────────────────
 
         private static string MapErrorMessage(FunctionsErrorCode code) => code switch

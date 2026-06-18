@@ -24,5 +24,16 @@ namespace GuildsAndEmpires.Services.Production
             int slotIndex,
             string recipeId,
             CancellationToken ct = default);
+
+        /// <summary>
+        /// Récolte la production accumulée sur tous les slots actifs d'un bâtiment via la CF collectProduction.
+        ///
+        /// Retourne l'état mis à jour du bâtiment, l'inventaire, et le détail récolté/rejeté.
+        /// Aucun slot actif = no-op valide (collected et discarded vides).
+        /// Lance <see cref="ProductionServiceException"/> sur erreur métier ou réseau.
+        /// </summary>
+        Task<CollectProductionResult> CollectProductionAsync(
+            string buildingId,
+            CancellationToken ct = default);
     }
 }
