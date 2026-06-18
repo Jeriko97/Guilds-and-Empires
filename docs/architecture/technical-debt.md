@@ -323,6 +323,31 @@ pour ne pas accumuler les warnings et s'habituer à les ignorer.
 
 ---
 
+### TD-015 — Duplication résiduelle des helpers de parsing (PlayerStateSnapshot ↔ ProductionParsingHelpers)
+
+**Identifié :** 2026-06-08 (ÉTAPE 17.B-1, extraction de ProductionParsingHelpers)
+**Criticité actuelle :** TRÈS FAIBLE
+**Composant :** `PlayerStateSnapshot.cs` + `ProductionParsingHelpers.cs`
+
+**Description :**
+L'extraction de ProductionParsingHelpers (17.B-1) a consolidé les helpers de parsing
+(RequireDict/GetValue/GetString/GetLong + ParseBuilding/ParseSlot/ParseInventory/ParseResourceStack)
+côté ProductionResult/CollectProductionResult. PlayerStateSnapshot conserve ses PROPRES copies privées
+de RequireDict/GetValue/GetString/GetLong (parsing de resolveLoginState/DebugScreen) → duplication
+résiduelle, consciemment laissée hors-scope de 17.B-1 (toucher PlayerStateSnapshot aurait élargi le
+diff au chemin de login). ParseTimestampMs reste single-source (internal dans PlayerStateSnapshot,
+réutilisé par tous — pas concerné).
+
+**Impact :**
+Faible. Si le format wire change pour ces helpers génériques, deux endroits à mettre à jour.
+Le helper critique (ParseTimestampMs) n'est PAS dupliqué.
+
+**Trigger de résolution :**
+Quand PlayerStateSnapshot sera prochainement touché → consolider ses helpers génériques vers
+ProductionParsingHelpers. YAGNI tant que PlayerStateSnapshot n'est pas touché.
+
+---
+
 ## TD Résolues
 
 ### TD-010 — firestore.rules incomplet pour Phase 1
