@@ -31,9 +31,10 @@ namespace GuildsAndEmpires.UI.Screens
         private Label         _titleLabel;
         private Label         _statusLabel;
         private VisualElement _slotsContainer;
+        private Button        _collectButton;
 
         // ── State ─────────────────────────────────────────────────────────────
-        private BuildingSnapshot   _currentBuilding;
+        private BuildingSnapshot      _currentBuilding;
         private readonly List<Button> _slotButtons = new();
 
         private void Awake()
@@ -45,10 +46,16 @@ namespace GuildsAndEmpires.UI.Screens
         {
             _cts = new CancellationTokenSource();
 
-            var root     = _doc.rootVisualElement;
-            _titleLabel  = root.Q<Label>("title-label");
-            _statusLabel = root.Q<Label>("status-label");
+            var root        = _doc.rootVisualElement;
+            _titleLabel     = root.Q<Label>("title-label");
+            _statusLabel    = root.Q<Label>("status-label");
             _slotsContainer = root.Q<VisualElement>("slots-container");
+            _collectButton  = root.Q<Button>("collect-button");
+            if (_collectButton != null)
+            {
+                _collectButton.style.display = DisplayStyle.None;
+                _collectButton.clicked += OnCollectClicked;
+            }
 
             SetStatus("Chargement…", "status--loading");
             _slotsContainer.Clear();
@@ -59,6 +66,8 @@ namespace GuildsAndEmpires.UI.Screens
 
         private void OnDisable()
         {
+            if (_collectButton != null)
+                _collectButton.clicked -= OnCollectClicked;
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -140,6 +149,17 @@ namespace GuildsAndEmpires.UI.Screens
 
                 _slotsContainer.Add(card);
             }
+
+            // Afficher le bouton Collecter seulement si ≥1 slot actif.
+            // Prédicat identique à ci-dessus : slot actif = RecipeId != null.
+            var anyActive = false;
+            foreach (var s in _currentBuilding.Slots)
+                if (s.RecipeId != null) { anyActive = true; break; }
+            if (_collectButton != null)
+            {
+                _collectButton.style.display = anyActive ? DisplayStyle.Flex : DisplayStyle.None;
+                _collectButton.SetEnabled(true);
+            }
         }
 
         // ── Production handler ────────────────────────────────────────────────
@@ -186,6 +206,47 @@ namespace GuildsAndEmpires.UI.Screens
             }
         }
 
+        // ── Collect handler ───────────────────────────────────────────────────
+
+        private void OnCollectClicked() => _ = CollectAsync(_cts.Token);
+
+        private async Task CollectAsync(CancellationToken ct)
+        {
+            SetAllButtonsEnabled(false);
+
+            if (!ServiceLocator.TryResolve<IProductionService>(out var productionService))
+            {
+                GELogger.Error("ProductionScreen", "IProductionService non enregistré.");
+                SetStatus("Erreur : service manquant.", "status--error");
+                SetAllButtonsEnabled(true);
+                return;
+            }
+
+            try
+            {
+                var result = await productionService.CollectProductionAsync(_currentBuilding.Id, ct);
+
+                ct.ThrowIfCancellationRequested();
+
+                _currentBuilding = result.Building;
+                RenderSlots();
+                SetStatus(FormatCollectMessage(result), "status--success");
+            }
+            catch (OperationCanceledException) { }
+            catch (ProductionServiceException ex)
+            {
+                GELogger.Warning("ProductionScreen", $"Erreur collecte: {ex.UserMessage}");
+                SetStatus($"Erreur : {ex.UserMessage}", "status--error");
+                SetAllButtonsEnabled(true);
+            }
+            catch (Exception ex)
+            {
+                GELogger.Error("ProductionScreen", $"Erreur inattendue: {ex.Message}");
+                SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                SetAllButtonsEnabled(true);
+            }
+        }
+
         // ── Helpers UI ────────────────────────────────────────────────────────
 
         private void SetStatus(string text, string modifier)
@@ -202,6 +263,27 @@ namespace GuildsAndEmpires.UI.Screens
         {
             foreach (var btn in _slotButtons)
                 btn.SetEnabled(enabled);
+            _collectButton?.SetEnabled(enabled);
+        }
+
+        private static string FormatCollectMessage(CollectProductionResult result)
+        {
+            if (result.Collected.Count == 0 && result.Discarded.Count == 0)
+                return "Rien à récolter pour l'instant.";
+
+            var parts = new List<string>();
+            foreach (var kv in result.Collected)
+                parts.Add($"{kv.Value} {kv.Key}");
+            var msg = "Récolté : " + string.Join(", ", parts);
+
+            if (result.Discarded.Count > 0)
+            {
+                var lostParts = new List<string>();
+                foreach (var kv in result.Discarded)
+                    lostParts.Add($"{kv.Value} {kv.Key}");
+                msg += " — perdu (cap plein) : " + string.Join(", ", lostParts);
+            }
+            return msg;
         }
     }
 }

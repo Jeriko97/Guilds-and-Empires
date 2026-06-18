@@ -4,5 +4,6 @@
         <ui:Label name="title-label" text="Sawmill" class="title" />
         <ui:Label name="status-label" text="Chargement…" class="status status--loading" />
         <ui:VisualElement name="slots-container" class="slots-container" />
+        <ui:Button name="collect-button" text="Collecter" class="collect-button" />
     </ui:VisualElement>
 </ui:UXML>
