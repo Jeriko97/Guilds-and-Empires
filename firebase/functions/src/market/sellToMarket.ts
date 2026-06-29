@@ -4,7 +4,7 @@ import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
 
 import { requireAuth } from "../shared/validators";
-import type { PlayerDocument, MarketStateDocument } from "../shared/types";
+import type { PlayerDocument, MarketStateDocument, InventoryState } from "../shared/types";
 
 // ── Types d'API — source de vérité pour tests et bindings client ──────────────
 
@@ -21,6 +21,7 @@ export type SellToMarketResponse = {
   priceApplied: number;
   newGold: number;
   alreadySold: boolean;
+  inventory: InventoryState;
 };
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -119,6 +120,7 @@ export async function sellToMarketHandler(
             priceApplied: trade.priceApplied,
             newGold:      player.gold,
             alreadySold:  true,
+            inventory:    player.inventory,
           };
         }
         throw new HttpsError(
@@ -160,7 +162,7 @@ export async function sellToMarketHandler(
       const newGold    = player.gold + goldEarned;
 
       // ── 4j. Mutations — toutes les validations précèdent ──────────────────
-      const updatedInventory = {
+      const updatedInventory: InventoryState = {
         ...player.inventory,
         [resourceType]: {
           ...player.inventory[resourceType],
@@ -184,7 +186,7 @@ export async function sellToMarketHandler(
       };
       tx.set(tradeRef, tradeDoc);
 
-      return { goldEarned, priceApplied: price, newGold, alreadySold: false };
+      return { goldEarned, priceApplied: price, newGold, alreadySold: false, inventory: updatedInventory };
     });
 
   } catch (err) {

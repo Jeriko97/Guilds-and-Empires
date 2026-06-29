@@ -504,6 +504,71 @@ describe("sellToMarket", () => {
     expect(playerSnap.data()!.marketSalesLastHour).toHaveLength(1);    // rate limit non doublé
   }, 30_000);
 
+  // ── G. Response inventory enrichment (18.0) ─────────────────────────────
+
+  it("22. Vente normale → response.inventory reflète le décrément POST-mutation sur resourceType", async () => {
+    const uid = "SELLM_inv_normal";
+    await createTestPlayer(uid, {
+      gold:      0,
+      inventory: {
+        logs:               { quantity: 30, cap: 200 },
+        planks:             { quantity: 10, cap: 200 },
+        reconstructionKits: { quantity: 5,  cap: 200 },
+      },
+    });
+    await createMarketState();
+
+    const result = await sellToMarketHandler(
+      makeSellRequest(uid, "logs", 8, "key-inv-normal-1")
+    );
+
+    expect(result.alreadySold).toBe(false);
+    // Logs décrémenté
+    expect(result.inventory.logs.quantity).toBe(22);            // 30 - 8
+    expect(result.inventory.logs.cap).toBe(200);
+    // Autres ressources inchangées
+    expect(result.inventory.planks.quantity).toBe(10);
+    expect(result.inventory.reconstructionKits.quantity).toBe(5);
+    // Cohérence avec l'état Firestore
+    const playerSnap = await db.collection("players").doc(uid).get();
+    expect(playerSnap.data()!.inventory.logs.quantity).toBe(22);
+  });
+
+  it("23. Replay idempotent immédiat → alreadySold=true, response.inventory = état courant (identique call 1)", async () => {
+    const uid = "SELLM_inv_idem";
+    await createTestPlayer(uid, {
+      gold:      0,
+      inventory: {
+        logs:               { quantity: 20, cap: 200 },
+        planks:             { quantity: 0,  cap: 200 },
+        reconstructionKits: { quantity: 0,  cap: 200 },
+      },
+    });
+    await createMarketState();
+
+    const call1 = await sellToMarketHandler(
+      makeSellRequest(uid, "logs", 4, "key-inv-idem-1")
+    );
+    expect(call1.alreadySold).toBe(false);
+
+    const call2 = await sellToMarketHandler(
+      makeSellRequest(uid, "logs", 4, "key-inv-idem-1")
+    );
+    expect(call2.alreadySold).toBe(true);
+
+    // response.inventory = état courant du doc player (pas reconstruit depuis marketTrades)
+    expect(call2.inventory.logs.quantity).toBe(16);             // 20 - 4, état courant
+    expect(call2.inventory.planks.quantity).toBe(0);
+    expect(call2.inventory.reconstructionKits.quantity).toBe(0);
+
+    // Identique au call1 puisqu'aucune mutation intermédiaire
+    expect(call2.inventory.logs.quantity).toBe(call1.inventory.logs.quantity);
+
+    // Cohérence avec Firestore (décrément une seule fois)
+    const playerSnap = await db.collection("players").doc(uid).get();
+    expect(playerSnap.data()!.inventory.logs.quantity).toBe(16);
+  });
+
   it("21. Deux ventes concurrentes idempotencyKeys différents : si stock insuffisant → 1 commit + 1 failed-precondition", async () => {
     const uid = "SELLM_concur_diff";
     await createTestPlayer(uid, {
