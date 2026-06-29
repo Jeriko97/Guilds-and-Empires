@@ -155,7 +155,7 @@ TD-013 ouverte : migration Node.js 20 → 22 avant le 2026-10-30.
 - `4d0a6d6` — feat(client): add DebugScreen UI Toolkit and wire anonymous auth in AppBootstrap
 - `bd78e96` — docs: add session log ETAPE 16, update decisions log and briefings
 - `d1fb9e5` — docs: log D-ETAPE16-005 App Check deferred + deploy Phase 1 functions
-- `[hash clôture]` — docs: close ETAPE 16 — first end-to-end Unity login
+- `d9289c7` — docs: close ETAPE 16 — first end-to-end Unity login
 
 ## Prochaine étape
 
