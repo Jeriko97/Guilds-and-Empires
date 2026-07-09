@@ -1,16 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Firebase.Firestore;
+using Firebase.Functions;
 using GuildsAndEmpires.Core.Logging;
 using GuildsAndEmpires.Models;
 
 namespace GuildsAndEmpires.Services.Market
 {
     /// <summary>
-    /// Implémente <see cref="IMarketService"/> via lecture Firestore directe (one-shot).
+    /// Implémente <see cref="IMarketService"/> via lecture Firestore directe (one-shot) et
+    /// appel Callable (sellToMarket).
     ///
-    /// Seule classe à importer Firebase.Firestore dans cette couche — doctrine C3.
+    /// Seule classe à importer Firebase.Firestore et Firebase.Functions dans cette couche — doctrine C3.
     /// Cache instance-level de 5 minutes : valide car enregistré en singleton via ServiceLocator.
     /// ZÉRO listener temps réel (coût réseau/batterie inacceptable en pré-alpha).
     /// </summary>
@@ -19,13 +22,15 @@ namespace GuildsAndEmpires.Services.Market
         private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
 
         private readonly FirebaseFirestore _db;
+        private readonly FirebaseFunctions _functions;
 
         private MarketStateSnapshot _cache;
         private DateTime            _lastFetch = DateTime.MinValue;
 
         public FirebaseMarketService()
         {
-            _db = FirebaseFirestore.DefaultInstance;
+            _db        = FirebaseFirestore.DefaultInstance;
+            _functions = FirebaseFunctions.DefaultInstance;
         }
 
         public async Task<MarketStateSnapshot> GetMarketPricesAsync(CancellationToken ct = default)
@@ -78,5 +83,65 @@ namespace GuildsAndEmpires.Services.Market
             GELogger.Info("MarketService", $"Prix chargés — logs:{result.Prices["logs"].CurrentPrice} planks:{result.Prices["planks"].CurrentPrice}");
             return result;
         }
+
+        public async Task<SellToMarketResult> SellToMarketAsync(
+            string resourceType,
+            int quantity,
+            string idempotencyKey,
+            CancellationToken ct = default)
+        {
+            GELogger.Debug("MarketService", $"sellToMarket — resource:{resourceType} qty:{quantity}");
+
+            var callable = _functions.GetHttpsCallable("sellToMarket");
+            var payload  = new Dictionary<string, object>
+            {
+                { "resourceType",   resourceType   },
+                { "quantity",       quantity        },
+                { "idempotencyKey", idempotencyKey },
+            };
+
+            HttpsCallableResult rawResult;
+            try
+            {
+                rawResult = await callable.CallAsync(payload);
+            }
+            catch (FunctionsException ex)
+            {
+                GELogger.Warning("MarketService", $"sellToMarket [{ex.ErrorCode}]: {ex.Message}");
+                throw new MarketServiceException(MapErrorMessage(ex.ErrorCode), ex);
+            }
+            catch (Exception ex) when (ct.IsCancellationRequested)
+            {
+                GELogger.Debug("MarketService", "sellToMarket — annulé.");
+                throw new OperationCanceledException(ct);
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                var result = SellToMarketResult.Parse(rawResult.Data);
+                GELogger.Info("MarketService", $"sellToMarket OK — goldEarned:{result.GoldEarned} newGold:{result.NewGold} alreadySold:{result.AlreadySold}");
+                return result;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                GELogger.Error("MarketService", $"Parsing réponse échoué: {ex.Message}");
+                throw new MarketServiceException("Réponse serveur invalide.", ex);
+            }
+        }
+
+        // ── FunctionsErrorCode → message joueur (doctrine C6) ─────────────────
+
+        private static string MapErrorMessage(FunctionsErrorCode code) => code switch
+        {
+            FunctionsErrorCode.ResourceExhausted  => "Limite de ventes atteinte (20/heure). Réessaie plus tard.",
+            FunctionsErrorCode.FailedPrecondition => "Vente impossible : vérifie ton stock.",
+            FunctionsErrorCode.InvalidArgument    => "Quantité invalide (1 à 100).",
+            FunctionsErrorCode.NotFound           => "Profil joueur introuvable.",
+            FunctionsErrorCode.Unauthenticated    => "Session expirée, reconnecte-toi.",
+            FunctionsErrorCode.Internal           => "Une erreur est survenue, réessaie.",
+            _                                     => "Une erreur est survenue, réessaie.",
+        };
     }
 }

@@ -37,5 +37,12 @@ namespace GuildsAndEmpires.Core
             try { return Convert.ToInt64(v); }
             catch { return fallback; }
         }
+
+        internal static bool GetBool(Dictionary<object, object> d, string key, bool fallback)
+        {
+            var v = GetValue(d, key);
+            if (v is bool b) return b;
+            return fallback;
+        }
     }
 }
