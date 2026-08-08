@@ -11,6 +11,7 @@ using GuildsAndEmpires.Services.Firebase;
 using GuildsAndEmpires.Services.Market;
 using GuildsAndEmpires.Services.Player;
 using GuildsAndEmpires.Services.Production;
+using GuildsAndEmpires.State;
 using GuildsAndEmpires.UI;
 using GuildsAndEmpires.UI.Screens;
 
@@ -154,6 +155,7 @@ namespace GuildsAndEmpires.Core.Bootstrap
                 ServiceLocator.Register<IPlayerService>(new FirebasePlayerService());
                 ServiceLocator.Register<IProductionService>(new FirebaseProductionService());
                 ServiceLocator.Register<IMarketService>(new FirebaseMarketService());
+                ServiceLocator.Register<PlayerEconomyStateStore>(new PlayerEconomyStateStore());
                 GELogger.Debug("Bootstrap", "App services registered.");
             }
 

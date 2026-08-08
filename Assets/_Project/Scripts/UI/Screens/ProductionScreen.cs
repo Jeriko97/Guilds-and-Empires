@@ -9,6 +9,7 @@ using GuildsAndEmpires.Core.Logging;
 using GuildsAndEmpires.Models;
 using GuildsAndEmpires.Services.Player;
 using GuildsAndEmpires.Services.Production;
+using GuildsAndEmpires.State;
 
 namespace GuildsAndEmpires.UI.Screens
 {
@@ -36,6 +37,7 @@ namespace GuildsAndEmpires.UI.Screens
         // ── State ─────────────────────────────────────────────────────────────
         private BuildingSnapshot      _currentBuilding;
         private readonly List<Button> _slotButtons = new();
+        private bool                  _hasLoadedOnce;
 
         private void Awake()
         {
@@ -57,11 +59,19 @@ namespace GuildsAndEmpires.UI.Screens
                 _collectButton.clicked += OnCollectClicked;
             }
 
-            SetStatus("Chargement…", "status--loading");
-            _slotsContainer.Clear();
-            _slotButtons.Clear();
+            if (!_hasLoadedOnce)
+            {
+                SetStatus("Chargement…", "status--loading");
+                _slotsContainer.Clear();
+                _slotButtons.Clear();
 
-            _ = LoadAsync(_cts.Token);
+                _ = LoadAsync(_cts.Token);
+            }
+            else
+            {
+                RenderSlots();
+                SetStatus("Prêt.", "status--success");
+            }
         }
 
         private void OnDisable()
@@ -95,9 +105,15 @@ namespace GuildsAndEmpires.UI.Screens
                     return;
                 }
 
+                if (ServiceLocator.TryResolve<PlayerEconomyStateStore>(out var economyStore))
+                    economyStore.ApplyServerState(snapshot.Player.Gold, snapshot.Player.Inventory);
+                else
+                    GELogger.Warning("ProductionScreen", "PlayerEconomyStateStore non enregistré — gold/inventaire non mis à jour.");
+
                 _currentBuilding = snapshot.Buildings[0];
                 RenderSlots();
                 SetStatus("Prêt.", "status--success");
+                _hasLoadedOnce = true;
             }
             catch (OperationCanceledException) { }
             catch (PlayerServiceException ex)
@@ -227,6 +243,11 @@ namespace GuildsAndEmpires.UI.Screens
                 var result = await productionService.CollectProductionAsync(_currentBuilding.Id, ct);
 
                 ct.ThrowIfCancellationRequested();
+
+                if (ServiceLocator.TryResolve<PlayerEconomyStateStore>(out var economyStore))
+                    economyStore.ApplyServerInventory(result.Inventory);
+                else
+                    GELogger.Warning("ProductionScreen", "PlayerEconomyStateStore non enregistré — inventaire non mis à jour.");
 
                 _currentBuilding = result.Building;
                 RenderSlots();
