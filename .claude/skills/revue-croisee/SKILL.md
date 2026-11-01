@@ -6,7 +6,8 @@ description: Revue croisée indépendante de Guilds & Empires par deux relecteur
 # Revue croisée — auditeur (Claude) + Codex
 
 Deux relecteurs relisent **le même contenu**, **en parallèle**, **sans voir l'avis l'un de l'autre**
-ni le raisonnement de l'exécutant. Claude Code arbitre ensuite. Une seule passe par mode.
+ni le raisonnement de l'exécutant. Claude Code arbitre ensuite. Une seule passe par mode, sauf la
+« passe courte » sur le delta d'une correction de logique faite après la revue diff (§5).
 
 ## Constantes
 ```bash
@@ -74,5 +75,12 @@ Coller les deux sorties **brutes**, puis un tableau : point · relecteur(s) · d
 - **Escalade** (CLAUDE.md, liste d'escalade) → bloquant non résoluble dans le périmètre (cas 6),
   ou les deux relecteurs se contredisent sur un bloquant (cas 7), ou valeur économique touchée (cas 4).
 
-Pas de seconde passe : les corrections faites après la revue sont listées dans le rapport de clôture
-(fichier:ligne), le founder voit ce qui a changé après les verdicts.
+Corrections faites APRÈS la revue diff (règle « passe courte », validée par le founder le 2026-11-01) :
+- **Elles touchent la logique** → **passe courte** avant le commit : les deux relecteurs, mode diff, sur CE delta
+  uniquement (version relue → version corrigée), même consigne, mêmes règles que §2-§5. « Logique » = tout ce qui
+  s'exécute ou décide d'un comportement : code C#/TypeScript, tests, Security Rules, configuration de build ou de
+  dépendances (`package.json`, scripts npm, manifest Unity), `.gitignore`. Une correction issue d'une passe courte
+  qui touche encore la logique relance une passe courte sur son propre delta.
+- **Elles ne touchent pas la logique** (doc, commentaire, texte affiché, style USS) → pas de nouvelle passe ;
+  elles sont listées dans le rapport de clôture (fichier:ligne), le founder voit ce qui a changé après les verdicts.
+Les verdicts bruts de chaque passe courte figurent dans le rapport de clôture, avec leur arbitrage.

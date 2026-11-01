@@ -17,7 +17,10 @@ la « validation par étape » du briefing.
 4. **Tests** : `npm run test:emulator` pour le backend ; compilation Unity sans erreur pour le client.
 5. **Play via le plugin Unity** (`unity:unity-cli`) : capture Game view + console brute.
    Sous-étape sans effet en jeu (doc, outillage) : écrire « Play : non applicable » dans le rapport.
-6. **Revue croisée — mode diff**.
+6. **Revue croisée — mode diff**. Si une correction faite APRÈS cette revue touche la logique (code, tests,
+   Security Rules, configuration de build ou de dépendances, `.gitignore`) : **passe courte** des deux relecteurs
+   sur ce delta uniquement, avant le commit (règle validée par le founder le 2026-11-01, détail dans le skill
+   `revue-croisee` §5). Correction sans effet sur la logique (doc, commentaire, style) : listée dans le rapport.
 7. **Commit atomique LOCAL**, puis rapport de clôture.
 
 ### b. Escalade — Claude Code S'ARRÊTE et demande au founder UNIQUEMENT si :
@@ -40,7 +43,7 @@ Hors de ces 8 cas : Claude Code tranche, avance, et documente dans le rapport.
 
 ### d. Rapport de clôture d'une sous-étape — français simple
 1. **Ce qui a été fait et pourquoi.**
-2. **Verdicts BRUTS des deux relecteurs** (mode ticket et mode diff), puis l'arbitrage point par point.
+2. **Verdicts BRUTS des deux relecteurs** (mode ticket, mode diff et chaque passe courte), puis l'arbitrage point par point.
 3. **Play** : capture + console brute (ou « non applicable »).
 4. **`git show --stat`** du commit.
 5. **Risques résiduels.**
