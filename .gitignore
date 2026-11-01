@@ -64,6 +64,13 @@ firebase/functions/node_modules/
 firebase/functions/lib/
 firebase/functions/.env*
 firebase-debug.log
+firestore-debug.log
+emulator.log
+emulator.err
+
+# Unity — sauvegardes de scène post-crash
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
 
 UserSettings/
 
