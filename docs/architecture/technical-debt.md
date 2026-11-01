@@ -448,21 +448,50 @@ Corriger `computeMarketPrice` AVANT d'implémenter, d'exporter (export aujourd'h
 `firebase/functions/src/index.ts:30`) ou de déployer `processWorldEventLifecycle`, et avant tout world event en
 production. Aucune autre sous-étape de cette étape ne démarre tant que TD-020 n'est pas résolue.
 
+**Amendement du founder (2026-11-02, D-TD020-002) — remplace la cible ci-dessus pour le modèle de calcul :**
+« Ma position : prix d'événement = valeur absolue imposée pendant l'événement (9 / 22, quel que soit le prix de départ), puis redescente progressive vers le prix courant. Ça règle les deux escalades d'un coup et rend le test déterministe. Si tu valides, fais-le inscrire dans TD-020 (amendement de D-TD020-001), commit séparé, poussé. »
+Validé par Claude Code. Il lève la contradiction de la version précédente : un prix d'event calculé depuis le prix
+courant ne pouvait pas rester à 9 / 22 (Planks 20/22/24 selon le bruit, Logs ≈ 11 depuis 6).
+
+**Cible (modèle absolu) :**
+- **Prix d'event** = `round(basePrice × multiplicateur de l'event)` : Logs 5 × 1,8 = **9**, Planks 12 × 1,83 =
+  21,96 → **22**. C'est la règle déjà appliquée aux kits (`min === max`, `computeMarketPrice.ts:56-57`) ; le schéma
+  d'event (`priceMultipliers`) ne change pas.
+- **Event actif** : le prix publié vaut le prix d'event à chaque tick, sans dérive ni bruit, quel que soit le prix
+  de départ (Logs 3 à 9, Planks 8 à 22).
+- **Prix de référence hors event (« prix courant »)** : suivi à part, jamais dérivé du prix publié. Il part du prix
+  publié juste avant l'event et continue d'évoluer à chaque tick avec la dérive et le bruit habituels (D-ETAPE14b).
+  Sans lui, aucune redescente : dérivé du prix publié, avec `DRIFT_FACTOR` 0,1 et l'arrondi, les Logs restent figés
+  à 9 et les Planks à 17. → nouveau champ dans `marketState` : `schemaVersion` + `schema-migrations.md` + seed
+  (D-TD018-001) dans le commit de correction. `marketState/state` existe déjà en production et le seed (`create()`)
+  ne le réécrit pas : préférer l'initialisation à la volée (champ absent → référence = prix publié, hors event),
+  qui évite toute écriture manuelle ; à défaut, migration du document en prod = escalade cas 1, AVANT le
+  déploiement de `updateMarketPrices` (sinon erreur à chaque tick, comme en D-TD018-001).
+- **Decay** : prix publié = `round(prixEvent + (prixRéférence − prixEvent) × progression)`, progression de 0 à 1
+  sur la durée du decay (~1 h, `phase-1-economy-values.md` §6), puis retour au calcul normal depuis le prix de
+  référence.
+- **Un seul event par ressource** : plusieurs events simultanés sur une même ressource (le code actuel multiplie
+  les multiplicateurs, `computeMarketPrice.ts:50-53`) → erreur explicite (fail loudly), pas de calcul silencieux ;
+  aucun cas prévu en Phase 1, escalade s'il apparaît. Portée de l'erreur (tick entier ou ressource concernée seule)
+  à trancher dans le ticket de correction : `updateMarketPrices` traite toutes les ressources en un tick.
+
 **Critères de fermeture :**
-- event actif démarré depuis le prix normal (Logs 5, Planks 12) : le prix calculé reste au prix d'event du design
-  (9 Logs, 22 Planks) sur plusieurs ticks consécutifs, sans cumul ;
-- decay : retour progressif vers le prix hors event ;
-- test multi-tick dans `computeMarketPrice.test.ts` (≥ 3 ticks actifs + decay) avec un `random` neutre injecté
-  (0,5 : bruit nul), `npm run test:emulator` vert ;
-- déploiement de `updateMarketPrices` corrigée = escalade cas 2.
-La décision ne règle que le départ au prix normal. Les Logs pouvant rester hors event entre 3 et 6 (TO_PLAYTEST §4),
-si la correction donne pour un autre prix de départ un prix d'event différent de 9 / 22 (ex. 6 × 1,8 ≈ 11) :
-**nouvelle escalade cas 4** au moment de la correction. À prévoir dès maintenant pour les **Planks** : leur prix hors
-event bouge (12 ± 0,6, arrondi à 11, 12 ou 13), donc un prix d'event calculé sur ce prix oscillera vers 20 / 22 / 24
-— préparer la question « 22 exact ou ≈ 22 ? » pour le founder. Piste technique : appliquer le multiplicateur à un
-prix « hors event » mémorisé. Elle amende l'ordre de calcul de D-ETAPE14b, à mettre à jour dans le même commit :
-l'amendement est couvert par D-TD020-001 tant qu'il sert uniquement la cible 9 / 22 ; tout autre changement
-d'algorithme (dérive, bruit, bornes) reste une escalade (cas 4).
+- test déterministe multi-tick dans `computeMarketPrice.test.ts` :
+  - event actif depuis plusieurs prix de départ (Logs 3, 5, 6, 9 ; Planks 8, 12, 22), avec une séquence de bruits
+    NON nuls injectée : prix publié = 9 / 22 exactement à chaque tick (≥ 3 ticks) ;
+  - decay, `random` 0,5 (bruit nul) : Logs depuis 5 → 9 pendant l'event, puis `round(9 − 4 × progression)`,
+    5 à la fin ; Planks depuis 12 → 22, puis `round(22 − 10 × progression)`, 12 à la fin ;
+  - référence sous bruit : Planks, séquence de bruits non nuls pendant l'event → la référence évolue (≠ 12) alors que
+    le prix publié reste 22 ; le decay converge vers CETTE référence (pas vers 12 ni vers le prix publié) ;
+- test émulateur sur `updateMarketPricesHandler` : référence persistée dans `marketState`, jamais recopiée depuis
+  le prix publié, sur au moins deux exécutions ; initialisation quand le champ manque ; tests du seed mis à jour ;
+- `npm run test:emulator` vert ; déploiement de `updateMarketPrices` corrigée = escalade cas 2.
+
+**Périmètre couvert par D-TD020-001/002** : modèle absolu pendant l'event, prix de référence suivi à part, decay
+interpolé, amendement de l'ordre de calcul de D-ETAPE14b dans le même commit. **Reste une escalade (cas 4)** : toute
+autre modification de l'algorithme ou de ses valeurs (`DRIFT_FACTOR`, `NOISE_AMPLITUDE`, bornes, durée du decay,
+multiplicateurs).
+Les deux escalades annoncées par la version précédente (départ hors prix normal ; bruit des Planks) sont sans objet.
 
 ---
 
