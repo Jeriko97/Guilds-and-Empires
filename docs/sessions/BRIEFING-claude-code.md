@@ -15,6 +15,8 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   ÉTAPE 18.2b-2 (11-01) : contenu de `MarketScreen` (prix pollés 5 min 5 s, vente 1 / 10 / Tout) et ligne
   gold/inventaire sur `ProductionScreen`. **ÉTAPE 18 FERMÉE le 11-01** — log
   `docs/sessions/2026-11-01-etape-18-marche.md`, décisions D-ETAPE18-001 à 006.
+- **11-02** : ÉTAPE 18 poussée ; décision founder TD-020 (D-TD020-001) — correction des prix d'event (9 / 22) =
+  prérequis bloquant de l'étape world events (voir « Prochaine étape »).
 - Revue croisée : règle de **passe courte** (D-ETAPE18-006) — correction de logique après la revue diff →
   les deux relecteurs relisent ce delta uniquement, avant commit (`CLAUDE.md` §a.6).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
@@ -127,8 +129,8 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 - **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers (`Core/FirebaseParsingHelpers`,
   `InventoryParsingHelpers`, `ProductionParsingHelpers`, `PlayerStateSnapshot`) — FAIBLE. Cible :
   `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
-- **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction = escalade cas 4,
-  avant le premier world event.
+- **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction actée le 11-02
+  (D-TD020-001 : 9 / 22), **prérequis bloquant** de l'étape qui activera `processWorldEventLifecycle`.
 - **TO_PLAYTEST** (economy-values §4) : prix des Logs immobile hors event (points fixes 3-6).
 
 ### Couche client Unity (Assets/_Project/)
@@ -298,12 +300,15 @@ les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
   `BaseScreen` activé/désactivé via `gameObject.SetActive` (pas USS display, pas UIDocument.enabled).
   `_screenContainer` non câblé (pas d'Instantiate pour l'instant).
 
-## Prochaine étape (2026-11-01)
+## Prochaine étape (2026-11-02)
 
 ÉTAPE 18 (marché) FERMÉE le 11-01 : TD-018 marché close, écran Marché complet (D-ETAPE18-001 à 006).
 Vente de test en prod autorisée par le founder pour cette validation seulement (1 log, D-ETAPE18-004).
 
-1. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
+1. **Prérequis bloquant — TD-020** (D-TD020-001, décidé par le founder le 11-02) : corriger `computeMarketPrice`
+   pour que le prix d'event reste à 9 (Logs) / 22 (Planks) sans cumul, test multi-tick, amender D-ETAPE14b.
+   Première sous-étape de l'étape contrats / world events, avant toute ligne de `processWorldEventLifecycle`.
+   Prix d'event ≠ 9 / 22 pour un départ hors prix normal → nouvelle escalade cas 4.
+2. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
    puis service client et écran (`acceptContract`, `deliverToContract`).
-2. Avant le premier world event en prod : faire trancher TD-020 par le founder (escalade cas 4).
 3. Résorber TD-015 dès qu'un fichier de parsing est touché.

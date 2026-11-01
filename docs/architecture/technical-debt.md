@@ -423,7 +423,8 @@ vert (222/222 ou plus) AVANT le déploiement, relecture des notes de version 7.3
 ### TD-020 — Le multiplicateur d'event se cumule d'un tick à l'autre (prix event ≈ 16 au lieu de 9)
 
 **Identifié :** 2026-11-01 (revue croisée du ticket de clôture ÉTAPE 18, auditeur) — vérifié par calcul, non corrigé
-**Criticité actuelle :** MOYENNE (sans effet tant qu'aucun world event n'est déclenché en production)
+**Criticité actuelle :** MOYENNE — **bloquante pour l'étape world events** (sans effet tant qu'aucun world event
+n'est déclenché en production)
 **Composant :** `firebase/functions/src/shared/computeMarketPrice.ts` (`updateMarketPrices`)
 
 **Description :**
@@ -436,10 +437,32 @@ plafonne vers 16 au lieu des 9 prévus (`phase-1-economy-values.md` : « +80 % (
 **Impact :**
 Prix d'event ≈ 1,8 fois plus hauts que le design ; ratio Planks/Logs et récompenses d'event faussés.
 
-**Trigger de résolution :**
-Avant le premier world event en production (étape contrats / `processWorldEventLifecycle`). La correction change
-les prix effectifs → **escalade founder (cas 4)**. Piste : appliquer le multiplicateur à un prix « hors event »
-mémorisé, plus un test multi-tick.
+**Décision du founder (2026-11-02, D-TD020-001) — cas 4 tranché :**
+« TD-020 : corriger pour respecter phase-1-economy-values.md (prix d'événement = 9 et 22). Pas maintenant : à traiter en tête de l'étape qui activera processWorldEventLifecycle. Inscris-le comme prérequis bloquant de cette étape dans TD-020. »
+Cible : les prix d'event du design, **Logs 9 et Planks 22** (`phase-1-economy-values.md` §4 l.104-105 « Prix event
+(haut) », et §6 l.165-166 : +80 % 5 → 9, +83 % 12 → 22). Aucune valeur de design modifiée.
+
+**Trigger de résolution — ⛔ PRÉREQUIS BLOQUANT, première sous-étape de l'étape qui activera
+`processWorldEventLifecycle` :**
+Corriger `computeMarketPrice` AVANT d'implémenter, d'exporter (export aujourd'hui commenté,
+`firebase/functions/src/index.ts:30`) ou de déployer `processWorldEventLifecycle`, et avant tout world event en
+production. Aucune autre sous-étape de cette étape ne démarre tant que TD-020 n'est pas résolue.
+
+**Critères de fermeture :**
+- event actif démarré depuis le prix normal (Logs 5, Planks 12) : le prix calculé reste au prix d'event du design
+  (9 Logs, 22 Planks) sur plusieurs ticks consécutifs, sans cumul ;
+- decay : retour progressif vers le prix hors event ;
+- test multi-tick dans `computeMarketPrice.test.ts` (≥ 3 ticks actifs + decay) avec un `random` neutre injecté
+  (0,5 : bruit nul), `npm run test:emulator` vert ;
+- déploiement de `updateMarketPrices` corrigée = escalade cas 2.
+La décision ne règle que le départ au prix normal. Les Logs pouvant rester hors event entre 3 et 6 (TO_PLAYTEST §4),
+si la correction donne pour un autre prix de départ un prix d'event différent de 9 / 22 (ex. 6 × 1,8 ≈ 11) :
+**nouvelle escalade cas 4** au moment de la correction. À prévoir dès maintenant pour les **Planks** : leur prix hors
+event bouge (12 ± 0,6, arrondi à 11, 12 ou 13), donc un prix d'event calculé sur ce prix oscillera vers 20 / 22 / 24
+— préparer la question « 22 exact ou ≈ 22 ? » pour le founder. Piste technique : appliquer le multiplicateur à un
+prix « hors event » mémorisé. Elle amende l'ordre de calcul de D-ETAPE14b, à mettre à jour dans le même commit :
+l'amendement est couvert par D-TD020-001 tant qu'il sert uniquement la cible 9 / 22 ; tout autre changement
+d'algorithme (dérive, bruit, bornes) reste une escalade (cas 4).
 
 ---
 

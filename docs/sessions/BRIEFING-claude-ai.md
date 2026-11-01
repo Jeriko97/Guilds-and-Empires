@@ -47,10 +47,11 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   - client : boucle produire → collecter → **vendre au marché** (écran Marché complet, ligne or/inventaire) ;
   - **ÉTAPE 18 (marché) FERMÉE** — log : `docs/sessions/2026-11-01-etape-18-marche.md`, décisions D-ETAPE18-001 à 006.
 - Dette ouverte : TD-015 (parsing, 4 foyers), TD-016 (région), TD-017 (App Check), TD-018 (`contractPool` vide),
-  TD-019 (firebase-functions 7.2.5 → 7.4.0), **TD-020 (multiplicateur d'event cumulatif : ≈ 16 au lieu de 9,
-  correction = décision économique du founder)**.
+  TD-019 (firebase-functions 7.2.5 → 7.4.0), **TD-020 (multiplicateur d'event cumulatif : ≈ 16 au lieu de 9 ;
+  correction ACTÉE le 11-02, D-TD020-001 : prix d'event 9 / 22, prérequis bloquant de l'étape world events)**.
 - TO_PLAYTEST : prix des Logs immobile hors event (bruit ±5 % absorbé par l'arrondi, points fixes 3-6).
-- Prochaine étape : contrats impériaux (`processWorldEventLifecycle` + `contractPool`, puis UI).
+- Prochaine étape : contrats impériaux (`processWorldEventLifecycle` + `contractPool`, puis UI), précédés de la
+  correction TD-020 (prérequis bloquant, D-TD020-001).
 
 ## État du projet (mise à jour : 2026-06-18 — historique)
 
@@ -182,10 +183,12 @@ Au début de chaque session, demander que ces docs soient attachés :
   À implémenter avant déploiement non-solo.
 - **TD-013** : RÉSOLUE le 2026-11-01 (Node 22 déployé).
 - **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers — FAIBLE. Cible `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
-- **TD-020** : multiplicateur d'event cumulatif — à trancher avec le founder avant le premier world event.
+- **TD-020** : multiplicateur d'event cumulatif — correction actée (D-TD020-001, cible 9 / 22), **prérequis bloquant** :
+  première sous-étape de l'étape qui activera `processWorldEventLifecycle`.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
 Contrats impériaux : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
-(`acceptContract`, `deliverToContract`). TD-020 à trancher avant le premier world event.
+(`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event 9 / 22,
+test multi-tick) avant d'implémenter `processWorldEventLifecycle`.
