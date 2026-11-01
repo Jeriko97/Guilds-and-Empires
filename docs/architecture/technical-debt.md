@@ -298,7 +298,11 @@ LiveOps — auquel cas la migration mutualise le travail tooling Remote Config.
 ### TD-013 — Migration Node.js 20 → 22 pour les Cloud Functions
 
 **Identifié :** 2026-05-31 (ÉTAPE 16, warning lors du déploiement sur guildsandempires-ca543)
-**Criticité actuelle :** FAIBLE
+**Criticité actuelle :** CRITIQUE (échéance dépassée) — **code migré le 2026-11-01, déploiement en attente**
+**Statut 2026-11-01 :** étapes 1-2 faites (commit 3de8a77 : `nodejs22`, `engines.node 22`,
+`@types/node ^22`), build + lint propres, 209/209 tests verts sur 2 runs. Étape 3
+(`firebase deploy`) à lancer par le founder. Entrée à déplacer en « TD Résolues » après
+un déploiement vérifié en Play.
 **Composant :** `firebase/functions` — runtime déclaré dans `firebase.json`
 
 **Description :**
@@ -345,6 +349,43 @@ Le helper critique (ParseTimestampMs) n'est PAS dupliqué.
 **Trigger de résolution :**
 Quand PlayerStateSnapshot sera prochainement touché → consolider ses helpers génériques vers
 ProductionParsingHelpers. YAGNI tant que PlayerStateSnapshot n'est pas touché.
+
+---
+
+### TD-016 — Cloud Functions en us-central1, Firestore en europe-west9
+
+**Identifié :** 2026-11-01 (audit v2)
+**Criticité actuelle :** MOYENNE
+**Composant :** `firebase/functions` (aucune `region` ni `setGlobalOptions`) + client Unity
+(`FirebaseFunctions.DefaultInstance`)
+
+**Description :**
+Aucune région n'est déclarée : les CF tournent dans la région par défaut (us-central1),
+alors que Firestore est en europe-west9 (`firebase.json`). Chaque appel client traverse
+l'Atlantique, et chaque transaction CF → Firestore aussi.
+
+**Impact :**
+Latence ajoutée sur chaque action joueur ; trafic inter-région facturable. Invisible à 0 DAU.
+
+**Trigger de résolution :**
+Avant le premier playtest externe. Changer de région = redéploiement dans la nouvelle région,
+suppression des anciennes CF, et `FirebaseFunctions.GetInstance(region)` côté client.
+
+---
+
+### TD-017 — App Check non activé (non suivi jusqu'ici)
+
+**Identifié :** 2026-05-11 (audit v1, HAUTE) — inscrit au registre le 2026-11-01
+**Criticité actuelle :** FAIBLE en pré-alpha solo, HAUTE avant tout test externe
+**Composant :** CF callables (`enforceAppCheck` absent) + client Unity
+
+**Description :**
+Différé par D-ETAPE16-005, mais aucune entrée TD ne le suivait. Les CF sont appelables
+par tout client authentifié (anonymement), hors de l'app.
+
+**Trigger de résolution :**
+Avant tout déploiement non-solo : DebugProvider en `#if UNITY_EDITOR`, Play Integrity
+en prod (D4.2), puis `enforceAppCheck: true` sur les callables.
 
 ---
 

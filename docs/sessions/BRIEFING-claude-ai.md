@@ -29,7 +29,22 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
 
-## État du projet (mise à jour : 2026-06-18)
+## Reprise du 2026-11-01 — à lire en premier
+
+- Audit v2 : `docs/architecture/audit-v2-2026-11-01.md`.
+- Log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
+- **Changement de méthode (D-REPRISE-001)** : Claude Code pilote désormais l'Éditeur Unity
+  (Unity CLI + `com.unity.pipeline`). Les tickets n'ont plus besoin d'une étape « wiring manuel »
+  ni d'une « validation Play par le founder » : Claude Code câble la scène, entre en Play, lit la console
+  et fournit une capture comme preuve. Le founder reste maître de la direction artistique et des arbitrages.
+- État :
+  - backend 9 CF, Node 22 côté code (déploiement en attente), `claimDailyBonus` retiré, 209/209 tests ;
+  - client : boucle produire → collecter + coquille Marché ;
+  - ÉTAPE 18 (marché) en cours.
+- Dette ouverte nouvelle : TD-016 (région us-central1 vs Firestore europe-west9), TD-017 (App Check).
+- Prochaine slice : 18.2b-2 (HUD gold/inventaire + MarketScreen prix et vente).
+
+## État du projet (mise à jour : 2026-06-18 — historique)
 
 - Phase : Phase 1 Vertical Slice — **backend CF TERMINÉ + boucle production câblée client (produce + collect)**
 - Backend : Firebase + Cloud Functions v2 (TypeScript strict)

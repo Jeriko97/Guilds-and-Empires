@@ -7,7 +7,43 @@
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 
-## État du repo (mise à jour : 2026-06-18)
+## Reprise 2026-11-01 — LIRE EN PREMIER
+
+- Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
+- ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
+  `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
+- Runtime CF : **Node 22** (TD-013, code migré, **déploiement en attente**).
+- `claimDailyBonus` retiré du code (D-REPRISE-001/002).
+- Tests : **209/209** verts.
+- Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
+
+### Pilotage de l'Éditeur Unity (D-REPRISE-001) — l'agent câble et valide lui-même
+
+Unity CLI + `com.unity.pipeline` (skill `unity:unity-cli`). Plus de « wiring manuel requis » ni de
+« validé en Play par le founder » : l'agent fait le câblage scène/prefab et valide en Play.
+La direction artistique reste au founder.
+- `unity status` → attendre `ready`. Si `PIPELINE_LOAD_PENDING`, donner le focus à la fenêtre Unity.
+- Syntaxe : `unity command <groupe.commande> --param valeur --result-only --no-banner`
+  (catalogue : `unity list --format json`).
+- Mode Play : `editor.playmode.start|stop`. Activer `editor.playmode.set_run_in_background --enable true`,
+  sinon le jeu se fige quand Unity n'a pas le focus.
+- Console : `console.clear` / `console.get --tail N`. Capture : `capture.game_view` (base64 sans `--save_path` ;
+  avec `--save_path`, le fichier est écrit sous `Assets/`).
+- Cliquer un bouton UI Toolkit : `script.eval` + `UQueryExtensions.Q<Button>(root, "name")` +
+  `NavigationSubmitEvent` (les méthodes d'extension ne sont pas visibles sans appel explicite).
+- Déplacer/renommer un asset : `asset.move` (conserve le GUID). Ne jamais éditer le YAML
+  `.unity`/`.prefab` à la main quand l'Éditeur est joignable.
+- Erreur de compilation → le pont tombe (`Library/ScriptAssemblies` vide). Corriger le C# dans les fichiers, puis relancer.
+- Après tout ajout d'asset : vérifier que son `.meta` est commité (incident du 31/05 → 11/01).
+
+### Déploiement des CF (à lancer par le founder tant que l'agent n'y est pas autorisé)
+
+```bash
+firebase deploy --only functions --project guildsandempires-ca543
+```
+La CLI propose de supprimer `claimDailyBonus` (absente du code) : répondre oui.
+
+## État du repo (mise à jour : 2026-06-18 — historique, voir « Reprise » ci-dessus)
 
 - Branche active : feature/bootstrap-architecture
 - **ÉTAPE 16 FERMÉE** — Login de bout en bout Unity → backend confirmé
@@ -101,9 +137,13 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 ## Skills à activer (Claude Code)
 
 - unity-firebase-architect
+- unity-mobile-gameplay-engineer
 - mobile-mmorpg-economy-systems-designer
 
-Les deux skills sont dans le repo sous docs/skills/.
+Ces skills sont dans le repo sous `docs/skills/`.
+Plugin officiel `unity@unity-agent-plugin` en complément : `unity:unity-cli` pour piloter
+l'Éditeur, `unity:ui-uitk` pour la syntaxe UXML/USS. **Hors doctrine (Firebase only)** :
+`unity:build-live-game`, `unity:setup-multiplayer-services`, `unity:setup-vivox-voice-chat`.
 
 ## Documents de référence dans le repo
 
@@ -220,7 +260,9 @@ Lire en priorité au démarrage :
   `BaseScreen` activé/désactivé via `gameObject.SetActive` (pas USS display, pas UIDocument.enabled).
   `_screenContainer` non câblé (pas d'Instantiate pour l'instant).
 
-## Prochaine étape
+## Prochaine étape (2026-11-01)
 
-À trancher avec le founder — prochaine slice client : marché / contrats / chaîne production complète.
-17.B entièrement fermée — boucle production (produce + collect) prouvée en Play.
+1. Déploiement CF Node 22 (founder) → vérifier en Play que `sellToMarket` renvoie `inventory`.
+2. ÉTAPE 18.2b-2 : HUD gold/inventaire sur `PlayerEconomyStateStore` (rafraîchi au retour de Pop)
+   + MarketScreen avec prix (`GetMarketPricesAsync`) et vente (`SellToMarketAsync`).
+3. Puis contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool`, avant l'UI.
