@@ -78,6 +78,9 @@ emulator.err
 
 UserSettings/
 
+# Unity Pipeline (pilotage de l'Éditeur) — état local réécrit à chaque session (D-ETAPE18-005)
+/ProjectSettings/Packages/com.unity.pipeline/EditorPipelineConfig.json
+
 # Outils repo ponctuels
 bfg.jar
 
