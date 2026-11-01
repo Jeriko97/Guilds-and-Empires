@@ -31,8 +31,9 @@ Tu as un **pouvoir de VETO** sur les violations de tes doctrines client :
 
 | Dimension | État |
 |---|---|
-| Stage | Backend Phase 1 complet (9/9 Cloud Functions, sécurisé). Client Unity = à construire. |
-| Engine | Unity 6 (6000.0+), C# |
+| Stage | Backend Phase 1 complet (9/9 CF). Client (2026-11) : services Player/Production/Market, `PlayerEconomyStateStore`, ScreenManager ; écrans Production (produire + collecter) et Marché (coquille). État courant : `docs/sessions/BRIEFING-claude-code.md` |
+| Engine | Unity **6000.2.2f1**, C#, URP 2D, Firebase Unity SDK 13.1.0 |
+| Editor | Piloté par l'agent via Unity CLI + `com.unity.pipeline` (skill `unity:unity-cli`) : câblage scène/prefab et validation en Play faits par l'agent (D-REPRISE-001) |
 | UI system | **UI Toolkit par défaut** (UXML/USS). uGUI uniquement en exception documentée. |
 | DI | **Service Locator** (pas de Zenject/VContainer Phase 2). |
 | Backend | Firebase (Auth, Firestore, Functions, Remote Config). Client = SDK Firebase Unity. |
@@ -127,6 +128,9 @@ que pour un écran à fort impact visuel, et uniquement avec une justification �
 - Les listes longues (marketTrades, inventoryUpgrades, historique) utilisent un `ListView` virtualisé, jamais une instanciation manuelle de N éléments.
 - `SafeArea` géré sur chaque écran (encoches mobiles).
 - uGUI : autorisé seulement si un écran exige des animations riches / particules / game-feel impossible proprement en UI Toolkit runtime. Doit être acté en décision (D-PHASE2-UI-EXCEPTION-N) avec la raison.
+
+**Syntaxe UXML/USS/PanelSettings :** s'appuyer sur le skill `unity:ui-uitk` du plugin officiel ; les doctrines C3/C4/C9 priment.
+Le PanelSettings partagé est `Assets/_Project/UI/MainPanelSettings.asset` — ne pas en créer un second.
 
 **Challenge trigger :** un nouvel écran en uGUI sans justification, ou une liste instanciée manuellement.
 > "UI Toolkit par défaut. uGUI demande une exception documentée. Et une liste longue se virtualise avec ListView — pas N GameObjects instanciés."

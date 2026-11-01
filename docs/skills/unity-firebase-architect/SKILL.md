@@ -22,7 +22,8 @@ You have **veto power**. When a decision violates a doctrine, you block it expli
 
 | Dimension | Current state |
 |---|---|
-| Stage | Pre-alpha — ~250 LOC, Auth + Firestore profile only |
+| Stage | Pre-alpha (2026-11) — backend Phase 1 : 9 CF + Security Rules, 209 tests ; client Unity 6000.2 : boucle produire → collecter + coquille Marché (ÉTAPE 18). État courant : `docs/sessions/BRIEFING-claude-code.md` |
+| Editor tooling | L'agent pilote l'Éditeur via Unity CLI + `com.unity.pipeline` (D-REPRISE-001). Plugin `unity@unity-agent-plugin` = connaissance moteur générique ; ses skills UGS (`build-live-game`, `setup-multiplayer-services`, `setup-vivox-voice-chat`) sont **hors doctrine Firebase only**. |
 | Platform | Android primary, iOS secondary |
 | Target device | Snapdragon 665, 3 GB RAM, Android 10+ |
 | Session target | 15–30 min, idle-friendly |
@@ -287,21 +288,24 @@ When the user proposes any of the following, VETO immediately and provide the al
 
 ---
 
-## Audit Baseline (2026-05-11 — always in mind)
+## Audit Baseline (mise à jour 2026-11-01 — always in mind)
 
-The project audit is at `docs/architecture/audit-v1-2026-05-11.md`. Key findings to enforce:
+Audits : `docs/architecture/audit-v1-2026-05-11.md` (initial) et `docs/architecture/audit-v2-2026-11-01.md` (reprise).
+Ne pas opposer de veto sur un point fermé. Statut des findings :
 
 | Finding | Severity | Status |
 |---|---|---|
-| No Firestore Security Rules | CRITICAL | Open — block any economy PR until fixed |
-| `AddGoldAsync` is client-side | CRITICAL | Open — VETO any related feature until migrated to CF |
-| Firebase App Check installed but not configured | HIGH | Open |
-| No `MainThreadDispatcher` — crash risk on Android | HIGH | Open |
-| No Firebase offline persistence configured | HIGH | Open |
+| No Firestore Security Rules | CRITICAL | **Closed** (ÉTAPE 15, TD-010) |
+| `AddGoldAsync` is client-side | CRITICAL | **Closed** (stack POC retirée en 17.0, tout passe par CF) |
+| No `MainThreadDispatcher` | HIGH | **Closed** (ÉTAPE 16) |
+| No Firebase offline persistence | HIGH | **Closed** (`FirebaseBootstrap`, persistence on) |
+| Firebase App Check not configured | HIGH | Open — TD-017, before any external test |
+| CF region us-central1 vs Firestore europe-west9 | MEDIUM | Open — TD-016 |
 | Company Name = "DefaultCompany" | MEDIUM | Open |
 | Visual Scripting + Multiplayer Center packages | MEDIUM | Open — remove before first beta |
 | No Addressables | HIGH | Open |
-| uid stored redundantly in Firestore document | LOW | Open |
+| Single Firebase project (no staging) | MEDIUM | Open — before external test |
+| `.meta` hygiene (assets committed without meta) | HIGH | Closed 2026-11-01 — **always commit the .meta with its asset** |
 
 **Do not let these be forgotten.** Proactively reference them when relevant design decisions arise.
 
