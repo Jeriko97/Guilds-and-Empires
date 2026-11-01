@@ -63,3 +63,18 @@ avec prix et vente, câblé et validé en Play par l'agent.
   `initializeApp({ projectId })` + refus si variable d'environnement contradictoire). Corrigé.
 - **En attente du founder** : exécution du seed en production (escalade cas 1 et 4), puis déploiement (cas 2).
   Ce poste n'a pas d'Application Default Credentials (`gcloud` absent).
+
+## TD-018 — exécution en production (accord founder : option 1, puis déploiement ciblé)
+- Google Cloud CLI 591.0.0 installé (winget, paquet Google LLC) ; ADC du founder via
+  `gcloud auth application-default login` (avertissement « quota project » sans effet).
+- Seed prod (`guildsandempires-ca543`) : `CRÉÉ` — document créé à 20:47:12 UTC (5 / 12 / 20, historique vide).
+  2e passage : `DÉJÀ PRÉSENT`, document relu : `updateTime` = `createTime` (rien réécrit).
+- Ticks de l'ANCIENNE `updateMarketPrices` entre 20:50 et 21:10 : sans avertissement (le marché est trouvé).
+- Avant déploiement : `firebase/functions` propre, HEAD = `0a54298`, 222/222 verts (14 suites).
+- Déploiement ciblé 21:13 UTC : `firebase deploy --only functions:updateMarketPrices` → révision
+  `updatemarketprices-00005-qin`, « Successful update operation ». Les 8 autres CF non touchées.
+- Après déploiement : le tick de ~21:15 n'a pas eu lieu (planificateur remis à jour par le déploiement) ;
+  exécutions à 21:18:00 et 21:23:07, sans erreur ni avertissement. Relu à 21:28 : `lastUpdatedAt`
+  21:23:08 ; prix logs 5 / planks 11 / kits 20 (dans les fourchettes 3–9, 8–22, plancher 20) ;
+  `priceHistory` logs [5,5,5], planks [11,11,11], kits [20,20,20].
+- Décision founder : pas de vente de test ; `sellToMarket` → `inventory` à vérifier en ÉTAPE 18.2b-2.

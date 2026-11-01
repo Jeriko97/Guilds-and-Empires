@@ -298,10 +298,10 @@ LiveOps — auquel cas la migration mutualise le travail tooling Remote Config.
 ### TD-018 — marketState et contractPool jamais initialisés en production
 
 **Identifié :** 2026-11-01 (vérification en Play après redéploiement Node 22)
-**Criticité actuelle :** HAUTE (bloque la slice marché et les contrats côté joueur)
+**Criticité actuelle :** MOYENNE depuis le 2026-11-01 (marché seedé ; `contractPool` toujours vide, bloque les contrats) — HAUTE à l'ouverture
 **Composant :** Firestore `marketState/state`, `contractPool` ; `updateMarketPrices`, `sellToMarket`, `acceptContract`
 
-**Description :**
+**Description (état à l'ouverture, avant seed — voir « Avancement » ci-dessous) :**
 En production (`guildsandempires-ca543`), le document `marketState/state` n'existe pas :
 `sellToMarket` répond `failed-precondition: market state not initialized`, et
 `updateMarketPrices` sort sans rien faire (tolérance « inexistant », D-ETAPE14c). Aucun script
@@ -314,14 +314,21 @@ ton stock », un message trompeur ici.
 Avant l'ÉTAPE 18.2b-2 (UI marché). Solution envisagée : script de seed idempotent versionné
 (valeurs de `docs/design/phase-1-economy-values.md`), exécuté une fois par projet Firebase ;
 retirer alors la tolérance « inexistant » de D-ETAPE14c (trigger prévu par cette décision).
+Mis à jour le 2026-11-01 : la partie marché se ferme pendant l'ÉTAPE 18.2b-2 (vérification de
+`inventory`) ; la partie `contractPool` se ferme à l'étape contrats.
 
 **Avancement 2026-11-01 — partie marché livrée en local (D-TD018-001) :**
 - Seed versionné `src/seed/marketStateSeed.ts` + CLI `npm run seed:market` (dry-run par défaut,
   garde-fous production), 13 tests ; tolérance « inexistant » retirée de `updateMarketPrices` ;
   message client `FailedPrecondition` neutralisé.
-- **Reste ouvert** : (1) exécution du seed en production (escalade founder) ; (2) déploiement des
-  functions, **après** le seed ; (3) vérification en Play que `sellToMarket` renvoie `inventory` ;
-  (4) `contractPool` : relève de `processWorldEventLifecycle` (étape contrats).
+- ~~(1) exécution du seed en production~~ : **fait le 2026-11-01** (accord founder) — `CRÉÉ` à
+  20:47:12 UTC, 2e passage `DÉJÀ PRÉSENT`, document relu conforme (5 / 12 / 20).
+- ~~(2) déploiement, après le seed~~ : **fait le 2026-11-01 à 21:13 UTC** (accord founder) —
+  `updateMarketPrices` seule, depuis `0a54298`, 222/222 verts. Exécutions planifiées vérifiées.
+- **Reste ouvert** : (3) vérification que `sellToMarket` renvoie `inventory` → ÉTAPE 18.2b-2
+  (décision founder : pas de vente de test sur son compte) ; (4) `contractPool` : relève de
+  `processWorldEventLifecycle` (étape contrats). **Criticité ramenée à MOYENNE** (marché débloqué,
+  contrats toujours vides).
 
 ---
 

@@ -44,19 +44,24 @@ FUNCTIONS_DISCOVERY_TIMEOUT=60 firebase deploy --only functions --project guilds
 ```
 Sans `FUNCTIONS_DISCOVERY_TIMEOUT`, la CLI échoue sur ce poste (« User code failed to load…
 Timeout after 10000 ») : chargement à froid de `lib/index.js` > 10 s sur le disque G:.
-Dernier déploiement : 2026-11-01, 9 CF en Node 22, `claimDailyBonus` supprimée.
-⚠️ **Ordre imposé (D-TD018-001)** : `marketState/state` doit exister en prod AVANT tout déploiement de
-functions postérieur au commit TD-018 — sinon `updateMarketPrices` lève une erreur toutes les 5 min.
+Dernier déploiement complet : 2026-11-01, 9 CF en Node 22, `claimDailyBonus` supprimée.
+Dernier déploiement ciblé : 2026-11-01 21:13 UTC, `updateMarketPrices` seule (`--only functions:updateMarketPrices`),
+depuis `0a54298` (TD-018). Les 8 autres CF tournent sur le code du déploiement complet.
+Vigilance : le prochain déploiement complet embarquera tout ce qui a été commité depuis (escalade cas 2).
+Rappel D-TD018-001 : `updateMarketPrices` lève une erreur si `marketState/state` manque (seedé en prod le 11-01).
 
-### ⚠️ TD-018 — marché et contrats non initialisés en production
+### ⚠️ TD-018 — marché seedé, contrats non initialisés en production
 
-`marketState/state` n'existe pas en prod → `sellToMarket` répond `failed-precondition`. `contractPool` est vide.
-Seed versionné livré en local (D-TD018-001) — exécution prod sur escalade founder uniquement :
+**Marché : résolu le 2026-11-01** — `marketState/state` seedé en prod (5 / 12 / 20) et `updateMarketPrices`
+redéployée. **Reste :** `contractPool` vide (étape contrats) ; `sellToMarket` → `inventory` à vérifier en 18.2b-2.
+Seed versionné (D-TD018-001), idempotent — toute nouvelle exécution prod reste une escalade founder :
 ```bash
 npm --prefix firebase/functions run seed:market -- --project guildsandempires-ca543            # dry-run
 npm --prefix firebase/functions run seed:market -- --project guildsandempires-ca543 --apply --confirm-production
 ```
-Identifiants : Application Default Credentials (`gcloud auth application-default login`), absents de ce poste au 11-01.
+Identifiants : Application Default Credentials. Google Cloud CLI 591.0.0 installé le 11-01
+(`%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd`), ADC du founder dans
+`%APPDATA%\gcloud\application_default_credentials.json` (hors repo). Avertissement « quota project » sans effet.
 
 ## État du repo (mise à jour : 2026-06-18 — historique, voir « Reprise » ci-dessus)
 
@@ -280,8 +285,8 @@ les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
 
 ## Prochaine étape (2026-11-01)
 
-1. TD-018 : seed et message client livrés en local (D-TD018-001). Restent : seed prod (escalade),
-   puis déploiement functions, puis vérifier en Play que `sellToMarket` renvoie `inventory`.
+1. TD-018 marché : FAIT (seed prod + déploiement ciblé le 11-01). La vérification « `sellToMarket`
+   renvoie `inventory` » est intégrée à l'ÉTAPE 18.2b-2 (pas de vente de test sur le compte du founder).
 2. ÉTAPE 18.2b-2 : HUD gold/inventaire sur `PlayerEconomyStateStore` (rafraîchi au retour de Pop)
    + MarketScreen avec prix (`GetMarketPricesAsync`) et vente (`SellToMarketAsync`).
 3. Puis contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool`, avant l'UI.
