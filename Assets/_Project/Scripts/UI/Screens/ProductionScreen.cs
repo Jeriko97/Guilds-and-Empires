@@ -28,11 +28,14 @@ namespace GuildsAndEmpires.UI.Screens
         private UIDocument _doc;
         private CancellationTokenSource _cts;
 
+        [SerializeField] private MarketScreen _marketScreenPrefab;
+
         // ── UI element refs ───────────────────────────────────────────────────
         private Label         _titleLabel;
         private Label         _statusLabel;
         private VisualElement _slotsContainer;
         private Button        _collectButton;
+        private Button        _marketButton;
 
         // ── State ─────────────────────────────────────────────────────────────
         private BuildingSnapshot      _currentBuilding;
@@ -59,6 +62,10 @@ namespace GuildsAndEmpires.UI.Screens
                 _collectButton.clicked += OnCollectClicked;
             }
 
+            _marketButton = root.Q<Button>("market-button");
+            if (_marketButton != null)
+                _marketButton.clicked += OnMarketClicked;
+
             if (!_hasLoadedOnce)
             {
                 SetStatus("Chargement…", "status--loading");
@@ -78,6 +85,8 @@ namespace GuildsAndEmpires.UI.Screens
         {
             if (_collectButton != null)
                 _collectButton.clicked -= OnCollectClicked;
+            if (_marketButton != null)
+                _marketButton.clicked -= OnMarketClicked;
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -220,6 +229,26 @@ namespace GuildsAndEmpires.UI.Screens
                 SetStatus("Erreur inattendue, consulte la console.", "status--error");
                 SetAllButtonsEnabled(true);
             }
+        }
+
+        // ── Market navigation ─────────────────────────────────────────────────
+
+        private void OnMarketClicked()
+        {
+            if (_marketScreenPrefab == null)
+            {
+                GELogger.Warning("ProductionScreen", "Prefab MarketScreen non assigné.");
+                return;
+            }
+
+            if (!ServiceLocator.TryResolve<ScreenManager>(out var screenManager))
+            {
+                GELogger.Warning("ProductionScreen", "ScreenManager non résolvable.");
+                return;
+            }
+
+            var instance = Instantiate(_marketScreenPrefab);
+            screenManager.Push(instance);
         }
 
         // ── Collect handler ───────────────────────────────────────────────────
