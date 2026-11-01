@@ -19,8 +19,9 @@ namespace GuildsAndEmpires.UI.Screens
     /// Règles absolues :
     /// - Aucun calcul économique local — après une vente, le store est remplacé par NewGold + Inventory
     ///   renvoyés par sellToMarket. Le prix affiché est indicatif (cache 5 min) ; le serveur fixe le prix.
-    /// - Une idempotencyKey par intention (ressource, quantité), figée au clic, conservée tant que
-    ///   l'intention n'est pas résolue par une réponse serveur — y compris si l'écran est détruit (Pop).
+    /// - Une idempotencyKey par intention (ressource, quantité, état serveur affiché), figée au clic.
+    ///   Réutilisée UNIQUEMENT pour la même ressource, la même quantité et le même état serveur ;
+    ///   la clé ne repart donc jamais avec une autre quantité. Survit à la destruction de l'écran (Pop).
     /// - Cycle de vie symétrique : CTS créé en OnEnable, annulé+disposé en OnDisable. Doctrine C9.
     /// - IMarketService, PlayerEconomyStateStore et ScreenManager résolus via ServiceLocator. Doctrine C3.
     /// </summary>
@@ -34,8 +35,11 @@ namespace GuildsAndEmpires.UI.Screens
         /// </summary>
         private const int MaxSellQuantity = 100;
 
-        /// <summary>Cadence de polling de marketState (doctrine C8 : cadence de updateMarketPrices, aucun listener).</summary>
-        private static readonly TimeSpan PricePollInterval = TimeSpan.FromMinutes(5);
+        /// <summary>
+        /// Cadence de polling de marketState (doctrine C8 : cadence de updateMarketPrices, aucun listener).
+        /// 5 s au-delà du TTL de 5 min du cache de FirebaseMarketService : chaque tour trouve le cache expiré.
+        /// </summary>
+        private static readonly TimeSpan PricePollInterval = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(5);
 
         private static readonly string[] ResourceKeys =
         {
@@ -44,12 +48,35 @@ namespace GuildsAndEmpires.UI.Screens
             EconomyResourceKeys.RECONSTRUCTION_KITS,
         };
 
-        // Intentions de vente non résolues : "resource:quantity" → idempotencyKey.
+        /// <summary>
+        /// Intention de vente non résolue, une par couple (ressource, quantité). BasedOn = l'InventoryState
+        /// serveur affiché au clic (objet immuable, remplacé à chaque réponse serveur).
+        /// </summary>
+        private sealed class PendingSale
+        {
+            public readonly string         ResourceKey;
+            public readonly int            Quantity;
+            public readonly string         IdempotencyKey;
+            public readonly InventoryState BasedOn;
+
+            public PendingSale(string resourceKey, int quantity, string idempotencyKey, InventoryState basedOn)
+            {
+                ResourceKey    = resourceKey;
+                Quantity       = quantity;
+                IdempotencyKey = idempotencyKey;
+                BasedOn        = basedOn;
+            }
+
+            public bool Matches(string resourceKey, int quantity, InventoryState basedOn) =>
+                ResourceKey == resourceKey && Quantity == quantity && ReferenceEquals(BasedOn, basedOn);
+        }
+
+        // Intentions non résolues : "resource:quantity" → PendingSale.
         // Statique : survit à la destruction de l'écran pour qu'un retry réutilise la même clé.
-        private static readonly Dictionary<string, string> PendingSaleKeys = new();
+        private static readonly Dictionary<string, PendingSale> PendingSales = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => PendingSaleKeys.Clear();
+        private static void ResetStatics() => PendingSales.Clear();
 
         private UIDocument _doc;
         private CancellationTokenSource _cts;
@@ -63,6 +90,7 @@ namespace GuildsAndEmpires.UI.Screens
         // ── State ─────────────────────────────────────────────────────────────
         private MarketStateSnapshot   _prices;
         private bool                  _saleInFlight;
+        private bool                  _priceStatusShown;   // le statut affiché vient du chargement des prix
         private readonly List<Button> _sellButtons = new();
 
         private void Awake()
@@ -86,6 +114,7 @@ namespace GuildsAndEmpires.UI.Screens
             _saleInFlight = false;
             RenderEconomy();
             SetStatus("Chargement des prix…", "status--loading");
+            _priceStatusShown = true;
             _ = PollPricesAsync(_cts.Token);
         }
 
@@ -101,7 +130,7 @@ namespace GuildsAndEmpires.UI.Screens
         // ── Prices ────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Charge les prix puis les relit toutes les 5 min tant que l'écran est actif (doctrine C8).
+        /// Charge les prix puis les relit toutes les 5 min 5 s (PricePollInterval) tant que l'écran est actif (doctrine C8).
         /// Le cache du service (TTL 5 min) est expiré à chaque tour : un tour = au plus un read Firestore.
         /// Arrêt par le CTS annulé en OnDisable (doctrine C9).
         /// </summary>
@@ -114,18 +143,16 @@ namespace GuildsAndEmpires.UI.Screens
                 return;
             }
 
-            var firstLoad = true;
             while (!ct.IsCancellationRequested)
             {
-                await LoadPricesAsync(marketService, firstLoad, ct);
-                firstLoad = false;
+                await LoadPricesAsync(marketService, ct);
 
                 try { await Task.Delay(PricePollInterval, ct); }
                 catch (OperationCanceledException) { return; }
             }
         }
 
-        private async Task LoadPricesAsync(IMarketService marketService, bool firstLoad, CancellationToken ct)
+        private async Task LoadPricesAsync(IMarketService marketService, CancellationToken ct)
         {
             try
             {
@@ -134,8 +161,8 @@ namespace GuildsAndEmpires.UI.Screens
 
                 _prices = prices;
                 RenderEconomy();
-                // Ne pas écraser le statut d'une vente en cours ni le résultat d'une vente.
-                if (firstLoad && !_saleInFlight)
+                // Remplace uniquement un statut de chargement/erreur de prix, jamais celui d'une vente.
+                if (_priceStatusShown && !_saleInFlight)
                     SetStatus("Prêt.", "status--success");
             }
             catch (OperationCanceledException) { }
@@ -145,14 +172,20 @@ namespace GuildsAndEmpires.UI.Screens
                 // La vente reste possible : le prix appliqué est fixé par le serveur.
                 GELogger.Warning("MarketScreen", $"Erreur prix: {ex.UserMessage}");
                 if (!_saleInFlight)
+                {
                     SetStatus($"Prix indisponibles : {ex.UserMessage}", "status--error");
+                    _priceStatusShown = true;
+                }
             }
             catch (Exception ex)
             {
                 if (ct.IsCancellationRequested) return;
                 GELogger.Error("MarketScreen", $"Erreur inattendue au chargement des prix: {ex.Message}");
                 if (!_saleInFlight)
+                {
                     SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                    _priceStatusShown = true;
+                }
             }
         }
 
@@ -221,20 +254,38 @@ namespace GuildsAndEmpires.UI.Screens
         {
             if (_saleInFlight || quantity <= 0) return;
 
-            // Une clé par intention : réutilisée si cette même intention a échoué sans réponse serveur.
+            ServiceLocator.TryResolve<PlayerEconomyStateStore>(out var store);
+            var basedOn = store?.Inventory;
+
+            // Purge des intentions formées sur un état serveur antérieur : si elles avaient abouti,
+            // l'état reçu depuis les inclut déjà ; sinon il ne s'est rien passé. Le serveur reste juge du stock.
+            var stale = new List<string>();
+            foreach (var kv in PendingSales)
+                if (!ReferenceEquals(kv.Value.BasedOn, basedOn))
+                    stale.Add(kv.Key);
+            foreach (var k in stale)
+                PendingSales.Remove(k);
+
+            // Retry de la même intention sur le même état serveur : même clé, même quantité.
+            // Une autre quantité est une autre intention, donc une autre clé. « Vendre 10 » et « Tout » à stock 10
+            // partagent volontairement la même intention (même ressource, même quantité, même état).
             var intent = $"{resourceKey}:{quantity}";
-            if (!PendingSaleKeys.TryGetValue(intent, out var idempotencyKey))
+            string idempotencyKey;
+            if (PendingSales.TryGetValue(intent, out var pending) && pending.Matches(resourceKey, quantity, basedOn))
             {
-                idempotencyKey = Guid.NewGuid().ToString();
-                PendingSaleKeys[intent] = idempotencyKey;
+                idempotencyKey = pending.IdempotencyKey;
+            }
+            else
+            {
+                idempotencyKey       = Guid.NewGuid().ToString();
+                PendingSales[intent] = new PendingSale(resourceKey, quantity, idempotencyKey, basedOn);
             }
 
             SetSaleInFlight(true);
-            _ = SellAsync(resourceKey, quantity, intent, idempotencyKey, _cts.Token);
+            _ = SellAsync(resourceKey, quantity, idempotencyKey, _cts.Token);
         }
 
-        private async Task SellAsync(string resourceKey, int quantity, string intent, string idempotencyKey,
-                                     CancellationToken ct)
+        private async Task SellAsync(string resourceKey, int quantity, string idempotencyKey, CancellationToken ct)
         {
             if (!ServiceLocator.TryResolve<IMarketService>(out var marketService))
             {
@@ -245,13 +296,16 @@ namespace GuildsAndEmpires.UI.Screens
             }
 
             SetStatus("Vente en cours…", "status--loading");
+            _priceStatusShown = false;
 
             try
             {
                 var result = await marketService.SellToMarketAsync(resourceKey, quantity, idempotencyKey, ct);
 
                 // Réponse serveur reçue : l'intention est résolue, même si l'écran a été quitté entre-temps.
-                PendingSaleKeys.Remove(intent);
+                var resolvedIntent = $"{resourceKey}:{quantity}";
+                if (PendingSales.TryGetValue(resolvedIntent, out var resolved) && resolved.IdempotencyKey == idempotencyKey)
+                    PendingSales.Remove(resolvedIntent);
 
                 if (ServiceLocator.TryResolve<PlayerEconomyStateStore>(out var economyStore))
                     economyStore.ApplyServerState(result.NewGold, result.Inventory);
