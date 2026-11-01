@@ -204,6 +204,9 @@ Lire en priorité au démarrage :
 
 ## Méthode de travail attendue
 
+⚠️ Depuis D-REPRISE-003, le mode autonome supervisé décrit dans CLAUDE.md prime sur
+les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
+
 - Validation par étape (ne pas enchaîner sans validation founder)
 - Tickets précis avec règles strictes
 - Audit visible avant exécution (montrer le diff, attendre validation)

@@ -55,9 +55,13 @@ Thumbs.db
 Assets/Firebase/Plugins/x86_64/*.bundle
 Assets/Firebase/Plugins/x86_64/*.so
 
-# Claude Code
-.claude/
-.claude/worktrees/
+# Claude Code — seuls agents/ et skills/ sont versionnés (D-REPRISE-003)
+.claude/*
+!.claude/agents/
+!.claude/skills/
+
+# Revue croisée — sorties temporaires (diff, ticket, sortie Codex)
+.revue-croisee/
 
 # Firebase Functions
 firebase/functions/node_modules/
