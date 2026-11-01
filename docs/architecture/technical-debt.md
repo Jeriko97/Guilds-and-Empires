@@ -295,35 +295,25 @@ LiveOps — auquel cas la migration mutualise le travail tooling Remote Config.
 
 ---
 
-### TD-013 — Migration Node.js 20 → 22 pour les Cloud Functions
+### TD-018 — marketState et contractPool jamais initialisés en production
 
-**Identifié :** 2026-05-31 (ÉTAPE 16, warning lors du déploiement sur guildsandempires-ca543)
-**Criticité actuelle :** CRITIQUE (échéance dépassée) — **code migré le 2026-11-01, déploiement en attente**
-**Statut 2026-11-01 :** étapes 1-2 faites (commit 3de8a77 : `nodejs22`, `engines.node 22`,
-`@types/node ^22`), build + lint propres, 209/209 tests verts sur 2 runs. Étape 3
-(`firebase deploy`) à lancer par le founder. Entrée à déplacer en « TD Résolues » après
-un déploiement vérifié en Play.
-**Composant :** `firebase/functions` — runtime déclaré dans `firebase.json`
+**Identifié :** 2026-11-01 (vérification en Play après redéploiement Node 22)
+**Criticité actuelle :** HAUTE (bloque la slice marché et les contrats côté joueur)
+**Composant :** Firestore `marketState/state`, `contractPool` ; `updateMarketPrices`, `sellToMarket`, `acceptContract`
 
 **Description :**
-Node.js 20 a été déprécié le 2026-04-30 et sera décommissionné le 2026-10-30.
-Après cette date, `firebase deploy --only functions` sera bloqué tant que le
-runtime n'aura pas été migré.
-
-**Impact actuel :**
-Aucun sur le fonctionnement des CF. Warning visible à chaque `firebase deploy`.
-Date de décommissionnement : **2026-10-30**.
+En production (`guildsandempires-ca543`), le document `marketState/state` n'existe pas :
+`sellToMarket` répond `failed-precondition: market state not initialized`, et
+`updateMarketPrices` sort sans rien faire (tolérance « inexistant », D-ETAPE14c). Aucun script
+versionné ne crée ce document, ni ne remplit `contractPool`. Les tests les seedent eux-mêmes,
+l'émulateur seulement.
+Effet de bord côté client : `FailedPrecondition` est traduit en « Vente impossible : vérifie
+ton stock », un message trompeur ici.
 
 **Trigger de résolution :**
-Avant le 2026-10-30. Recommandé avant la prochaine session de déploiement prod
-pour ne pas accumuler les warnings et s'habituer à les ignorer.
-
-**Solution prévue :**
-1. Dans `firebase.json`, mettre `"runtime": "nodejs22"`.
-2. Dans `firebase/functions/package.json`, mettre `"engines": { "node": "22" }`.
-3. `firebase deploy --only functions` — vérifier que les 9 CF se redéploient sans erreur.
-4. Aucun changement de code CF attendu (Node 20 → 22 est une mise à jour mineure
-   sans breaking changes sur les APIs utilisées par ce projet).
+Avant l'ÉTAPE 18.2b-2 (UI marché). Solution envisagée : script de seed idempotent versionné
+(valeurs de `docs/design/phase-1-economy-values.md`), exécuté une fois par projet Firebase ;
+retirer alors la tolérance « inexistant » de D-ETAPE14c (trigger prévu par cette décision).
 
 ---
 
@@ -390,6 +380,39 @@ en prod (D4.2), puis `enforceAppCheck: true` sur les callables.
 ---
 
 ## TD Résolues
+
+### TD-013 — Migration Node.js 20 → 22 pour les Cloud Functions
+
+**Identifié :** 2026-05-31 (ÉTAPE 16, warning lors du déploiement sur guildsandempires-ca543)
+**Criticité actuelle :** RÉSOLUE (2026-11-01)
+**Résolution :** commit 3de8a77 (`nodejs22`, `engines.node 22`, `@types/node ^22`) ;
+209/209 tests verts sur 2 runs ; déployé le 2026-11-01 (9 CF « Successful update », Node.js 22
+2nd Gen) avec `FUNCTIONS_DISCOVERY_TIMEOUT=60`, car le chargement du code dépassait le délai
+de 10 s de la CLI sur ce poste. Vérifié en Play : `resolveLoginState OK`.
+**Composant :** `firebase/functions` — runtime déclaré dans `firebase.json`
+
+**Description :**
+Node.js 20 a été déprécié le 2026-04-30 et sera décommissionné le 2026-10-30.
+Après cette date, `firebase deploy --only functions` sera bloqué tant que le
+runtime n'aura pas été migré.
+
+**Impact actuel :**
+Aucun sur le fonctionnement des CF. Warning visible à chaque `firebase deploy`.
+Date de décommissionnement : **2026-10-30**.
+
+**Trigger de résolution :**
+Avant le 2026-10-30. Recommandé avant la prochaine session de déploiement prod
+pour ne pas accumuler les warnings et s'habituer à les ignorer.
+
+**Solution prévue :**
+1. Dans `firebase.json`, mettre `"runtime": "nodejs22"`.
+2. Dans `firebase/functions/package.json`, mettre `"engines": { "node": "22" }`.
+3. `firebase deploy --only functions` — vérifier que les 9 CF se redéploient sans erreur.
+4. Aucun changement de code CF attendu (Node 20 → 22 est une mise à jour mineure
+   sans breaking changes sur les APIs utilisées par ce projet).
+
+---
+
 
 ### TD-010 — firestore.rules incomplet pour Phase 1
 

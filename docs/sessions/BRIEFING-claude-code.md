@@ -12,7 +12,7 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
 - ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
   `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
-- Runtime CF : **Node 22** (TD-013, code migré, **déploiement en attente**).
+- Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **209/209** verts.
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
@@ -36,12 +36,20 @@ La direction artistique reste au founder.
 - Erreur de compilation → le pont tombe (`Library/ScriptAssemblies` vide). Corriger le C# dans les fichiers, puis relancer.
 - Après tout ajout d'asset : vérifier que son `.meta` est commité (incident du 31/05 → 11/01).
 
-### Déploiement des CF (à lancer par le founder tant que l'agent n'y est pas autorisé)
+### Déploiement des CF
 
+Uniquement sur autorisation explicite du founder pour ce déploiement (garde-fou auto mode).
 ```bash
-firebase deploy --only functions --project guildsandempires-ca543
+FUNCTIONS_DISCOVERY_TIMEOUT=60 firebase deploy --only functions --project guildsandempires-ca543
 ```
-La CLI propose de supprimer `claimDailyBonus` (absente du code) : répondre oui.
+Sans `FUNCTIONS_DISCOVERY_TIMEOUT`, la CLI échoue sur ce poste (« User code failed to load…
+Timeout after 10000 ») : chargement à froid de `lib/index.js` > 10 s sur le disque G:.
+Dernier déploiement : 2026-11-01, 9 CF en Node 22, `claimDailyBonus` supprimée.
+
+### ⚠️ TD-018 — marché et contrats non initialisés en production
+
+`marketState/state` n'existe pas en prod → `sellToMarket` répond `failed-precondition`. `contractPool` est vide.
+Un script de seed versionné est un prérequis de l'ÉTAPE 18.2b-2.
 
 ## État du repo (mise à jour : 2026-06-18 — historique, voir « Reprise » ci-dessus)
 
@@ -262,7 +270,8 @@ Lire en priorité au démarrage :
 
 ## Prochaine étape (2026-11-01)
 
-1. Déploiement CF Node 22 (founder) → vérifier en Play que `sellToMarket` renvoie `inventory`.
+1. TD-018 : script de seed versionné pour `marketState/state` (valeurs de phase-1-economy-values)
+   → vérifier en Play que `sellToMarket` renvoie `inventory` ; corriger le message client de `FailedPrecondition`.
 2. ÉTAPE 18.2b-2 : HUD gold/inventaire sur `PlayerEconomyStateStore` (rafraîchi au retour de Pop)
    + MarketScreen avec prix (`GetMarketPricesAsync`) et vente (`SellToMarketAsync`).
 3. Puis contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool`, avant l'UI.

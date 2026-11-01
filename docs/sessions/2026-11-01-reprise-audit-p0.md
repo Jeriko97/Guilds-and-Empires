@@ -32,11 +32,20 @@ Reconstitué depuis git (aucun log de session ni décision à l'époque) :
 - **Docs** : TD-013 mise à jour, TD-016 (région) et TD-017 (App Check) ouvertes, D-REPRISE-001/002,
   briefings, snapshots des skills.
 
+## Suite de la session (même jour)
+- **Déploiement** autorisé par le founder :
+  - 1er essai du founder en échec, « User code failed to load… Timeout after 10000 », car le chargement à froid dépasse 10 s.
+  - Relancé avec `FUNCTIONS_DISCOVERY_TIMEOUT=60` : 9 CF en Node 22, `claimDailyBonus` supprimée.
+  - TD-013 résolue.
+- **Vérification en Play** :
+  - `resolveLoginState OK` (50 logs en stock).
+  - `sellToMarket` répond, mais avec `failed-precondition: market state not initialized`. **`marketState/state` n'a jamais été seedé en prod** → TD-018 ouverte (contractPool idem).
+  - Le format `inventory` de la réponse reste donc à vérifier après le seed.
+- **Push** : OK après reconnexion du founder au bon compte GitHub. `origin` était resté au 18/06 : le travail de juillet-août n'avait jamais été poussé.
+- `_Recovery` et dossier `Economy` supprimés à la main par le founder.
+
 ## Non fait / en attente du founder
-- **Déploiement des CF** (Node 22 + `sellToMarket` enrichi) : refusé par le garde-fou de l'agent
-  (déploiement en production). À lancer par le founder, voir le briefing Claude Code.
-- `Assets/_Recovery/` (ignoré), dossier vide `Scripts/Services/Economy/`,
-  `ProjectSettings/Packages/com.unity.ai.assistant/` : suppressions refusées par le garde-fou, à faire à la main.
+- `ProjectSettings/Packages/com.unity.ai.assistant/` : résidu à supprimer à la main.
 - Branches `claude/keen-almeida-c9032d`, `claude/relaxed-antonelli-57a65e` (1 commit non fusionné)
   et worktrees `happy-germain` / `heuristic-stonebraker` (brouillons de mai non commités) : à trier par le founder.
 - Stratégie `main` (106+ commits d'avance sur `feature/bootstrap-architecture`).
