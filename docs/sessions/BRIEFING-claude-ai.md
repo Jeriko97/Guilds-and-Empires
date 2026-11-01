@@ -37,12 +37,20 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   (Unity CLI + `com.unity.pipeline`). Les tickets n'ont plus besoin d'une étape « wiring manuel »
   ni d'une « validation Play par le founder » : Claude Code câble la scène, entre en Play, lit la console
   et fournit une capture comme preuve. Le founder reste maître de la direction artistique et des arbitrages.
-- État :
-  - backend 9 CF, Node 22 côté code (déploiement en attente), `claimDailyBonus` retiré, 209/209 tests ;
-  - client : boucle produire → collecter + coquille Marché ;
-  - ÉTAPE 18 (marché) en cours.
-- Dette ouverte nouvelle : TD-016 (région us-central1 vs Firestore europe-west9), TD-017 (App Check).
-- Prochaine slice : 18.2b-2 (HUD gold/inventaire + MarketScreen prix et vente).
+- **Mode autonome supervisé (D-REPRISE-003)** : Claude Code orchestre ; deux relecteurs read-only
+  (sous-agent `auditeur` + Codex) relisent chaque ticket puis chaque diff ; le founder n'intervient que sur
+  escalade (8 cas, `CLAUDE.md`). Règle de « passe courte » (D-ETAPE18-006) : une correction de logique faite
+  après la revue diff est relue par les deux relecteurs sur ce delta uniquement.
+- État (fin de journée 2026-11-01) :
+  - backend 9 CF déployées en **Node 22**, `claimDailyBonus` supprimé, 222/222 tests ; `marketState/state`
+    seedé en prod (TD-018 marché close) ;
+  - client : boucle produire → collecter → **vendre au marché** (écran Marché complet, ligne or/inventaire) ;
+  - **ÉTAPE 18 (marché) FERMÉE** — log : `docs/sessions/2026-11-01-etape-18-marche.md`, décisions D-ETAPE18-001 à 006.
+- Dette ouverte : TD-015 (parsing, 4 foyers), TD-016 (région), TD-017 (App Check), TD-018 (`contractPool` vide),
+  TD-019 (firebase-functions 7.2.5 → 7.4.0), **TD-020 (multiplicateur d'event cumulatif : ≈ 16 au lieu de 9,
+  correction = décision économique du founder)**.
+- TO_PLAYTEST : prix des Logs immobile hors event (bruit ±5 % absorbé par l'arrondi, points fixes 3-6).
+- Prochaine étape : contrats impériaux (`processWorldEventLifecycle` + `contractPool`, puis UI).
 
 ## État du projet (mise à jour : 2026-06-18 — historique)
 
@@ -172,10 +180,12 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 - **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
   À implémenter avant déploiement non-solo.
-- **TD-013** : migration Node.js 20 → 22 avant 2026-10-30 (simple, low-risk).
-- **TD-015** : helpers de parsing dupliqués (PlayerStateSnapshot ↔ ProductionParsingHelpers) — TRÈS FAIBLE. À résoudre quand PlayerStateSnapshot sera prochainement touché.
+- **TD-013** : RÉSOLUE le 2026-11-01 (Node 22 déployé).
+- **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers — FAIBLE. Cible `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
+- **TD-020** : multiplicateur d'event cumulatif — à trancher avec le founder avant le premier world event.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
-À trancher avec le founder — prochaine slice client : marché / contrats / chaîne production complète.
+Contrats impériaux : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
+(`acceptContract`, `deliverToContract`). TD-020 à trancher avant le premier world event.

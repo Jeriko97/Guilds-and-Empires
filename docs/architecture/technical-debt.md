@@ -335,28 +335,31 @@ Mis à jour le 2026-11-01 : la partie marché se ferme pendant l'ÉTAPE 18.2b-2 
 
 ---
 
-### TD-015 — Duplication résiduelle des helpers de parsing (PlayerStateSnapshot ↔ ProductionParsingHelpers)
+### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)
 
-**Identifié :** 2026-06-08 (ÉTAPE 17.B-1, extraction de ProductionParsingHelpers)
-**Criticité actuelle :** TRÈS FAIBLE
-**Composant :** `PlayerStateSnapshot.cs` + `ProductionParsingHelpers.cs`
+**Identifié :** 2026-06-08 (ÉTAPE 17.B-1, extraction de ProductionParsingHelpers) — requalifiée le 2026-11-01 (clôture ÉTAPE 18)
+**Criticité actuelle :** FAIBLE (était TRÈS FAIBLE : 4 foyers au lieu de 2)
+**Composant :** `Core/FirebaseParsingHelpers.cs`, `Models/InventoryParsingHelpers.cs`,
+`Services/Production/ProductionParsingHelpers.cs`, `Models/PlayerStateSnapshot.cs`
 
 **Description :**
-L'extraction de ProductionParsingHelpers (17.B-1) a consolidé les helpers de parsing
-(RequireDict/GetValue/GetString/GetLong + ParseBuilding/ParseSlot/ParseInventory/ParseResourceStack)
-côté ProductionResult/CollectProductionResult. PlayerStateSnapshot conserve ses PROPRES copies privées
-de RequireDict/GetValue/GetString/GetLong (parsing de resolveLoginState/DebugScreen) → duplication
-résiduelle, consciemment laissée hors-scope de 17.B-1 (toucher PlayerStateSnapshot aurait élargi le
-diff au chemin de login). ParseTimestampMs reste single-source (internal dans PlayerStateSnapshot,
-réutilisé par tous — pas concerné).
+Le slice marché (ÉTAPE 18) a ajouté `Core/FirebaseParsingHelpers` (primitives) et `Models/InventoryParsingHelpers`
+(inventaire), utilisés par `MarketStateSnapshot` et `SellToMarketResult`. Les copies antérieures n'ont pas été retirées :
+- primitives `RequireDict` / `GetValue` / `GetString` / `GetLong` : 3 exemplaires (`FirebaseParsingHelpers`,
+  `ProductionParsingHelpers`, copies privées de `PlayerStateSnapshot`) ; `GetBool` : 2 exemplaires (absent de
+  `ProductionParsingHelpers`) ;
+- `ParseInventory` / `ParseResourceStack` : 3 exemplaires (`InventoryParsingHelpers`, `ProductionParsingHelpers`,
+  `PlayerStateSnapshot`).
+`ParseTimestampMs` reste source unique (internal, `PlayerStateSnapshot`) — non concerné.
 
 **Impact :**
-Faible. Si le format wire change pour ces helpers génériques, deux endroits à mettre à jour.
-Le helper critique (ParseTimestampMs) n'est PAS dupliqué.
+Si le format wire change (ex. type numérique boxé), jusqu'à 3 endroits à corriger, avec un risque de divergence
+silencieuse entre login, production et marché.
 
 **Trigger de résolution :**
-Quand PlayerStateSnapshot sera prochainement touché → consolider ses helpers génériques vers
-ProductionParsingHelpers. YAGNI tant que PlayerStateSnapshot n'est pas touché.
+Prochaine sous-étape qui touche l'un de ces fichiers (au plus tard l'ÉTAPE contrats, qui ajoutera des parsers).
+Cibles : primitives → `Core/FirebaseParsingHelpers` ; inventaire → `Models/InventoryParsingHelpers` ;
+`ParseBuilding`/`ParseSlot` → un seul foyer (`ProductionParsingHelpers`) ; `PlayerStateSnapshot` délègue.
 
 ---
 
@@ -394,6 +397,49 @@ par tout client authentifié (anonymement), hors de l'app.
 **Trigger de résolution :**
 Avant tout déploiement non-solo : DebugProvider en `#if UNITY_EDITOR`, Play Integrity
 en prod (D4.2), puis `enforceAppCheck: true` sur les callables.
+
+---
+
+### TD-019 — firebase-functions obsolète (avertissement au déploiement)
+
+**Identifié :** 2026-11-01 (déploiements de la reprise)
+**Criticité actuelle :** FAIBLE
+**Composant :** `firebase/functions/package.json` (`"firebase-functions": "^7.2.5"`, 7.2.5 installée)
+
+**Description :**
+La CLI Firebase signale au déploiement une version obsolète de `firebase-functions` (texte exact non consigné).
+Version installée 7.2.5 ; dernière publiée 7.4.0 (`npm view firebase-functions version`, 2026-11-01).
+Rappel : en 7.x, `defineInt` ignore `options.default` au runtime (constantes directes utilisées).
+
+**Impact :**
+Aucun bug constaté. Risque : correctifs et compatibilité runtime manqués ; l'avertissement masque d'autres alertes.
+
+**Trigger de résolution :**
+Au prochain déploiement complet (escalade cas 2) : montée de version en commit dédié, `npm run test:emulator`
+vert (222/222 ou plus) AVANT le déploiement, relecture des notes de version 7.3 → 7.4.
+
+---
+
+### TD-020 — Le multiplicateur d'event se cumule d'un tick à l'autre (prix event ≈ 16 au lieu de 9)
+
+**Identifié :** 2026-11-01 (revue croisée du ticket de clôture ÉTAPE 18, auditeur) — vérifié par calcul, non corrigé
+**Criticité actuelle :** MOYENNE (sans effet tant qu'aucun world event n'est déclenché en production)
+**Composant :** `firebase/functions/src/shared/computeMarketPrice.ts` (`updateMarketPrices`)
+
+**Description :**
+`computeMarketPrice` applique le multiplicateur d'event à `currentPrice`, qui contient déjà le boost du tick
+précédent. Avec les multiplicateurs du design (×1,8 Logs, ×1,83 Planks ; aucun event n'est encore défini dans le
+code, les multiplicateurs viennent du document d'event) — Logs : tick 1 → 5 × 1,8 = 9 ; tick 2 → dérive depuis 9, clamp à 9, × 1,8 ≈ 15-16 ; le prix
+plafonne vers 16 au lieu des 9 prévus (`phase-1-economy-values.md` : « +80 % (5 → 9) »). Planks : 22 prévu,
+≈ 40 au tick 2. Les tests (`computeMarketPrice.test.ts`) ne couvrent qu'un seul tick.
+
+**Impact :**
+Prix d'event ≈ 1,8 fois plus hauts que le design ; ratio Planks/Logs et récompenses d'event faussés.
+
+**Trigger de résolution :**
+Avant le premier world event en production (étape contrats / `processWorldEventLifecycle`). La correction change
+les prix effectifs → **escalade founder (cas 4)**. Piste : appliquer le multiplicateur à un prix « hors event »
+mémorisé, plus un test multi-tick.
 
 ---
 

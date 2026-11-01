@@ -112,6 +112,18 @@ En période normale, les prix dérivent lentement dans la fourchette bas/normal 
 
 **TO_PLAYTEST** — Les prix absolus. L'amplitude event (+80% Logs) est-elle assez visible sur le ticker pour déclencher une réaction sans sembler artificielle ?
 
+**TO_PLAYTEST — Prix des Logs immobile hors event (constat du 2026-11-01, aucune valeur modifiée).**
+Avec `DRIFT_FACTOR = 0.1` et `NOISE_AMPLITUDE = 0.05` (D-ETAPE14b), le bruit de ±5 % d'un prix de Logs
+est trop faible pour survivre à l'arrondi à l'entier :
+- initialisé à 5 (seed) et sans multiplicateur d'event actif ou décroissant, le prix calculé reste dans
+  [4,75 ; 5,25[, arrondi à 5 : **le prix des Logs ne bouge jamais** ;
+- plus largement, 3, 4, 5 et 6 sont des points fixes (à 6 : 5,9 ± 0,3 → 6 ; à 4 : 4,1 ± 0,2 → 4 ; à 3 :
+  3,2 ± 0,15 → 3). Un prix qui redescend d'un event jusqu'à 6 y reste : il ne revient jamais à 5, ce qui
+  contredit le « retour progressif » décrit plus haut.
+Les Planks (base 12, bruit ±0,6) bougent, eux. **Décision reportée au playtest** ; levier prévu par
+D-ETAPE14b : ajuster `DRIFT_FACTOR` avant tout autre paramètre. Voir aussi TD-020 (cumul du multiplicateur
+d'event d'un tick à l'autre).
+
 ---
 
 > ⚠️ **VALEUR CRITIQUE — Ratio Planks/Logs à prix normal (2,4)**

@@ -264,7 +264,7 @@ export const deliverToContract = functions.https.onCall(
 
 /**
  * Vend des ressources à l'AI market au prix courant.
- * Le serveur lit le prix depuis /global/marketState — jamais fourni par le client.
+ * Le serveur lit le prix depuis marketState/state — jamais fourni par le client.
  * Rate limit: 20 ventes / heure par uid (anti-farming).
  * Validation : quantity > 0, quantity <= inventory, quantity <= seuil par transaction.
  * Idempotency: idempotencyKey.
@@ -313,7 +313,7 @@ export const purchaseGuildCharter = functions.https.onCall(
  * Recalcule les prix du marché toutes les 5 minutes.
  * Algorithme : drift lent vers basePrice + bruit contrôlé (±5% max par tick)
  *              + multiplicateurs des world events actifs.
- * Écrit dans /global/marketState — 1 write / 5 min.
+ * Écrit dans marketState/state — 1 write / 5 min.
  * Pas de sinusoïde prévisible : le bruit est pseudo-aléatoire seedé par serverTimestamp.
  */
 export const updateMarketPrices = functions.scheduler.onSchedule(
@@ -455,7 +455,7 @@ Scheduled functions : `updateMarketPrices` = 12 writes/h × 24h × 30j = ~8 600 
 
 ### ⚠️ FLAG COÛT #1 — Listener Firestore sur `marketState` (BLOQUANT)
 
-Si le ticker UI utilise un **listener temps réel** sur `/global/marketState`, chaque write du scheduled CF (toutes les 5 min) génère **1 read par joueur connecté**.
+Si le ticker UI utilise un **listener temps réel** sur `marketState/state`, chaque write du scheduled CF (toutes les 5 min) génère **1 read par joueur connecté**.
 
 ```
 12 writes/h × 24h × 30j = 8 640 writes/mois
@@ -464,7 +464,7 @@ Si le ticker UI utilise un **listener temps réel** sur `/global/marketState`, c
 ```
 
 **Alternative qui préserve l'intention design :**
-Le client poll `/global/marketState` manuellement toutes les 5 minutes (même cadence que la mise à jour serveur). Le joueur voit les prix se mettre à jour exactement aussi souvent qu'ils changent réellement. L'intention "lecture ambiante" est préservée. Le coût est réduit à ~3M reads/mois supplémentaires à 10k DAU.
+Le client poll `marketState/state` manuellement toutes les 5 minutes (même cadence que la mise à jour serveur). Le joueur voit les prix se mettre à jour exactement aussi souvent qu'ils changent réellement. L'intention "lecture ambiante" est préservée. Le coût est réduit à ~3M reads/mois supplémentaires à 10k DAU.
 
 ### ⚠️ FLAG COÛT #2 — Subcollection buildings qui grandit (Phase 2)
 
@@ -562,7 +562,7 @@ public class FirebaseInitializer : MonoBehaviour
 | Favor thresholds | `ScriptableObject` + **Remote Config** | Rarement changés mais doivent l'être sans store update |
 | Coûts des upgrades inventaire | **Remote Config** | Gold sink = levier économique LiveOps critique |
 | Coût du Guild Charter | **Remote Config** | Événement économique majeur = trigger LiveOps |
-| Prix courants | **Firestore** (`/global/marketState`) | State live, server-authoritative |
+| Prix courants | **Firestore** (`marketState/state`) | State live, server-authoritative |
 | State joueur (gold, inventory) | **Firestore** uniquement | Server-authoritative, jamais de cache local économique |
 
 **Règle d'or :** si la valeur affecte l'économie → Remote Config. Si c'est du state live → Firestore. ScriptableObject est le fallback offline, jamais la source de vérité en production.
@@ -583,7 +583,7 @@ public class FirebaseMarketService : IMarketService
             return _cache;
 
         var snapshot = await FirebaseFirestore.DefaultInstance
-            .Document("global/marketState")
+            .Collection("marketState").Document("state")
             .GetSnapshotAsync(ct);
 
         _cache = snapshot.ConvertTo<MarketSnapshot>();
@@ -592,6 +592,10 @@ public class FirebaseMarketService : IMarketService
     }
 }
 ```
+
+> Extrait de conception initial. Implémentation réelle : `FirebaseMarketService.GetMarketPricesAsync`
+> (cache 5 min) + polling de `MarketScreen` (5 min + 5 s, D-ETAPE18-002). Chemin réel : `marketState/state`
+> (corrigé le 2026-11-01 : l'ancien chemin sous une collection `global` n'a jamais existé dans le code).
 
 Le ticker UI appelle `GetCurrentPricesAsync()` à l'affichage — il reçoit le cache en <1 ms la plupart du temps, et déclenche un vrai read seulement toutes les 5 min. **Zéro listener Firestore sur les documents globaux.**
 

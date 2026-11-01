@@ -12,8 +12,11 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
 - ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
   `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
-  ÉTAPE 18.2b-2 (11-01) : contenu de `MarketScreen` (prix pollés 5 min, vente 1 / 10 / Tout) et ligne
-  gold/inventaire sur `ProductionScreen`.
+  ÉTAPE 18.2b-2 (11-01) : contenu de `MarketScreen` (prix pollés 5 min 5 s, vente 1 / 10 / Tout) et ligne
+  gold/inventaire sur `ProductionScreen`. **ÉTAPE 18 FERMÉE le 11-01** — log
+  `docs/sessions/2026-11-01-etape-18-marche.md`, décisions D-ETAPE18-001 à 006.
+- Revue croisée : règle de **passe courte** (D-ETAPE18-006) — correction de logique après la revue diff →
+  les deux relecteurs relisent ce delta uniquement, avant commit (`CLAUDE.md` §a.6).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **222/222** verts (dont 13 du seed marché TD-018).
@@ -37,6 +40,10 @@ La direction artistique reste au founder.
   `.unity`/`.prefab` à la main quand l'Éditeur est joignable.
 - Erreur de compilation → le pont tombe (`Library/ScriptAssemblies` vide). Corriger le C# dans les fichiers, puis relancer.
 - Après tout ajout d'asset : vérifier que son `.meta` est commité (incident du 31/05 → 11/01).
+- `ProjectSettings/Packages/com.unity.pipeline/EditorPipelineConfig.json` est ignoré par git (D-ETAPE18-005) :
+  le paquet le réécrit à chaque session. Vérifier à la main que `m_AllowBrowserClients` reste `false`.
+- Tester une CF contre la production avec des appels « à échec voulu » est refusé par le garde-fou
+  de l'agent (vu en 18.2b-2) : prévoir ces tests sur l'émulateur.
 
 ### Déploiement des CF
 
@@ -50,6 +57,7 @@ Dernier déploiement complet : 2026-11-01, 9 CF en Node 22, `claimDailyBonus` su
 Dernier déploiement ciblé : 2026-11-01 21:13 UTC, `updateMarketPrices` seule (`--only functions:updateMarketPrices`),
 depuis `0a54298` (TD-018). Les 8 autres CF tournent sur le code du déploiement complet.
 Vigilance : le prochain déploiement complet embarquera tout ce qui a été commité depuis (escalade cas 2).
+TD-019 : y joindre la montée `firebase-functions` 7.2.5 → 7.4.0 (avertissement de la CLI), tests verts avant.
 Rappel D-TD018-001 : `updateMarketPrices` lève une erreur si `marketState/state` manque (seedé en prod le 11-01).
 
 ### ⚠️ TD-018 — marché seedé, contrats non initialisés en production
@@ -116,8 +124,12 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 ### Points d'attention
 
 - **TD-014 RÉSOLUE** : sleeps remplacés par suppression déterministe du doc rateLimits.
-- **TD-015** : helpers de parsing dupliqués (PlayerStateSnapshot ↔ ProductionParsingHelpers) —
-  TRÈS FAIBLE. À résoudre quand PlayerStateSnapshot sera prochainement touché.
+- **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers (`Core/FirebaseParsingHelpers`,
+  `InventoryParsingHelpers`, `ProductionParsingHelpers`, `PlayerStateSnapshot`) — FAIBLE. Cible :
+  `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
+- **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction = escalade cas 4,
+  avant le premier world event.
+- **TO_PLAYTEST** (economy-values §4) : prix des Logs immobile hors event (points fixes 3-6).
 
 ### Couche client Unity (Assets/_Project/)
 
@@ -288,8 +300,10 @@ les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
 
 ## Prochaine étape (2026-11-01)
 
-1. TD-018 marché : FAIT (seed prod + déploiement ciblé + vérification `inventory` le 11-01).
-2. ÉTAPE 18.2b-2 : FAITE le 11-01 — MarketScreen (gold, inventaire, prix, vente 1 / 10 / Tout,
-   une idempotencyKey par intention) + ligne gold/inventaire sur ProductionScreen relue à chaque OnEnable.
-   Vente de test en prod autorisée par le founder pour cette validation seulement (1 log).
-3. Puis contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool`, avant l'UI.
+ÉTAPE 18 (marché) FERMÉE le 11-01 : TD-018 marché close, écran Marché complet (D-ETAPE18-001 à 006).
+Vente de test en prod autorisée par le founder pour cette validation seulement (1 log, D-ETAPE18-004).
+
+1. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
+   puis service client et écran (`acceptContract`, `deliverToContract`).
+2. Avant le premier world event en prod : faire trancher TD-020 par le founder (escalade cas 4).
+3. Résorber TD-015 dès qu'un fichier de parsing est touché.
