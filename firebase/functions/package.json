@@ -8,6 +8,7 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "test:emulator": "jest --forceExit --runInBand",
+    "seed:market": "npm run build && node lib/seed/runSeedMarketState.js",
     "lint": "eslint . --ext .ts"
   },
   "engines": {

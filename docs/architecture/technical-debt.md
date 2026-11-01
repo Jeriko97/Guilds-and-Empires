@@ -315,6 +315,14 @@ Avant l'ÉTAPE 18.2b-2 (UI marché). Solution envisagée : script de seed idempo
 (valeurs de `docs/design/phase-1-economy-values.md`), exécuté une fois par projet Firebase ;
 retirer alors la tolérance « inexistant » de D-ETAPE14c (trigger prévu par cette décision).
 
+**Avancement 2026-11-01 — partie marché livrée en local (D-TD018-001) :**
+- Seed versionné `src/seed/marketStateSeed.ts` + CLI `npm run seed:market` (dry-run par défaut,
+  garde-fous production), 13 tests ; tolérance « inexistant » retirée de `updateMarketPrices` ;
+  message client `FailedPrecondition` neutralisé.
+- **Reste ouvert** : (1) exécution du seed en production (escalade founder) ; (2) déploiement des
+  functions, **après** le seed ; (3) vérification en Play que `sellToMarket` renvoie `inventory` ;
+  (4) `contractPool` : relève de `processWorldEventLifecycle` (étape contrats).
+
 ---
 
 ### TD-015 — Duplication résiduelle des helpers de parsing (PlayerStateSnapshot ↔ ProductionParsingHelpers)

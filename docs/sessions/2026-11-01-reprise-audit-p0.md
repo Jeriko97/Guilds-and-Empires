@@ -53,3 +53,13 @@ Reconstitué depuis git (aucun log de session ni décision à l'époque) :
 ## Prochaine étape
 Après déploiement : ÉTAPE 18.2b-2 — HUD gold/inventaire (`PlayerEconomyStateStore`) + MarketScreen
 avec prix et vente, câblé et validé en Play par l'agent.
+
+## TD-018 (partie marché) — seed versionné, mode autonome supervisé
+- Le récap ne contient pas de « section 9 » numérotée : les 5 points ont été reconstitués depuis TD-018 et la
+  « Prochaine étape » du briefing (seed, garde-fous CLI, tests, retrait de la tolérance D-ETAPE14c, message client).
+- Livré en local (D-TD018-001) : `src/seed/marketStateSeed.ts`, CLI `npm run seed:market`, 13 tests (222/222 verts),
+  `updateMarketPrices` en fail loudly sur document absent, message `FailedPrecondition` neutralisé côté client.
+- Revue ticket : Codex GO ; auditeur GO APRÈS CORRECTION (bloquant : cible réelle du SDK Admin = `--project` →
+  `initializeApp({ projectId })` + refus si variable d'environnement contradictoire). Corrigé.
+- **En attente du founder** : exécution du seed en production (escalade cas 1 et 4), puis déploiement (cas 2).
+  Ce poste n'a pas d'Application Default Credentials (`gcloud` absent).

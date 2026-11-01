@@ -136,7 +136,7 @@ namespace GuildsAndEmpires.Services.Market
         private static string MapErrorMessage(FunctionsErrorCode code) => code switch
         {
             FunctionsErrorCode.ResourceExhausted  => "Limite de ventes atteinte (20/heure). Réessaie plus tard.",
-            FunctionsErrorCode.FailedPrecondition => "Vente impossible : vérifie ton stock.",
+            FunctionsErrorCode.FailedPrecondition => "Vente impossible pour le moment : stock insuffisant ou marché indisponible.",
             FunctionsErrorCode.InvalidArgument    => "Quantité invalide (1 à 100).",
             FunctionsErrorCode.NotFound           => "Profil joueur introuvable.",
             FunctionsErrorCode.Unauthenticated    => "Session expirée, reconnecte-toi.",

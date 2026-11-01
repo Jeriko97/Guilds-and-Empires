@@ -1,6 +1,5 @@
 import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { logger } from "firebase-functions/logger";
 
 import { MARKET_PRICE_BOUNDS } from "../shared/marketPrices";
 import type { MarketResource } from "../shared/marketPrices";
@@ -25,10 +24,10 @@ export async function updateMarketPricesHandler(
       .get(),
   ]);
 
-  // 2. Missing marketState → graceful skip (first deployment)
+  // 2. Missing marketState → fail loudly (D-TD018-001 : le seed versionné `npm run seed:market`
+  //    est un prérequis de déploiement ; l'absence n'est plus un cas légitime)
   if (!marketStateSnap.exists) {
-    logger.warn("updateMarketPrices: marketState/state not found — skipping (first deployment?)");
-    return;
+    throw new Error("marketState/state not found — run `npm run seed:market` (TD-018)");
   }
 
   const marketData = marketStateSnap.data()!;

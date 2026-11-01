@@ -185,11 +185,11 @@ describe("updateMarketPrices", () => {
 
   // ── H. Cas limites Firestore ─────────────────────────────────────────────
 
-  it("24. marketState inexistant → log warning et return (pas d'exception, doc reste absent)", async () => {
-    // marketState absent — handler doit retourner silencieusement
+  it("24. marketState inexistant → throw Error explicite, doc reste absent (D-TD018-001)", async () => {
+    // marketState absent — fail loudly : le seed est un prérequis de déploiement
     await expect(
       updateMarketPricesHandler(() => 0.5, NOW_TS)
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("marketState/state not found");
 
     const snap = await db.collection("marketState").doc("state").get();
     expect(snap.exists).toBe(false);
