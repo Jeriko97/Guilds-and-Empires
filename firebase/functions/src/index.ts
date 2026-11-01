@@ -10,9 +10,6 @@ export { resolveLoginState } from "./login/resolveLoginState";
 export { startProductionSlot }  from "./production/startProductionSlot";
 export { collectProduction }    from "./production/collectProduction";
 
-// ── Économie (legacy — pré-spec, à supprimer fin Phase 1) ────────────────────
-export { claimDailyBonus } from "./economy/claimDailyBonus";
-
 // ── Contrats ──────────────────────────────────────────────────────────────────
 export { acceptContract }     from "./contracts/acceptContract";
 export { deliverToContract }  from "./contracts/deliverToContract";
