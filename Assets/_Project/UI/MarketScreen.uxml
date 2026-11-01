@@ -3,6 +3,8 @@
     <ui:VisualElement name="market-screen" class="market-screen">
         <ui:Label name="title-label" text="Marché" class="title" />
         <ui:Label name="status-label" text="" class="status" />
+        <ui:Label name="gold-label" text="Or : —" class="gold" />
+        <ui:ScrollView name="resources-container" class="resources-container" />
         <ui:Button name="back-button" text="Retour" class="back-button" />
     </ui:VisualElement>
 </ui:UXML>

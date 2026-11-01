@@ -12,6 +12,8 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
 - ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
   `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
+  ÉTAPE 18.2b-2 (11-01) : contenu de `MarketScreen` (prix pollés 5 min, vente 1 / 10 / Tout) et ligne
+  gold/inventaire sur `ProductionScreen`.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **222/222** verts (dont 13 du seed marché TD-018).
@@ -53,7 +55,8 @@ Rappel D-TD018-001 : `updateMarketPrices` lève une erreur si `marketState/state
 ### ⚠️ TD-018 — marché seedé, contrats non initialisés en production
 
 **Marché : résolu le 2026-11-01** — `marketState/state` seedé en prod (5 / 12 / 20) et `updateMarketPrices`
-redéployée. **Reste :** `contractPool` vide (étape contrats) ; `sellToMarket` → `inventory` à vérifier en 18.2b-2.
+redéployée. `sellToMarket` → `inventory` vérifié en Play le 11-01 (ÉTAPE 18.2b-2, 1 log vendu).
+**Reste :** `contractPool` vide (étape contrats).
 Seed versionné (D-TD018-001), idempotent — toute nouvelle exécution prod reste une escalade founder :
 ```bash
 npm --prefix firebase/functions run seed:market -- --project guildsandempires-ca543            # dry-run
@@ -285,8 +288,8 @@ les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
 
 ## Prochaine étape (2026-11-01)
 
-1. TD-018 marché : FAIT (seed prod + déploiement ciblé le 11-01). La vérification « `sellToMarket`
-   renvoie `inventory` » est intégrée à l'ÉTAPE 18.2b-2 (pas de vente de test sur le compte du founder).
-2. ÉTAPE 18.2b-2 : HUD gold/inventaire sur `PlayerEconomyStateStore` (rafraîchi au retour de Pop)
-   + MarketScreen avec prix (`GetMarketPricesAsync`) et vente (`SellToMarketAsync`).
+1. TD-018 marché : FAIT (seed prod + déploiement ciblé + vérification `inventory` le 11-01).
+2. ÉTAPE 18.2b-2 : FAITE le 11-01 — MarketScreen (gold, inventaire, prix, vente 1 / 10 / Tout,
+   une idempotencyKey par intention) + ligne gold/inventaire sur ProductionScreen relue à chaque OnEnable.
+   Vente de test en prod autorisée par le founder pour cette validation seulement (1 log).
 3. Puis contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool`, avant l'UI.

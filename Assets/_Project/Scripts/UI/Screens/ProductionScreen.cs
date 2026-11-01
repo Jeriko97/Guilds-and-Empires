@@ -33,6 +33,7 @@ namespace GuildsAndEmpires.UI.Screens
         // ── UI element refs ───────────────────────────────────────────────────
         private Label         _titleLabel;
         private Label         _statusLabel;
+        private Label         _economyLabel;
         private VisualElement _slotsContainer;
         private Button        _collectButton;
         private Button        _marketButton;
@@ -54,6 +55,7 @@ namespace GuildsAndEmpires.UI.Screens
             var root        = _doc.rootVisualElement;
             _titleLabel     = root.Q<Label>("title-label");
             _statusLabel    = root.Q<Label>("status-label");
+            _economyLabel   = root.Q<Label>("economy-label");
             _slotsContainer = root.Q<VisualElement>("slots-container");
             _collectButton  = root.Q<Button>("collect-button");
             if (_collectButton != null)
@@ -65,6 +67,9 @@ namespace GuildsAndEmpires.UI.Screens
             _marketButton = root.Q<Button>("market-button");
             if (_marketButton != null)
                 _marketButton.clicked += OnMarketClicked;
+
+            // Relu à chaque OnEnable : reflète les ventes faites sur MarketScreen au retour de Pop.
+            RenderEconomy();
 
             if (!_hasLoadedOnce)
             {
@@ -119,6 +124,7 @@ namespace GuildsAndEmpires.UI.Screens
                 else
                     GELogger.Warning("ProductionScreen", "PlayerEconomyStateStore non enregistré — gold/inventaire non mis à jour.");
 
+                RenderEconomy();
                 _currentBuilding = snapshot.Buildings[0];
                 RenderSlots();
                 SetStatus("Prêt.", "status--success");
@@ -278,6 +284,7 @@ namespace GuildsAndEmpires.UI.Screens
                 else
                     GELogger.Warning("ProductionScreen", "PlayerEconomyStateStore non enregistré — inventaire non mis à jour.");
 
+                RenderEconomy();
                 _currentBuilding = result.Building;
                 RenderSlots();
                 SetStatus(FormatCollectMessage(result), "status--success");
@@ -298,6 +305,25 @@ namespace GuildsAndEmpires.UI.Screens
         }
 
         // ── Helpers UI ────────────────────────────────────────────────────────
+
+        /// <summary>Affiche gold + inventaire depuis le store (valeurs serveur, aucun calcul local).</summary>
+        private void RenderEconomy()
+        {
+            if (_economyLabel == null) return;
+
+            if (!ServiceLocator.TryResolve<PlayerEconomyStateStore>(out var store)
+                || !store.HasState || store.Inventory == null)
+            {
+                _economyLabel.text = "Or : —";
+                return;
+            }
+
+            var inv = store.Inventory;
+            _economyLabel.text =
+                $"Or : {store.Gold}  ·  Logs {inv.Logs.Quantity}/{inv.Logs.Cap}  ·  " +
+                $"Planks {inv.Planks.Quantity}/{inv.Planks.Cap}  ·  " +
+                $"Kits {inv.ReconstructionKits.Quantity}/{inv.ReconstructionKits.Cap}";
+        }
 
         private void SetStatus(string text, string modifier)
         {

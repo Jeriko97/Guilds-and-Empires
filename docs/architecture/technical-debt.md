@@ -325,8 +325,11 @@ Mis à jour le 2026-11-01 : la partie marché se ferme pendant l'ÉTAPE 18.2b-2 
   20:47:12 UTC, 2e passage `DÉJÀ PRÉSENT`, document relu conforme (5 / 12 / 20).
 - ~~(2) déploiement, après le seed~~ : **fait le 2026-11-01 à 21:13 UTC** (accord founder) —
   `updateMarketPrices` seule, depuis `0a54298`, 222/222 verts. Exécutions planifiées vérifiées.
-- **Reste ouvert** : (3) vérification que `sellToMarket` renvoie `inventory` → ÉTAPE 18.2b-2
-  (décision founder : pas de vente de test sur son compte) ; (4) `contractPool` : relève de
+- ~~(3) vérification que `sellToMarket` renvoie `inventory`~~ : **fait le 2026-11-01 (ÉTAPE 18.2b-2)** —
+  vente de 1 log en Play sur le compte du founder (accord donné au lancement de 18.2b-2, remplaçant
+  pour cette validation la décision « pas de vente de test ») : `sellToMarket OK — goldEarned:5 newGold:5`,
+  `inventory` présent et parsé (logs 50 → 49), état relu par `resolveLoginState` au relancement (gold 5).
+- **Reste ouvert** : (4) `contractPool` : relève de
   `processWorldEventLifecycle` (étape contrats). **Criticité ramenée à MOYENNE** (marché débloqué,
   contrats toujours vides).
 
