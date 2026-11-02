@@ -186,7 +186,11 @@ Au début de chaque session, demander que ces docs soient attachés :
 - **App Check** : CF publiquement appelables (D-ETAPE16-005). Acceptable pré-alpha.
   À implémenter avant déploiement non-solo.
 - **TD-013** : RÉSOLUE le 2026-11-01 (Node 22 déployé).
-- **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers — FAIBLE. Cible `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
+- **TD-015 RÉSOLUE** le 11-02 (ÉTAPE 19.3, `5b13b09`, D-ETAPE19-009) : un seul foyer par primitive de parsing ;
+  46 tests EditMode de caractérisation côté client.
+- **TD-025** (11-02) : parsing numérique client permissif — décision du founder avant tout testeur externe.
+- **TD-024** (11-02) : format de la clé d'idempotence non validé hors production — au plus tard avant tout
+  testeur externe.
 - **TD-020** : multiplicateur d'event cumulatif — correction actée (D-TD020-001/002 : prix d'event absolu 9 / 22, decay vers un prix de référence suivi à part),
   **prérequis bloquant** :
   première sous-étape de l'étape qui activera `processWorldEventLifecycle`. 3 arbitrages figés (D-TD020-003 :
@@ -243,7 +247,13 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
 - 19.2b — backend : l'arrêt règle d'abord tous les slots du bâtiment, comme une collecte ; un slot voisin corrompu
   refuse l'arrêt ; validation commune de `buildingId` (lancement, collecte, arrêt ; 128 octets max) — fait le 11-02
   (non déployé ; D-ETAPE19-007) ; conditions 19.5 et extension de TD-021 consignées (D-ETAPE19-008) ;
-- 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
+- 19.3 — client : consolidation TD-015 — fait le 11-02 (`3d17770` tests de caractérisation et ligne
+  `InternalsVisibleTo`, `5b13b09` consolidation ; D-ETAPE19-009) : une seule implémentation par primitive de
+  parsing, messages d'erreur identiques au caractère près ; 46 tests EditMode verts avant et après fusion ;
+  TD-024 (format de clé d'idempotence hors production) et TD-025 (parsing numérique permissif) ouvertes ;
+- prochain ticket backend, à ajouter : test d'arrêt avec un slot voisin occupé sans date de début (`startedAt`)
+  → `failed-precondition` ; les messages « introuvable » recopient encore l'identifiant reçu (≤ 128 octets),
+  correction reportée (D-ETAPE19-007, annotation 19.3) ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
   parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService`. État de slot corrompu
   (`failed-precondition`, `details.reason = "corrupt-slot"`, à la connexion, à la collecte ou à l'arrêt) :

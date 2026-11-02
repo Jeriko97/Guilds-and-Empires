@@ -335,34 +335,6 @@ Mis à jour le 2026-11-01 : la partie marché se ferme pendant l'ÉTAPE 18.2b-2 
 
 ---
 
-### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)
-
-**Identifié :** 2026-06-08 (ÉTAPE 17.B-1, extraction de ProductionParsingHelpers) — requalifiée le 2026-11-01 (clôture ÉTAPE 18)
-**Criticité actuelle :** FAIBLE (était TRÈS FAIBLE : 4 foyers au lieu de 2)
-**Composant :** `Core/FirebaseParsingHelpers.cs`, `Models/InventoryParsingHelpers.cs`,
-`Services/Production/ProductionParsingHelpers.cs`, `Models/PlayerStateSnapshot.cs`
-
-**Description :**
-Le slice marché (ÉTAPE 18) a ajouté `Core/FirebaseParsingHelpers` (primitives) et `Models/InventoryParsingHelpers`
-(inventaire), utilisés par `MarketStateSnapshot` et `SellToMarketResult`. Les copies antérieures n'ont pas été retirées :
-- primitives `RequireDict` / `GetValue` / `GetString` / `GetLong` : 3 exemplaires (`FirebaseParsingHelpers`,
-  `ProductionParsingHelpers`, copies privées de `PlayerStateSnapshot`) ; `GetBool` : 2 exemplaires (absent de
-  `ProductionParsingHelpers`) ;
-- `ParseInventory` / `ParseResourceStack` : 3 exemplaires (`InventoryParsingHelpers`, `ProductionParsingHelpers`,
-  `PlayerStateSnapshot`).
-`ParseTimestampMs` reste source unique (internal, `PlayerStateSnapshot`) — non concerné.
-
-**Impact :**
-Si le format wire change (ex. type numérique boxé), jusqu'à 3 endroits à corriger, avec un risque de divergence
-silencieuse entre login, production et marché.
-
-**Trigger de résolution :**
-Prochaine sous-étape qui touche l'un de ces fichiers (au plus tard l'ÉTAPE contrats, qui ajoutera des parsers).
-Cibles : primitives → `Core/FirebaseParsingHelpers` ; inventaire → `Models/InventoryParsingHelpers` ;
-`ParseBuilding`/`ParseSlot` → un seul foyer (`ProductionParsingHelpers`) ; `PlayerStateSnapshot` délègue.
-
----
-
 ### TD-016 — Cloud Functions en us-central1, Firestore en europe-west9
 
 **Identifié :** 2026-11-01 (audit v2)
@@ -775,7 +747,104 @@ D-ETAPE19-008. TD-023 reste ouverte : fermeture au déploiement 19.5.
 
 ---
 
+### TD-024 — Format de la clé d'idempotence non validé hors production
+
+**Identifié :** 2026-11-02 (ticket transverse de D-ETAPE19-005 ; ouverte en TD par le ticket 19.3 du founder)
+**Criticité actuelle :** FAIBLE (aucun joueur, app non distribuée)
+**Composant :** `firebase/functions/src/market/sellToMarket.ts:83-92`, `inventory/upgradeInventoryCap.ts:90-102`,
+`guildCharter/purchaseGuildCharter.ts:48-56`, `contracts/deliverToContract.ts:39-40`
+
+**Description :**
+Depuis 19.1, le lancement et l'arrêt d'un slot exigent une clé d'idempotence au format UUID strict, sinon
+`invalid-argument` (`requireValidIdempotencyKey`, D-ETAPE19-005). Les quatre autres fonctions à clé ne vérifient
+qu'une chaîne non vide. `sellToMarket`, `upgradeInventoryCap` et `purchaseGuildCharter` en font un identifiant de
+document Firestore : une clé comme `bad/key` y donne une erreur `internal` au lieu d'un refus clair, et sa longueur
+n'est pas bornée. `deliverToContract` la stocke comme champ, sans contrôle de format.
+
+**Impact :**
+Aucun pour le client actuel, qui envoie des UUID. Un appel direct avec une clé mal formée obtient une erreur
+`internal` peu lisible au lieu d'un refus explicite.
+
+**Résolution :**
+Appliquer `requireValidIdempotencyKey` à ces quatre fonctions, avec les tests émulateur correspondants.
+
+**Trigger de résolution :**
+Prochain ticket qui touche l'une de ces fonctions, au plus tard avant tout testeur externe (ticket 19.3 du founder).
+
+---
+
+### TD-025 — Parsing numérique client permissif
+
+**Identifié :** 2026-11-02 (ÉTAPE 19.3, décision du founder à l'escalade de la Tâche 0)
+**Criticité actuelle :** FAIBLE (le serveur est autoritaire ; une valeur mal lue n'affecte que l'affichage)
+**Composant :** `Assets/_Project/Scripts/Core/FirebaseParsingHelpers.cs` (`GetLong`) et ses appelants (conversions
+`(int)`)
+
+**Description :**
+Texte du founder, cité tel quel : « le parsing numérique client est permissif (décimal arrondi en silence, dépassement
+ou type inconvertible → valeur par défaut au lieu d'une erreur), ce qui contredit la doctrine de parsing strict. »
+Constats complémentaires de Claude Code, figés par les mêmes tests : `GetLong` convertit aussi un booléen (`true` → 1,
+`false` → 0) et une chaîne numérique (« 42 » → 42, lecture selon la culture du poste) ; les conversions `(int)` des
+appelants tronquent sans erreur au-delà de 2 147 483 647 (4 294 967 297 → 1) ; `GetString` et `GetBool` reviennent en
+silence à la valeur par défaut sur un mauvais type ; les bâtiments et slots reçus en `Dictionary<string,object>` sont
+ignorés sans erreur.
+
+**Impact :**
+Une réponse serveur mal formée s'affiche avec des valeurs fausses au lieu d'échouer visiblement.
+
+**Résolution :**
+Décider si ces cas lèvent une erreur (décision du founder). Référence : les tests de caractérisation de 19.3
+(`Assets/_Project/Tests/Editor/FirebaseParsingCharacterizationTests.cs`), qui figent le comportement actuel ; toute
+correction les modifie explicitement.
+
+**Trigger de résolution :**
+Avant tout testeur externe.
+
+---
+
 ## TD Résolues
+
+### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)
+
+**Identifié :** 2026-06-08 (ÉTAPE 17.B-1, extraction de ProductionParsingHelpers) — requalifiée le 2026-11-01 (clôture
+ÉTAPE 18)
+**Criticité actuelle :** RÉSOLUE (2026-11-02, ÉTAPE 19.3)
+**Résolution :** commits `3d17770` (tests de caractérisation et ligne `InternalsVisibleTo`, sur le code d'avant
+fusion) et `5b13b09` (consolidation). Une seule implémentation par primitive : `RequireDict`, `GetValue`, `GetString`,
+`GetLong`, `GetBool` dans `Core/FirebaseParsingHelpers` (`RequireDict` reçoit le préfixe de son appelant, messages
+identiques au caractère près, D-ETAPE19-009) ; `ParseInventory` / `ParseResourceStack` dans
+`Models/InventoryParsingHelpers` ; `ParseBuilding` / `ParseSlot` dans `ProductionParsingHelpers` (identifiant passé
+par l'appelant : paramètre de la Cloud Function en production, champ `id` à la connexion) ; `PlayerStateSnapshot`
+délègue. 46 tests EditMode verts avant et après fusion, fichier de tests inchangé. Le comportement permissif figé par
+ces tests relève de TD-025.
+Point reporté (auditeur, revue du commit de consolidation) : `PlayerStateSnapshot` (namespace `Models`) appelle
+désormais `ProductionParsingHelpers.ParseBuilding` (`Services.Production`), qui appelle déjà
+`PlayerStateSnapshot.ParseTimestampMs` ; ce cycle est sans effet tant que le client tient dans une seule assembly, et
+il est à défaire (`ParseBuilding`, `ParseSlot` et `ParseTimestampMs` dans un même foyer) avant tout découpage en asmdef.
+**Composant :** `Core/FirebaseParsingHelpers.cs`, `Models/InventoryParsingHelpers.cs`,
+`Services/Production/ProductionParsingHelpers.cs`, `Models/PlayerStateSnapshot.cs`
+
+**Description :**
+Le slice marché (ÉTAPE 18) a ajouté `Core/FirebaseParsingHelpers` (primitives) et `Models/InventoryParsingHelpers`
+(inventaire), utilisés par `MarketStateSnapshot` et `SellToMarketResult`. Les copies antérieures n'ont pas été
+retirées :
+- primitives `RequireDict` / `GetValue` / `GetString` / `GetLong` : 3 exemplaires (`FirebaseParsingHelpers`,
+  `ProductionParsingHelpers`, copies privées de `PlayerStateSnapshot`) ; `GetBool` : 2 exemplaires (absent de
+  `ProductionParsingHelpers`) ;
+- `ParseInventory` / `ParseResourceStack` : 3 exemplaires (`InventoryParsingHelpers`, `ProductionParsingHelpers`,
+  `PlayerStateSnapshot`).
+`ParseTimestampMs` reste source unique (internal, `PlayerStateSnapshot`) — non concerné.
+
+**Impact :**
+Si le format wire change (ex. type numérique boxé), jusqu'à 3 endroits à corriger, avec un risque de divergence
+silencieuse entre login, production et marché.
+
+**Trigger de résolution :**
+Prochaine sous-étape qui touche l'un de ces fichiers (au plus tard l'ÉTAPE contrats, qui ajoutera des parsers).
+Cibles : primitives → `Core/FirebaseParsingHelpers` ; inventaire → `Models/InventoryParsingHelpers` ;
+`ParseBuilding`/`ParseSlot` → un seul foyer (`ProductionParsingHelpers`) ; `PlayerStateSnapshot` délègue.
+
+---
 
 ### TD-013 — Migration Node.js 20 → 22 pour les Cloud Functions
 

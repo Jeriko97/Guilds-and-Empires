@@ -27,6 +27,8 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **347/347** verts le 11-02 après l'ÉTAPE 19.2b (318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
+- Tests client : **46/46** EditMode verts le 11-02 (ÉTAPE 19.3, caractérisation du parsing,
+  `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch).
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
 
 ### Pilotage de l'Éditeur Unity (D-REPRISE-001) — l'agent câble et valide lui-même
@@ -134,9 +136,11 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 ### Points d'attention
 
 - **TD-014 RÉSOLUE** : sleeps remplacés par suppression déterministe du doc rateLimits.
-- **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers (`Core/FirebaseParsingHelpers`,
-  `InventoryParsingHelpers`, `ProductionParsingHelpers`, `PlayerStateSnapshot`) — FAIBLE. Cible :
-  `Core/FirebaseParsingHelpers`, résorbée en 19.3 (au plus tard à l'étape contrats).
+- **TD-015 RÉSOLUE** le 11-02 (ÉTAPE 19.3, `5b13b09`, D-ETAPE19-009) : un seul foyer par primitive de parsing.
+- **TD-025** (11-02) : parsing numérique client permissif (arrondi, valeur par défaut au lieu d'une erreur) —
+  décision du founder avant tout testeur externe ; les tests de caractérisation de 19.3 servent de référence.
+- **TD-024** (11-02) : format de la clé d'idempotence non validé hors production — prochain ticket qui touche
+  ces fonctions, au plus tard avant tout testeur externe.
 - **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction actée le 11-02
   (D-TD020-001/002 : prix d'event absolu 9 / 22), **prérequis bloquant** de l'étape qui activera `processWorldEventLifecycle`.
   Arbitrages figés le 11-02 (D-TD020-003) : création à la volée, un seul event par ressource, redescente 60 min.
@@ -186,8 +190,9 @@ journal attribuée au founder, jamais à un texte de spec rédigé par un agent.
 - `IProductionService` + `FirebaseProductionService` — appel startProductionSlot, parsing, C6
   Patron identique à FirebasePlayerService (GetHttpsCallable → CallAsync → Parse → exceptions).
 - `PlayerStateSnapshot` — modèle C# complet (gold, favor, inventory, favorRank, etc.)
-- `ProductionParsingHelpers` (internal static) — helpers partagés (RequireDict/GetValue/GetString/GetLong +
-  ParseBuilding/ParseSlot/ParseInventory/ParseResourceStack). Délégués par ProductionResult et CollectProductionResult.
+- `ProductionParsingHelpers` (internal static) — `ParseBuilding`/`ParseSlot`, foyer unique depuis 19.3 (primitives :
+  `Core/FirebaseParsingHelpers` ; inventaire : `InventoryParsingHelpers`). Délégués par ProductionResult,
+  CollectProductionResult et PlayerStateSnapshot.
 - `ProductionResult` — `{ BuildingSnapshot Building; InventoryState Inventory }` + `Parse(data, buildingId)`
   Délègue à ProductionParsingHelpers. `ParseTimestampMs` source unique préservée (internal, PlayerStateSnapshot).
 - `CollectProductionResult` — `{ Building; Inventory; IReadOnlyDictionary<string,int> Collected; Discarded }` + `Parse(data, buildingId)`
@@ -362,7 +367,13 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
 - 19.2b — backend : l'arrêt règle d'abord tous les slots du bâtiment, comme une collecte ; un slot voisin corrompu
   refuse l'arrêt ; validation commune de `buildingId` (lancement, collecte, arrêt ; 128 octets max) — fait le 11-02
   (non déployé ; D-ETAPE19-007) ; conditions 19.5 et extension de TD-021 consignées (D-ETAPE19-008) ;
-- 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
+- 19.3 — client : consolidation TD-015 — fait le 11-02 (`3d17770` tests de caractérisation et ligne
+  `InternalsVisibleTo`, `5b13b09` consolidation ; D-ETAPE19-009) : une seule implémentation par primitive de
+  parsing, messages d'erreur identiques au caractère près ; 46 tests EditMode verts avant et après fusion ;
+  TD-024 (format de clé d'idempotence hors production) et TD-025 (parsing numérique permissif) ouvertes ;
+- prochain ticket backend, à ajouter : test d'arrêt avec un slot voisin occupé sans date de début (`startedAt`)
+  → `failed-precondition` ; les messages « introuvable » recopient encore l'identifiant reçu (≤ 128 octets),
+  correction reportée (D-ETAPE19-007, annotation 19.3) ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
   parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService`. État de slot corrompu
   (`failed-precondition`, `details.reason = "corrupt-slot"`, à la connexion, à la collecte ou à l'arrêt) :
@@ -402,4 +413,4 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
    (activation refusée, file d'attente bornée, durée) sont des critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`.
 2. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
    puis service client et écran (`acceptContract`, `deliverToContract`).
-3. TD-015 : résorbée en 19.3 (au plus tard ici si ce n'est pas fait).
+3. TD-015 : résolue en 19.3 (`5b13b09`).
