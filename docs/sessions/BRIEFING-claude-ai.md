@@ -51,7 +51,10 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   correction ACTÉE le 11-02, D-TD020-001/002 : prix d'event ABSOLU 9 / 22, prérequis bloquant de l'étape world events)**.
 - TO_PLAYTEST : prix des Logs immobile hors event (bruit ±5 % absorbé par l'arrondi, points fixes 3-6).
 - Prochaine étape : contrats impériaux (`processWorldEventLifecycle` + `contractPool`, puis UI), précédés de la
-  correction TD-020 (prérequis bloquant, D-TD020-001/002).
+  correction TD-020 (prérequis bloquant, D-TD020-001/002). Ses 3 arbitrages sont figés (D-TD020-003, 11-02) :
+  prix de référence créé à la volée sans migration ; un seul event en cours par ressource (activation refusée,
+  relecture des prix en échec si doublon) ; redescente 60 min exactes, à valider au playtest
+  (`EVENT_DECAY_DURATION_MS`, à créer).
 
 ## État du projet (mise à jour : 2026-06-18 — historique)
 
@@ -185,11 +188,18 @@ Au début de chaque session, demander que ces docs soient attachés :
 - **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers — FAIBLE. Cible `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
 - **TD-020** : multiplicateur d'event cumulatif — correction actée (D-TD020-001/002 : prix d'event absolu 9 / 22, decay vers un prix de référence suivi à part),
   **prérequis bloquant** :
-  première sous-étape de l'étape qui activera `processWorldEventLifecycle`.
+  première sous-étape de l'étape qui activera `processWorldEventLifecycle`. 3 arbitrages figés (D-TD020-003 :
+  création à la volée, un seul event par ressource, redescente 60 min).
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ## Prochaine étape attendue
 
 Contrats impériaux : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
 (`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event absolu 9 / 22,
-tests déterministes, D-TD020-002) avant d'implémenter `processWorldEventLifecycle`.
+tests déterministes, D-TD020-002) avant d'implémenter `processWorldEventLifecycle`. Arbitrages figés (D-TD020-003) :
+A — `referencePrices` créé à la volée par `updateMarketPrices`, sans migration (champ absent avec event en cours →
+erreur) ; B — un seul event en cours par ressource (garde à l'activation + échec de toute la relecture si doublon) ;
+C — redescente 60 min exactes, à valider au playtest (`EVENT_DECAY_DURATION_MS`, à créer, `decayEndsAt` calculé
+par le serveur à l'activation). Plus aucun point de design ouvert. Jalons : TD-020 se ferme côté prix
+(`updateMarketPrices`), déployée et constatée avant `processWorldEventLifecycle` ; la garde à l'activation et la durée
+de 60 min sont des critères obligatoires de la sous-étape `processWorldEventLifecycle`.

@@ -108,7 +108,7 @@ Le plancher IA à 20 gold/Kit existe uniquement comme soupape — pour éviter q
 1 Plank coûte exactement 2 Logs en input. À prix normal, 1 Plank vaut 2,4 Logs. La marge de transformation (~20%) est suffisante pour rendre la chaîne rentable sans rendre la vente de Logs bruts absurde. Un joueur peut vendre des Logs et être compétitif — simplement moins optimisé qu'un transformateur. C'est voulu : la diversité de stratégies crée un marché vivant.
 
 **Comportement des prix IA :**
-En période normale, les prix dérivent lentement dans la fourchette bas/normal selon l'offre simulée. En event, montée rapide vers le haut, retour progressif sur ~1h après la fin de l'event (pas de coupure brutale — dernière fenêtre de vente).
+En période normale, les prix dérivent lentement dans la fourchette bas/normal selon l'offre simulée. En event, montée rapide vers le haut, retour progressif sur 60 min (à valider au playtest, constante `EVENT_DECAY_DURATION_MS`) après la fin de l'event (pas de coupure brutale — dernière fenêtre de vente).
 
 **TO_PLAYTEST** — Les prix absolus. L'amplitude event (+80% Logs) est-elle assez visible sur le ticker pour déclencher une réaction sans sembler artificielle ?
 
@@ -161,7 +161,7 @@ d'event d'un tick à l'autre).
 | Paramètre | Valeur | Raison design |
 |---|---|---|
 | **Durée totale de l'event** | 4 heures | Assez long pour qu'un joueur ouvrant l'app 1h après le déclenchement puisse encore pleinement participer. Assez court pour créer une urgence perçue. |
-| **Decay progressif post-event** | ~1 heure | Les prix ne s'effondrent pas instantanément. Fenêtre de fin pour les retardataires, évite la sensation de coupure brutale. |
+| **Decay progressif post-event** | 60 min (à valider au playtest, constante `EVENT_DECAY_DURATION_MS`) | Les prix ne s'effondrent pas instantanément. Fenêtre de fin pour les retardataires, évite la sensation de coupure brutale. |
 | **Amplitude Logs** | +80% (5 → 9) | Assez visible sur le ticker pour déclencher une réaction. Assez lisible pour ne pas sembler aléatoire. |
 | **Amplitude Planks** | +83% (12 → 22) | Cohérent avec Logs, légèrement amplifié pour refléter la rareté plus grande des Planks transformés pendant l'event. |
 | **Nombre de Contrats Prioritaires** | 5 slots (phase solo) | En test solo, le joueur peut capturer l'intégralité de l'event s'il joue bien. C'est intentionnel pour le premier event scripté — on veut une première victoire claire. En Phase 2 MMO, ce nombre sera en compétition réelle. |

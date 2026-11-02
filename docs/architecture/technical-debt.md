@@ -467,13 +467,108 @@ courant ne pouvait pas rester à 9 / 22 (Planks 20/22/24 selon le bruit, Logs �
   ne le réécrit pas : préférer l'initialisation à la volée (champ absent → référence = prix publié, hors event),
   qui évite toute écriture manuelle ; à défaut, migration du document en prod = escalade cas 1, AVANT le
   déploiement de `updateMarketPrices` (sinon erreur à chaque tick, comme en D-TD018-001).
+  **Tranché par D-TD020-003 (arbitrage A ci-dessous)** : initialisation à la volée, sans migration ; la
+  migration de repli et l'escalade cas 1 associée sont sans objet.
 - **Decay** : prix publié = `round(prixEvent + (prixRéférence − prixEvent) × progression)`, progression de 0 à 1
-  sur la durée du decay (~1 h, `phase-1-economy-values.md` §6), puis retour au calcul normal depuis le prix de
-  référence.
+  sur la durée du decay (**60 min**, `EVENT_DECAY_DURATION_MS`, à valider au playtest — arbitrage C ci-dessous),
+  puis retour au calcul normal depuis le prix de référence.
 - **Un seul event par ressource** : plusieurs events simultanés sur une même ressource (le code actuel multiplie
   les multiplicateurs, `computeMarketPrice.ts:50-53`) → erreur explicite (fail loudly), pas de calcul silencieux ;
   aucun cas prévu en Phase 1, escalade s'il apparaît. Portée de l'erreur (tick entier ou ressource concernée seule)
   à trancher dans le ticket de correction : `updateMarketPrices` traite toutes les ressources en un tick.
+  **Tranché par D-TD020-003 (arbitrage B ci-dessous)** : garde à l'activation, et échec du tick entier.
+
+**Arbitrages figés (2026-11-02, D-TD020-003)** — demandés par l'auditeur Claude.ai, validés par le founder
+(« Tu peux exécuter tout le ticket comme prévu »). Ils complètent D-TD020-001/002. Sur un seul point, ils
+remplacent la conséquence « schemaVersion, migration » prévue par D-TD020-002 : ni l'un ni l'autre (arbitrage A).
+Définition commune : un event est **en cours sur une ressource** quand son `status` vaut `active` ou `decaying`
+(les deux statuts lus par `updateMarketPrices` et qui modifient le prix) et que `priceMultipliers` contient cette
+ressource. Avec le schéma actuel, chaque event porte `logs` et `planks` : en pratique, un seul event à la fois sur
+le marché. Les gardes A et B s'évaluent sur ce `status`, AVANT le filtre actuel de `updateMarketPrices.ts:55-56` qui
+ignore un event sans `endsAt` (quel que soit son statut) ou `decaying` sans `decayEndsAt` : un event incomplet
+n'échappe pas aux gardes.
+
+- **A — Prix de référence créé à la volée, sans migration.**
+  - Champ : `referencePrices.{ressource}` (entier) dans `marketState/state`, distinct de `prices` (le client lit
+    `prices.{ressource}.currentPrice` et `trend` par clé : contrat client inchangé).
+  - Créé par `updateMarketPricesHandler` lors du premier passage qui ne le trouve pas, dans la **même
+    transaction** que la relecture des prix : lecture de `marketState/state` et des events, calcul, écriture
+    unique. Aujourd'hui le handler lit hors transaction puis fait un seul `set` (commentaire « scheduled CF is
+    singleton ») : passage en `runTransaction` dans le commit de correction.
+  - **Cas autorisé** : champ absent ET aucun event en cours sur la ressource → référence initialisée à
+    `prices.{ressource}.currentPrice`, puis calcul normal.
+  - **Cas interdit** : champ absent ET event en cours sur la ressource → `throw Error` explicite, le tick échoue,
+    rien n'est écrit. Aucune initialisation devinée (le prix publié est alors un prix d'event ou de decay).
+  - Aucune écriture manuelle ou par script en production, aucun script de migration. `schemaVersion` reste 1 :
+    champ ajouté avec repli, comme `marketSalesLastHour` et `upgradesApplied` (`schema-migrations.md`). Une
+    évolution de `schemaVersion` imposerait une migration (D-TD018-001), exclue ici. Le seed
+    (`marketStateSeed.ts`) écrit le champ pour les nouveaux documents (référence = `basePrice`).
+  - **Ordre de déploiement imposé** (comme D-TD018-001) : `updateMarketPrices` corrigée est déployée, puis on
+    constate dans `marketState/state` (ou dans les logs) que `referencePrices` a été créé, AVANT tout déploiement
+    de `processWorldEventLifecycle`. Sinon, un event activé avant ce premier passage rend le cas interdit
+    permanent : erreur à chaque tick pendant ≈ 5 h (4 h d'event + 60 min), prix figés.
+- **B — Un seul event par ressource.**
+  - **Garde principale** : `processWorldEventLifecycle` refuse d'activer un event sur une ressource où un event
+    est déjà en cours (check-then-mutate dans une transaction : lecture des events `active`/`decaying`, puis
+    passage à `active`). Contexte schedulé → l'event refusé reste `pending`, rien n'est écrit pour lui, erreur
+    explicite. Déclenchement par une callable (si un jour il en existe une) → `HttpsError` `failed-precondition`.
+  - **Déroulé d'un passage schedulé** (pour qu'un refus ne bloque jamais le cycle) :
+    1. d'abord les expirations (`active → decaying` à `endsAt`, `decaying → completed` à `decayEndsAt`), chacune
+       dans sa propre transaction, validées quel que soit le résultat des activations ;
+    2. puis les activations des events `pending` échus, chacune en transaction avec la garde ;
+    3. un refus est logué (`logger.error`, event et ressource) et le passage se termine par un `throw Error`
+       une fois toutes les autres transitions validées : échec visible, sans rien annuler.
+  - **Sort de l'event refusé** : il reste `pending` et la garde le réévalue à chaque passage. Il est activé au
+    premier passage où plus aucun event n'est en cours sur ses ressources, y compris le passage même où
+    l'expiration du précédent (`→ completed`) vient d'être validée, puisque les expirations passent d'abord.
+    `startedAt` = heure réelle de l'activation, `endsAt` = `startedAt` + 4 h (durée complète), `decayEndsAt` = `endsAt` + 60 min.
+    Le calendrier prévu par le design ne change pas : la Phase 1 n'a qu'un event scripté, déclenché par
+    `firstContractCompleted` (`phase-1-technical-implementation.md`, `processWorldEventLifecycle`). Aucun
+    chevauchement n'y est prévu, le report ne joue qu'en cas d'anomalie, rendue visible par l'erreur. Toute autre
+    politique (annuler l'event, raccourcir sa durée, décaler le précédent) → escalade cas 4. Ce déroulé et ce sort
+    ont été précisés par Claude Code en revue croisée, après le feu vert du founder, sans modifier aucune valeur
+    (4 h et 60 min conservées).
+  - **Garde secondaire** : si `updateMarketPricesHandler` trouve plus d'un event en cours sur une même ressource,
+    **toute la relecture échoue** (`throw Error`). Pas seulement la ressource concernée, et aucune écriture
+    partielle : `marketState/state` reste inchangé.
+  - Justification : cohérence avec D-TD018-001 (échec bruyant plutôt que repli silencieux). Remplace le produit des
+    multiplicateurs actuel (`computeMarketPrice.ts:50-53`).
+- **C — Durée de redescente : exactement 60 minutes.**
+  Décision du founder (2026-11-02) : « Décision founder TD-020, arbitrage C : **option 1, durée de redescente =
+  exactement 60 minutes**, marquée « à valider au playtest ». »
+  Précisions du founder, même message, citées telles quelles :
+  « Constante `EVENT_DECAY_DURATION_MS` = 60 min, placée avec les autres valeurs économiques côté serveur. Pas en
+  dur dans `processWorldEventLifecycle`. » et « L'heure de fin de redescente est calculée par le serveur à
+  l'activation de l'événement et stockée sur l'événement. Rien n'est reçu du client. »
+  - Source de départ : `phase-1-economy-values.md` l.111 (« ~1h ») et l.164 (« ~1 heure »), approximatifs ; aucune
+    constante dans le code (`updateMarketPrices` lit `decayEndsAt`, `processWorldEventLifecycle` n'existe pas).
+    Ces deux lignes portent désormais la valeur exacte.
+  - **Constante à créer** : `EVENT_DECAY_DURATION_MS = 60 * 60 * 1000` (`// 60 minutes — TO_PLAYTEST`), dans
+    `firebase/functions/src/shared/marketPrices.ts`, à côté de `MARKET_PRICE_DRIFT_FACTOR`. Jamais en dur dans
+    `processWorldEventLifecycle`. Créée dans la sous-étape `processWorldEventLifecycle`, son premier usage (pas de
+    constante morte dans la correction TD-020).
+  - `decayEndsAt = endsAt + EVENT_DECAY_DURATION_MS`, calculé par le serveur à l'activation (même écriture que
+    `startedAt` et `endsAt`) et stocké sur l'event. Aucune valeur reçue du client.
+  - Conséquence à aligner dans la sous-étape `processWorldEventLifecycle` (c'est elle qui pose la valeur) : le
+    contrat actuel « `decayEndsAt` null jusqu'à la fin de l'event » devient « renseigné dès l'activation ». Endroits
+    concernés : `types.ts:213`, `updateMarketPrices.ts:53` et `:66`, `computeMarketPrice.ts:33-34`,
+    `BRIEFING-claude-code.md` (convention « Guard active vs decaying events »). En plus,
+    `phase-1-technical-implementation.md:141` (« `endsAt + 1h` ») passe à `EVENT_DECAY_DURATION_MS`. La garde
+    `decaying && !decayEndsAt` de `updateMarketPrices` reste valide. Le changement de cette convention verrouillée
+    est couvert par la précision du founder (arbitrage C, « calculée par le serveur à l'activation de
+    l'événement »). Ce n'est pas un changement de convention sans escalade (cas 5).
+  - À traiter dans la sous-étape `processWorldEventLifecycle` (constat de revue, hors décision) : le cycle de vie
+    tourne toutes les 10 min et `updateMarketPrices` suit le `status`. Entre `endsAt` et le passage suivant, le prix
+    peut donc rester au prix d'event jusqu'à 10 min de trop, puis le decay démarre déjà avancé. Comme `decayEndsAt`
+    est connu dès l'activation, la sous-étape aligne prix et horaires : c'est un détail d'implémentation, pas un
+    point de design. Les 4 h et les 60 min ne changent pas. Le moyen retenu (prix piloté par
+    les horodatages, ou autre) est relu dans le ticket de cette sous-étape ; s'il change la durée réelle
+    d'application du prix d'event → cas 4.
+  - Également à trancher dans le ticket de la sous-étape `processWorldEventLifecycle` (rattrapage après passages
+    manqués, pas une valeur de design) : un event `active` dont `endsAt` ET `decayEndsAt` sont échus enchaîne-t-il
+    `active → decaying → completed` dans le même passage, ce qui décide si un event `pending` concurrent est activé
+    ou refusé ?
+  - Modifier ces 60 min reste une escalade (cas 4).
 
 **Critères de fermeture :**
 - test déterministe multi-tick dans `computeMarketPrice.test.ts` :
@@ -485,10 +580,42 @@ courant ne pouvait pas rester à 9 / 22 (Planks 20/22/24 selon le bruit, Logs �
     le prix publié reste 22 ; le decay converge vers CETTE référence (pas vers 12 ni vers le prix publié) ;
 - test émulateur sur `updateMarketPricesHandler` : référence persistée dans `marketState`, jamais recopiée depuis
   le prix publié, sur au moins deux exécutions ; initialisation quand le champ manque ; tests du seed mis à jour ;
+- tests émulateur des arbitrages D-TD020-003 côté `updateMarketPricesHandler` (déterministes, chiffrés) :
+  - **création à la volée** : `referencePrices` absent, aucun event, `random` 0,5 (bruit nul), Logs
+    `currentPrice` **6** (hors `basePrice`, pour qu'une initialisation erronée à `basePrice` échoue) →
+    `referencePrices.logs` = 6 après le tick ; Planks 12 → 12, kits 20 → 20 ;
+  - **création à la volée refusée** : `referencePrices` entièrement absent, un event (`priceMultipliers` logs
+    ×1,8 et planks ×1,83, comme le schéma l'impose, `endsAt` et `decayEndsAt` renseignés) — un cas `active`, un
+    cas `decaying` → le handler lève une
+    erreur, `marketState/state` strictement identique avant/après (`prices`, `priceHistory`, `lastUpdatedAt`,
+    `referencePrices` toujours absent) ;
+  - **doublon détecté dans `updateMarketPrices`** : `referencePrices` présent, deux events `active` sur
+    Logs/Planks → erreur, `marketState/state` strictement identique avant/après, kits compris ;
+  - **event incomplet** (garde évaluée avant le filtre) : `referencePrices` absent et un event `active` sans
+    `endsAt` → erreur, document inchangé ; `referencePrices` présent, deux events `active` sur Logs/Planks dont un
+    sans `endsAt` → erreur, document inchangé ;
 - `npm run test:emulator` vert ; déploiement de `updateMarketPrices` corrigée = escalade cas 2.
 
-**Périmètre couvert par D-TD020-001/002** : modèle absolu pendant l'event, prix de référence suivi à part, decay
-interpolé, amendement de l'ordre de calcul de D-ETAPE14b dans le même commit. **Reste une escalade (cas 4)** : toute
+**Ce qui ferme TD-020 et ce qui est reporté** : TD-020 se ferme sur la correction de `computeMarketPrice` /
+`updateMarketPrices` et les critères ci-dessus. Cette correction lève le prérequis bloquant. Les deux tests
+suivants exigent `processWorldEventLifecycle`, qui n'existe pas avant cette correction. Ils deviennent des
+**critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`** (étape contrats / world
+events), avec la garde principale B, la constante `EVENT_DECAY_DURATION_MS` et l'alignement du contrat
+`decayEndsAt` :
+  - **doublon d'event**, trois cas distincts, chacun avec un event `pending` B arrivé à échéance et un premier
+    event A sur Logs/Planks :
+    - (a) A `active`, `endsAt` échu → `active → decaying` validé ; A reste en cours, donc B est refusé : refus logué,
+      erreur en fin de passage, B reste `pending` sans `startedAt`, `endsAt` ni `decayEndsAt`, et la transition de
+      A n'est pas annulée ;
+    - (b) A `decaying`, `decayEndsAt` non échu → B refusé, comme en (a) ; A inchangé ;
+    - (c) A `decaying`, `decayEndsAt` échu → A passe `completed`, puis B est activé DANS CE MÊME passage :
+      `startedAt` = heure du passage, durée complète (+4 h, puis +60 min), aucune erreur ;
+  - **durée** (arbitrage C) : activation à `T` → `endsAt = T + 4 h`, `decayEndsAt = endsAt + 60 min`, issu de
+    `EVENT_DECAY_DURATION_MS`.
+
+**Périmètre couvert par D-TD020-001/002/003** : modèle absolu pendant l'event, prix de référence suivi à part, decay
+interpolé, amendement de l'ordre de calcul de D-ETAPE14b dans le même commit ; arbitrages A, B, C. Le ticket de
+correction n'a plus de point de design ouvert. **Reste une escalade (cas 4)** : toute
 autre modification de l'algorithme ou de ses valeurs (`DRIFT_FACTOR`, `NOISE_AMPLITUDE`, bornes, durée du decay,
 multiplicateurs).
 Les deux escalades annoncées par la version précédente (départ hors prix normal ; bruit des Planks) sont sans objet.

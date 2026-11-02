@@ -92,6 +92,22 @@ au premier login (`!playerSnap.exists`), second write de la même transaction qu
 player. Pas de migration de données : s'applique aux nouveaux joueurs uniquement ; les players
 existants sans building ne sont pas rétro-seedés (acceptable pré-alpha, ~0 joueur — cf. TD-003).
 
+**Note TD-020 — statut : PRÉVU, pas encore implémenté (D-TD020-003, arbitrage A) :**
+`marketState/state` recevra `referencePrices.{logs,planks,reconstructionKits}` (entiers) : le prix de référence
+hors event, suivi à part du prix publié (D-TD020-002).
+- **Pas de migration de données, pas de script, aucune écriture manuelle en production** : `updateMarketPrices`
+  crée le champ à la volée, dans la même transaction que la relecture des prix, au premier passage qui ne le trouve
+  pas. Référence = `prices.{ressource}.currentPrice` s'il n'y a aucun event `active`/`decaying` sur la ressource.
+  Dans le cas contraire, erreur explicite et document inchangé.
+- `schemaVersion` reste 1 (champ ajouté avec repli, comme `marketSalesLastHour`) ; le seed l'écrit pour les
+  nouveaux documents.
+- `activeWorldEvents/{eventId}.decayEndsAt` : calculé à l'activation (`endsAt + EVENT_DECAY_DURATION_MS`, 60 min)
+  au lieu de rester null jusqu'à la fin de l'event (D-TD020-003, arbitrage C), dans la sous-étape
+  `processWorldEventLifecycle`. Aucun event n'existe en production : pas de donnée à migrer.
+- Ordre de déploiement : `updateMarketPrices` corrigée, puis `referencePrices` constaté dans `marketState/state`,
+  AVANT tout déploiement de `processWorldEventLifecycle`.
+- Détail, cas d'erreur et tests : `technical-debt.md`, TD-020.
+
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction
 `claimDailyBonus` (preuve de concept pré-spec). Elle sera supprimée

@@ -16,7 +16,8 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   gold/inventaire sur `ProductionScreen`. **ÉTAPE 18 FERMÉE le 11-01** — log
   `docs/sessions/2026-11-01-etape-18-marche.md`, décisions D-ETAPE18-001 à 006.
 - **11-02** : ÉTAPE 18 poussée ; décision founder TD-020 (D-TD020-001, amendée D-TD020-002) — prix d'event ABSOLU
-  9 / 22 = prérequis bloquant de l'étape world events (voir « Prochaine étape »).
+  9 / 22 = prérequis bloquant de l'étape world events (voir « Prochaine étape »). Puis 3 arbitrages figés
+  (D-TD020-003) : prix de référence créé à la volée, un seul event par ressource, redescente 60 min.
 - Revue croisée : règle de **passe courte** (D-ETAPE18-006) — correction de logique après la revue diff →
   les deux relecteurs relisent ce delta uniquement, avant commit (`CLAUDE.md` §a.6).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
@@ -131,6 +132,7 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
   `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
 - **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction actée le 11-02
   (D-TD020-001/002 : prix d'event absolu 9 / 22), **prérequis bloquant** de l'étape qui activera `processWorldEventLifecycle`.
+  Arbitrages figés le 11-02 (D-TD020-003) : création à la volée, un seul event par ressource, redescente 60 min.
 - **TO_PLAYTEST** (economy-values §4) : prix des Logs immobile hors event (points fixes 3-6).
 
 ### Couche client Unity (Assets/_Project/)
@@ -305,12 +307,22 @@ les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
 ÉTAPE 18 (marché) FERMÉE le 11-01 : TD-018 marché close, écran Marché complet (D-ETAPE18-001 à 006).
 Vente de test en prod autorisée par le founder pour cette validation seulement (1 log, D-ETAPE18-004).
 
-1. **Prérequis bloquant — TD-020** (D-TD020-001 amendée par D-TD020-002, founder, 11-02) : corriger
-   `computeMarketPrice` — prix d'event ABSOLU `round(basePrice × multiplicateur)` = 9 (Logs) / 22 (Planks) à chaque
-   tick actif, quel que soit le prix de départ ; prix de référence hors event suivi à part (nouveau champ
-   `marketState` : schemaVersion, migration, seed) ; decay interpolé vers lui ; un seul event par ressource ;
-   tests déterministes chiffrés (TD-020) ; amender D-ETAPE14b. Première sous-étape de l'étape contrats / world
-   events, avant toute ligne de `processWorldEventLifecycle`.
+1. **Prérequis bloquant — TD-020** (D-TD020-001 amendée par D-TD020-002, complétée par D-TD020-003, founder, 11-02) :
+   corriger `computeMarketPrice` — prix d'event ABSOLU `round(basePrice × multiplicateur)` = 9 (Logs) / 22 (Planks)
+   à chaque tick actif, quel que soit le prix de départ ; prix de référence hors event suivi à part ; decay
+   interpolé vers lui ; tests déterministes chiffrés (TD-020) ; amender D-ETAPE14b. **3 arbitrages figés
+   (D-TD020-003)**, plus aucun point de design ouvert :
+   - A : `referencePrices.{ressource}` créé à la volée par `updateMarketPrices` (même transaction), sans migration
+     ni `schemaVersion` modifié ; champ absent avec un event en cours → erreur, document inchangé ;
+   - B : un seul event en cours (`active`/`decaying`) par ressource — activation refusée dans
+     `processWorldEventLifecycle`, et toute la relecture en échec dans `updateMarketPrices` si doublon ;
+   - C : redescente **60 min** exactes (à valider au playtest), constante `EVENT_DECAY_DURATION_MS` à créer dans
+     `shared/marketPrices.ts` ; `decayEndsAt` calculé par le serveur à l'activation.
+   Première sous-étape de l'étape contrats / world events, avant toute ligne de `processWorldEventLifecycle`.
+   **Jalons** : TD-020 se ferme sur `computeMarketPrice` / `updateMarketPrices` (A + garde secondaire B). Ordre
+   de déploiement imposé : `updateMarketPrices` corrigée, puis `referencePrices` constaté en prod, AVANT
+   `processWorldEventLifecycle`. La garde principale B, la constante, le contrat `decayEndsAt` et leurs tests
+   (activation refusée, durée) sont des critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`.
 2. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
    puis service client et écran (`acceptContract`, `deliverToContract`).
 3. Résorber TD-015 dès qu'un fichier de parsing est touché.
