@@ -53,3 +53,9 @@ Hors de ces 9 cas : Claude Code tranche, avance, et documente dans le rapport.
 
 ### e. Push
 Aucun push sans accord explicite du founder. Commits locaux uniquement.
+
+## Pilotage de l'Éditeur Unity — installation obligatoire (D-REPRISE-006)
+
+« Outil de pilotage : activer "Ensure editor runs in background in PlayMode" et couper la consigne permanente. Fichier local non suivi, à refaire sur tout nouveau poste. »
+Réglage : Project Settings > Pipeline > Editor, case « Ensure editor runs in background in PlayMode » ; consigne permanente coupée par `unity command editor.playmode.set_run_in_background --enable false`. Contrôle dans `ProjectSettings/Packages/com.unity.pipeline/EditorPipelineConfig.json` : `m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`. Ne jamais
+relancer `set_run_in_background --enable true` : `runInBackground` reste à 0 dans le projet (effet sur Android).

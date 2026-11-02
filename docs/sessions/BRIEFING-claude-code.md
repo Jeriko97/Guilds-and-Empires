@@ -37,8 +37,11 @@ La direction artistique reste au founder.
 - `unity status` → attendre `ready`. Si `PIPELINE_LOAD_PENDING`, donner le focus à la fenêtre Unity.
 - Syntaxe : `unity command <groupe.commande> --param valeur --result-only --no-banner`
   (catalogue : `unity list --format json`).
-- Mode Play : `editor.playmode.start|stop`. Activer `editor.playmode.set_run_in_background --enable true`,
-  sinon le jeu se fige quand Unity n'a pas le focus.
+- **Installation obligatoire (D-REPRISE-006)** : « Outil de pilotage : activer "Ensure editor runs in background in PlayMode" et couper la consigne permanente. Fichier local non suivi, à refaire sur tout nouveau poste. »
+  Réglage : Project Settings > Pipeline > Editor, case « Ensure editor runs in background in PlayMode » ; consigne permanente coupée par `unity command editor.playmode.set_run_in_background --enable false`. Contrôle dans `ProjectSettings/Packages/com.unity.pipeline/EditorPipelineConfig.json` : `m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`.
+- Mode Play : `editor.playmode.start|stop`. Le réglage ci-dessus force Run In Background pendant le mode Play
+  seulement (sinon le jeu se fige quand Unity n'a pas le focus) et remet 0 en sortie. Ne jamais relancer
+  `set_run_in_background --enable true` : `runInBackground` reste à 0 dans `ProjectSettings.asset`.
 - Console : `console.clear` / `console.get --tail N`. Capture : `capture.game_view` (base64 sans `--save_path` ;
   avec `--save_path`, le fichier est écrit sous `Assets/`).
 - Cliquer un bouton UI Toolkit : `script.eval` + `UQueryExtensions.Q<Button>(root, "name")` +
