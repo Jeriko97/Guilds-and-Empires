@@ -512,7 +512,15 @@ n'échappe pas aux gardes.
     est déjà en cours (check-then-mutate dans une transaction : lecture des events `active`/`decaying`, puis
     passage à `active`). Contexte schedulé → l'event refusé reste `pending`, rien n'est écrit pour lui, erreur
     explicite. Déclenchement par une callable (si un jour il en existe une) → `HttpsError` `failed-precondition`.
-  - **Déroulé d'un passage schedulé** (pour qu'un refus ne bloque jamais le cycle) :
+  - **Déroulé d'un passage schedulé** (pour qu'un refus ne bloque jamais le cycle ; la donnée corrompue n'est
+    pas un refus et fait exception, voulue, à l'étape 0) :
+    0. contrôle de la donnée corrompue (plus d'un event en attente sur une ressource, voir « File d'attente
+       bornée ») : lecture faite avant les transactions des étapes suivantes ; si elle est présente, arrêt sur
+       erreur explicite AVANT toute transition, rien n'est écrit. Ce contrôle ne remplace pas les gardes : chaque
+       transaction d'activation ou de mise en attente revérifie le nombre de `pending` (check-then-mutate) ; si
+       elle en trouve plus d'un sur une ressource, même traitement que la donnée corrompue : erreur explicite,
+       cette transaction n'écrit rien, le passage se termine en erreur. Les transactions d'expiration ne
+       revérifient pas : elles ne créent ni ne modifient aucun `pending` ;
     1. d'abord les expirations (`active → decaying` à `endsAt`, `decaying → completed` à `decayEndsAt`), chacune
        dans sa propre transaction, validées quel que soit le résultat des activations ;
     2. puis les activations des events `pending` échus, chacune en transaction avec la garde ;
@@ -542,19 +550,34 @@ n'échappe pas aux gardes.
       (`logger.error`, event et ressource) et le passage se termine en erreur, comme tout refus du déroulé
       ci-dessus, sans annuler les autres transitions.
     - **Refus définitif**, à la différence de l'event en attente : un event refusé au-delà de la borne n'est jamais
-      recréé par un passage suivant, même quand la place en attente se libère. Le ticket de la sous-étape
-      `processWorldEventLifecycle` fixe la façon d'empêcher la recréation, par exemple via le champ prévu contre
-      le double déclenchement (`triggerCondition` / `triggerProcessed`, `types.ts:225-232`) ou une détection de
-      front. Pas en modifiant `firstContractCompleted`, drapeau du joueur remis à `true` à chaque livraison et
-      utilisé ailleurs. Une recréation différée serait une file plus longue : escalade cas 4.
-    - Si l'état contient déjà plus d'un event en attente sur une ressource (état que le cycle de vie ne produit
-      pas, par exemple une insertion manuelle) → erreur explicite. Aucune activation pour cette ressource, aucun
-      choix silencieux entre les deux events (échec bruyant, D-TD018-001).
+      recréé par un passage suivant, même quand la place en attente se libère. Une recréation différée serait une
+      file plus longue : escalade cas 4.
+    - **Point ouvert de la sous-étape `processWorldEventLifecycle` — document de mémorisation du refus
+      définitif** : l'event refusé au-delà de la borne (C dans les tests) n'étant jamais écrit, le refus ne peut
+      pas être mémorisé sur lui. Pas en modifiant `firstContractCompleted`, drapeau du joueur remis à `true` à
+      chaque livraison et utilisé ailleurs. `triggerProcessed`
+      (`types.ts:225-232`) est un champ du document event : il ne convient que posé sur un autre document (modèle
+      d'event existant, document de déclencheur dédié), ou il faut une détection de front. Le ticket de cette
+      sous-étape tranche le document et le champ, et la revue croisée le relit. Un choix qui permettrait une
+      recréation différée → escalade cas 4.
+    - Plus d'un event en attente sur une ressource est un état impossible avec la borne : **donnée corrompue**
+      (insertion manuelle, bug), pas un cas normal. Demande du founder (2026-11-02), citée telle quelle :
+      « Le cas de test « plusieurs événements déjà en attente » décrit un état impossible avec la borne d'un seul en attente. Vérifie que TD-020 le traite comme une donnée corrompue : erreur explicite, rien n'est écrit, l'état reste inchangé. S'il est traité comme un cas normal, corrige-le. »
+      Le passage le détecte avant toute transition et s'arrête sur
+      une erreur explicite : rien n'est écrit (aucune expiration, aucune activation, aucune création), l'état
+      reste inchangé, aucun choix silencieux entre les events. Échec bruyant, comme un `marketState` corrompu
+      (D-ETAPE14c, D-TD018-001). Conséquence, signalée au founder dans le rapport de clôture du 2026-11-02 :
+      tant que la donnée n'est pas corrigée, aucun event n'expire. Un event `active` garde son prix d'event
+      (9 / 22) au-delà de ses 4 h, avec le calcul actuel piloté par le `status`. Un event `decaying` reste
+      `decaying` : sa progression est plafonnée à 1, le prix publié revient au prix de référence, mais il reste
+      compté comme en cours. L'alignement prix / horaires prévu pour la sous-étape `processWorldEventLifecycle`
+      peut changer ce constat : il sera relu dans son ticket. La correction de la donnée est une écriture
+      manuelle en production : escalade cas 1.
     - Changer cette borne (plus d'un event en attente, file plus longue, remplacement de l'event en attente) →
       escalade cas 4.
-    - La citation est celle du founder. La mise en œuvre (définition de « en attente », garde à la mise en attente,
-      refus définitif, cas de plus d'un `pending` déjà présent) est précisée par Claude Code en revue croisée, sans
-      modifier aucune valeur.
+    - Les deux citations ci-dessus sont celles du founder. Le reste de la mise en
+      œuvre (définition de « en attente », garde à la mise en attente, refus définitif, détection avant toute
+      transition) est précisé par Claude Code en revue croisée, sans modifier aucune valeur.
   - **Garde secondaire** : si `updateMarketPricesHandler` trouve plus d'un event en cours sur une même ressource,
     **toute la relecture échoue** (`throw Error`). Pas seulement la ressource concernée, et aucune écriture
     partielle : `marketState/state` reste inchangé.
@@ -643,8 +666,10 @@ l'alignement du contrat `decayEndsAt` :
     identiques avant/après (`status`, `startedAt`, `endsAt`, `decayEndsAt`), `marketState/state` intact. Puis, aux
     passages suivants, la condition de déclenchement de C restant remplie, A expire et B est activé, mais C n'est
     toujours pas créé (refus définitif) ;
-  - **plus d'un `pending` déjà présent** sur Logs/Planks (insertion directe dans l'émulateur), aucun event en cours
-    → erreur explicite, aucun des deux n'est activé, état inchangé ;
+  - **donnée corrompue — plus d'un `pending` déjà présent** sur Logs/Planks (insertion directe dans l'émulateur),
+    plus un event A `active` dont `endsAt` est échu → erreur explicite ; rien n'est écrit : A n'expire pas, aucun
+    `pending` n'est activé, aucun event n'est créé ; tous les documents `activeWorldEvents` et `marketState/state`
+    strictement identiques avant/après ;
   - **durée** (arbitrage C) : activation à `T` → `endsAt = T + 4 h`, `decayEndsAt = endsAt + 60 min`, issu de
     `EVENT_DECAY_DURATION_MS`.
 

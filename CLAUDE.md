@@ -17,10 +17,10 @@ la « validation par étape » du briefing.
 4. **Tests** : `npm run test:emulator` pour le backend ; compilation Unity sans erreur pour le client.
 5. **Play via le plugin Unity** (`unity:unity-cli`) : capture Game view + console brute.
    Sous-étape sans effet en jeu (doc, outillage) : écrire « Play : non applicable » dans le rapport.
-6. **Revue croisée — mode diff**. Si une correction faite APRÈS cette revue touche la logique (code, tests,
-   Security Rules, configuration de build ou de dépendances, `.gitignore`) : **passe courte** des deux relecteurs
-   sur ce delta uniquement, avant le commit (règle validée par le founder le 2026-11-01, détail dans le skill
-   `revue-croisee` §5). Correction sans effet sur la logique (doc, commentaire, style) : listée dans le rapport.
+6. **Revue croisée — mode diff**. Règle du founder (D-REPRISE-004, 2026-11-02) :
+   « Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
+   La passe courte relit, par les deux relecteurs, ce delta uniquement (version qui a reçu le dernier GO → version
+   à commiter). Détail dans le skill `revue-croisee` §5.
 7. **Commit atomique LOCAL**, puis rapport de clôture.
 
 ### b. Escalade — Claude Code S'ARRÊTE et demande au founder UNIQUEMENT si :

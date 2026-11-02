@@ -18,12 +18,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - **11-02** : ÉTAPE 18 poussée ; décision founder TD-020 (D-TD020-001, amendée D-TD020-002) — prix d'event ABSOLU
   9 / 22 = prérequis bloquant de l'étape world events (voir « Prochaine étape »). Puis 3 arbitrages figés
   (D-TD020-003) : prix de référence créé à la volée, un seul event par ressource, redescente 60 min.
-- Revue croisée : règle de **passe courte** (D-ETAPE18-006) — correction de logique après la revue diff →
-  les deux relecteurs relisent ce delta uniquement, avant commit (`CLAUDE.md` §a.6).
-- **Règle du founder (2026-11-02)** : toute modification faite après un GO, **même de forme**, déclenche une passe de
-  revue courte (Codex + auditeur, sur ce delta uniquement) avant le commit. Pour les modifications faites après un
-  GO, cette règle prime sur la phrase de `CLAUDE.md` §a.6 « Correction sans effet sur la logique (doc, commentaire,
-  style) : listée dans le rapport » (alignement de `CLAUDE.md` et du skill `revue-croisee` à décider par le founder).
+- Revue croisée — **règle du founder (D-REPRISE-004, 2026-11-02, remplace D-ETAPE18-006 sur ce point)** :
+  « Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
+  Inscrite dans `CLAUDE.md` §a.6 et le skill `revue-croisee` §5.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **222/222** verts (dont 13 du seed marché TD-018).

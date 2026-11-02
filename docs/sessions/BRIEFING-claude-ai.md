@@ -39,10 +39,9 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   et fournit une capture comme preuve. Le founder reste maître de la direction artistique et des arbitrages.
 - **Mode autonome supervisé (D-REPRISE-003)** : Claude Code orchestre ; deux relecteurs read-only
   (sous-agent `auditeur` + Codex) relisent chaque ticket puis chaque diff ; le founder n'intervient que sur
-  escalade (8 cas, `CLAUDE.md`). Règle de « passe courte » (D-ETAPE18-006) : une correction de logique faite
-  après la revue diff est relue par les deux relecteurs sur ce delta uniquement. **Règle du founder (2026-11-02)** :
-  toute modification faite après un GO, même de forme, déclenche une passe de revue courte avant le commit (elle prime
-  sur la tolérance « doc, commentaire, style » de `CLAUDE.md` §a.6 ; alignement de `CLAUDE.md` et du skill à décider).
+  escalade (8 cas, `CLAUDE.md`). **Règle du founder (D-REPRISE-004,
+  2026-11-02, remplace D-ETAPE18-006 sur ce point)** : « Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
+  Inscrite dans `CLAUDE.md` §a.6 et le skill `revue-croisee` §5.
 - État (fin de journée 2026-11-01) :
   - backend 9 CF déployées en **Node 22**, `claimDailyBonus` supprimé, 222/222 tests ; `marketState/state`
     seedé en prod (TD-018 marché close) ;

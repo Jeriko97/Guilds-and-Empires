@@ -7,7 +7,7 @@ description: Revue croisée indépendante de Guilds & Empires par deux relecteur
 
 Deux relecteurs relisent **le même contenu**, **en parallèle**, **sans voir l'avis l'un de l'autre**
 ni le raisonnement de l'exécutant. Claude Code arbitre ensuite. Une seule passe par mode, sauf la
-« passe courte » sur le delta d'une correction de logique faite après la revue diff (§5).
+« passe courte » sur toute modification faite après le dernier GO (§5).
 
 ## Constantes
 ```bash
@@ -25,16 +25,20 @@ dans le rapport (« chemin Codex du skill à mettre à jour »).
 
 - **Mode ticket** — écrire le ticket dans `$OUT/ticket.md` : objectif, fichiers du périmètre, hors périmètre,
   critères d'acceptation, valeurs économiques touchées (« aucune » ou liste explicite).
-- **Mode diff** — capturer UNIQUEMENT les fichiers de la sous-étape (le working tree peut contenir autre chose) :
+- **Mode diff** — stager UNIQUEMENT les fichiers de la sous-étape (le working tree peut contenir autre chose),
+  puis montrer aux relecteurs exactement cet index :
   ```bash
   FICHIERS=(chemin1 chemin2 ...)   # périmètre exact du futur commit
-  { git -C "$REPO" diff HEAD -- "${FICHIERS[@]}"
-    git -C "$REPO" ls-files --others --exclude-standard -- "${FICHIERS[@]}" |
-      while read -r f; do git -C "$REPO" diff --no-index -- /dev/null "$f"; done
-  } > "$OUT/diff.patch"
-  grep "^diff --git" "$OUT/diff.patch"   # chaque fichier de FICHIERS doit y figurer
+  rm -f "$OUT/tree" "$OUT/go.tree" "$OUT/prev.tree"   # au début du mode diff de CHAQUE sous-étape
+  git -C "$REPO" diff --cached --name-only   # staging antérieur ? il sera perdu à la ligne suivante
+  git -C "$REPO" reset -q          # remet l'index à HEAD, working tree intact ; tout staging antérieur
+                                   # (même partiel, `git add -p`) est perdu
+  git -C "$REPO" add -- "${FICHIERS[@]}"
+  git -C "$REPO" diff --cached --name-only   # doit lister FICHIERS, et rien d'autre
+  git -C "$REPO" write-tree > "$OUT/tree"    # identifiant exact de la version relue
+  git -C "$REPO" diff --cached --binary --no-textconv > "$OUT/diff.patch"
   ```
-  `-C "$REPO"` sur CHAQUE commande git : les chemins de `ls-files` sont relatifs au repo.
+  `-C "$REPO"` sur CHAQUE commande git. Ne plus toucher l'index jusqu'aux verdicts.
 
 ## 2. Consigne commune (texte IDENTIQUE pour les deux)
 ```
@@ -65,22 +69,48 @@ C'est l'orchestrateur qui capture le contenu (étape 1) et le **joint** : l'audi
 Attendre les deux notifications. Ne pas lire une sortie avant d'avoir lancé l'autre relecteur.
 
 ## 4. Échec d'un relecteur
-Codex : exit ≠ 0 ou `codex-<mode>.md` vide → une relance. Toujours en échec → poursuivre avec l'auditeur seul
-et l'écrire en tête du rapport (« Codex : ÉCHEC », avec les 20 dernières lignes de `codex-<mode>.log`).
+Codex : exit ≠ 0 ou `codex-<mode>.md` vide → une relance. Auditeur sans sortie au format imposé → une relance.
+Toujours en échec → **pas de commit** : sans le GO des deux relecteurs, rien ne se commite. L'arrêt découle de
+la règle du founder (D-REPRISE-004) : il n'existe aucune autre issue. Claude Code s'arrête et escalade au
+founder, avec « Codex : ÉCHEC » et les 20 dernières lignes de
+`codex-<mode>.log`, ou « Auditeur : ÉCHEC » et la sortie brute de l'auditeur.
 
 ## 5. Arbitrage (Claude Code, jamais automatique)
 Coller les deux sorties **brutes**, puis un tableau : point · relecteur(s) · décision · justification.
 - **Accepté** → corrigé seulement si c'est dans le périmètre du ticket.
 - **Rejeté** → raison factuelle (règle, fichier, test) ; un bloquant ne se rejette que preuve à l'appui.
+  Un bloquant rejeté ne vaut pas GO : **pas de commit** (D-REPRISE-004). Si l'autre relecteur n'a pas levé ce
+  point et a rendu GO → escalade cas 7 ; sinon → arrêt et escalade au founder au titre de D-REPRISE-004.
 - **Escalade** (CLAUDE.md, liste d'escalade) → bloquant non résoluble dans le périmètre (cas 6),
   ou les deux relecteurs se contredisent sur un bloquant (cas 7), ou valeur économique touchée (cas 4).
 
-Corrections faites APRÈS la revue diff (règle « passe courte », validée par le founder le 2026-11-01) :
-- **Elles touchent la logique** → **passe courte** avant le commit : les deux relecteurs, mode diff, sur CE delta
-  uniquement (version relue → version corrigée), même consigne, mêmes règles que §2-§5. « Logique » = tout ce qui
-  s'exécute ou décide d'un comportement : code C#/TypeScript, tests, Security Rules, configuration de build ou de
-  dépendances (`package.json`, scripts npm, manifest Unity), `.gitignore`. Une correction issue d'une passe courte
-  qui touche encore la logique relance une passe courte sur son propre delta.
-- **Elles ne touchent pas la logique** (doc, commentaire, texte affiché, style USS) → pas de nouvelle passe ;
-  elles sont listées dans le rapport de clôture (fichier:ligne), le founder voit ce qui a changé après les verdicts.
+Modifications faites APRÈS un GO — règle du founder (D-REPRISE-004, 2026-11-02, remplace D-ETAPE18-006 sur ce
+point) :
+« Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
+- **Passe courte** : les deux relecteurs, mode diff, sur CE delta uniquement (version qui a reçu le dernier GO des
+  deux → version à commiter), même consigne, mêmes règles que §2-§5. Doc, commentaire, texte affiché, style USS,
+  coupure de ligne : aucune exception.
+- Une modification issue d'une passe courte relance une passe courte sur son propre delta. Un non-bloquant peut être
+  reporté (listé dans le rapport) plutôt qu'appliqué, pour ne pas relancer de passe.
+- Le verdict « GO APRÈS CORRECTION » d'un relecteur n'est pas un GO : les corrections demandées passent une passe
+  courte, et seul le GO de cette passe compte.
+- **Figer la version du GO** : au GO des deux, la version relue est l'arbre `$OUT/tree` enregistré au §1
+  (contenu montré = exactement cet index) : `cp "$OUT/tree" "$OUT/go.tree"`.
+- **Passe courte** (après un GO, ou après une passe sans GO des deux) :
+  ```bash
+  cp "$OUT/tree" "$OUT/prev.tree"            # AVANT d'appliquer la modification
+  # … appliquer la modification …
+  git -C "$REPO" reset -q
+  git -C "$REPO" add -- "${FICHIERS[@]}"
+  git -C "$REPO" diff --cached --name-only   # doit lister FICHIERS, et rien d'autre
+  git -C "$REPO" write-tree > "$OUT/tree"
+  BASE="$OUT/go.tree"; [ -f "$BASE" ] || BASE="$OUT/prev.tree"
+  git -C "$REPO" diff --binary --no-textconv "$(cat "$BASE")" "$(cat "$OUT/tree")" > "$OUT/delta.patch"
+  grep "^diff --git" "$OUT/delta.patch"      # non vide : liste les fichiers modifiés
+  ```
+  Départ du delta : la version qui a reçu le dernier GO des deux (`go.tree`) dès qu'il en existe un dans la
+  sous-étape ; sinon (aucun GO encore, par exemple après la revue diff initiale), la version de la passe
+  précédente (`prev.tree`). À son GO des deux : `cp "$OUT/tree" "$OUT/go.tree"`.
+- **Avant le commit** : `git -C "$REPO" write-tree` doit être identique à `go.tree`, et
+  `git -C "$REPO" diff --cached --name-only` doit lister FICHIERS et rien d'autre. Sinon, pas de commit.
 Les verdicts bruts de chaque passe courte figurent dans le rapport de clôture, avec leur arbitrage.
