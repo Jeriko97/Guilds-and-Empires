@@ -528,6 +528,33 @@ n'échappe pas aux gardes.
     politique (annuler l'event, raccourcir sa durée, décaler le précédent) → escalade cas 4. Ce déroulé et ce sort
     ont été précisés par Claude Code en revue croisée, après le feu vert du founder, sans modifier aucune valeur
     (4 h et 60 min conservées).
+  - **File d'attente bornée — décision du founder (2026-11-02)** : « L'événement refusé est mis en attente, puis
+    démarre avec sa durée complète quand le précédent est terminé. **Un seul événement en attente par ressource.**
+    Au-delà, l'activation est refusée et journalisée. »
+    - Un event est **en attente sur une ressource** quand son `status` vaut `pending` et que `priceMultipliers`
+      contient cette ressource. Par ressource : au plus un event en cours et un event en attente. Dans le schéma
+      actuel, un event `pending` n'a pas d'horaire de départ programmé (`types.ts:206-233`) : tout `pending` est
+      candidat à l'activation, donc compté comme en attente. Dans ce texte, un `pending` « échu » ou « arrivé à
+      échéance » désigne un `pending` candidat à l'activation.
+    - Garde dans `processWorldEventLifecycle`, au moment où un event est mis en attente (création ou programmation
+      d'un event `pending`), en transaction : si une ressource de cet event a déjà un event en attente → refus.
+      Aucun document event n'est écrit pour l'event refusé, et les events existants ne changent pas. Le refus est journalisé
+      (`logger.error`, event et ressource) et le passage se termine en erreur, comme tout refus du déroulé
+      ci-dessus, sans annuler les autres transitions.
+    - **Refus définitif**, à la différence de l'event en attente : un event refusé au-delà de la borne n'est jamais
+      recréé par un passage suivant, même quand la place en attente se libère. Le ticket de la sous-étape
+      `processWorldEventLifecycle` fixe la façon d'empêcher la recréation, par exemple via le champ prévu contre
+      le double déclenchement (`triggerCondition` / `triggerProcessed`, `types.ts:225-232`) ou une détection de
+      front. Pas en modifiant `firstContractCompleted`, drapeau du joueur remis à `true` à chaque livraison et
+      utilisé ailleurs. Une recréation différée serait une file plus longue : escalade cas 4.
+    - Si l'état contient déjà plus d'un event en attente sur une ressource (état que le cycle de vie ne produit
+      pas, par exemple une insertion manuelle) → erreur explicite. Aucune activation pour cette ressource, aucun
+      choix silencieux entre les deux events (échec bruyant, D-TD018-001).
+    - Changer cette borne (plus d'un event en attente, file plus longue, remplacement de l'event en attente) →
+      escalade cas 4.
+    - La citation est celle du founder. La mise en œuvre (définition de « en attente », garde à la mise en attente,
+      refus définitif, cas de plus d'un `pending` déjà présent) est précisée par Claude Code en revue croisée, sans
+      modifier aucune valeur.
   - **Garde secondaire** : si `updateMarketPricesHandler` trouve plus d'un event en cours sur une même ressource,
     **toute la relecture échoue** (`throw Error`). Pas seulement la ressource concernée, et aucune écriture
     partielle : `marketState/state` reste inchangé.
@@ -597,11 +624,11 @@ n'échappe pas aux gardes.
 - `npm run test:emulator` vert ; déploiement de `updateMarketPrices` corrigée = escalade cas 2.
 
 **Ce qui ferme TD-020 et ce qui est reporté** : TD-020 se ferme sur la correction de `computeMarketPrice` /
-`updateMarketPrices` et les critères ci-dessus. Cette correction lève le prérequis bloquant. Les deux tests
+`updateMarketPrices` et les critères ci-dessus. Cette correction lève le prérequis bloquant. Les tests
 suivants exigent `processWorldEventLifecycle`, qui n'existe pas avant cette correction. Ils deviennent des
 **critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`** (étape contrats / world
-events), avec la garde principale B, la constante `EVENT_DECAY_DURATION_MS` et l'alignement du contrat
-`decayEndsAt` :
+events), avec la garde principale B, la file d'attente bornée, la constante `EVENT_DECAY_DURATION_MS` et
+l'alignement du contrat `decayEndsAt` :
   - **doublon d'event**, trois cas distincts, chacun avec un event `pending` B arrivé à échéance et un premier
     event A sur Logs/Planks :
     - (a) A `active`, `endsAt` échu → `active → decaying` validé ; A reste en cours, donc B est refusé : refus logué,
@@ -610,6 +637,14 @@ events), avec la garde principale B, la constante `EVENT_DECAY_DURATION_MS` et l
     - (b) A `decaying`, `decayEndsAt` non échu → B refusé, comme en (a) ; A inchangé ;
     - (c) A `decaying`, `decayEndsAt` échu → A passe `completed`, puis B est activé DANS CE MÊME passage :
       `startedAt` = heure du passage, durée complète (+4 h, puis +60 min), aucune erreur ;
+  - **file d'attente bornée** (décision du founder) : A `active` avec `endsAt` NON échu et B `pending` sur
+    Logs/Planks, puis demande d'un 3e event C sur les mêmes ressources → C refusé, `logger.error` nommant C et la
+    ressource, le passage se termine en erreur ; l'état reste inchangé : C n'est pas écrit, A et B strictement
+    identiques avant/après (`status`, `startedAt`, `endsAt`, `decayEndsAt`), `marketState/state` intact. Puis, aux
+    passages suivants, la condition de déclenchement de C restant remplie, A expire et B est activé, mais C n'est
+    toujours pas créé (refus définitif) ;
+  - **plus d'un `pending` déjà présent** sur Logs/Planks (insertion directe dans l'émulateur), aucun event en cours
+    → erreur explicite, aucun des deux n'est activé, état inchangé ;
   - **durée** (arbitrage C) : activation à `T` → `endsAt = T + 4 h`, `decayEndsAt = endsAt + 60 min`, issu de
     `EVENT_DECAY_DURATION_MS`.
 

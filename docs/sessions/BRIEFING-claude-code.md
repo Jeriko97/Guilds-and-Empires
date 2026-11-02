@@ -20,6 +20,10 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   (D-TD020-003) : prix de référence créé à la volée, un seul event par ressource, redescente 60 min.
 - Revue croisée : règle de **passe courte** (D-ETAPE18-006) — correction de logique après la revue diff →
   les deux relecteurs relisent ce delta uniquement, avant commit (`CLAUDE.md` §a.6).
+- **Règle du founder (2026-11-02)** : toute modification faite après un GO, **même de forme**, déclenche une passe de
+  revue courte (Codex + auditeur, sur ce delta uniquement) avant le commit. Pour les modifications faites après un
+  GO, cette règle prime sur la phrase de `CLAUDE.md` §a.6 « Correction sans effet sur la logique (doc, commentaire,
+  style) : listée dans le rapport » (alignement de `CLAUDE.md` et du skill `revue-croisee` à décider par le founder).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **222/222** verts (dont 13 du seed marché TD-018).
@@ -315,14 +319,16 @@ Vente de test en prod autorisée par le founder pour cette validation seulement 
    - A : `referencePrices.{ressource}` créé à la volée par `updateMarketPrices` (même transaction), sans migration
      ni `schemaVersion` modifié ; champ absent avec un event en cours → erreur, document inchangé ;
    - B : un seul event en cours (`active`/`decaying`) par ressource — activation refusée dans
-     `processWorldEventLifecycle`, et toute la relecture en échec dans `updateMarketPrices` si doublon ;
+     `processWorldEventLifecycle`, et toute la relecture en échec dans `updateMarketPrices` si doublon ; l'event
+     refusé attend (`pending`), **un seul en attente par ressource** (décision founder) : un 3e est refusé et
+     journalisé, rien n'est écrit, refus définitif (jamais recréé) ;
    - C : redescente **60 min** exactes (à valider au playtest), constante `EVENT_DECAY_DURATION_MS` à créer dans
      `shared/marketPrices.ts` ; `decayEndsAt` calculé par le serveur à l'activation.
    Première sous-étape de l'étape contrats / world events, avant toute ligne de `processWorldEventLifecycle`.
    **Jalons** : TD-020 se ferme sur `computeMarketPrice` / `updateMarketPrices` (A + garde secondaire B). Ordre
    de déploiement imposé : `updateMarketPrices` corrigée, puis `referencePrices` constaté en prod, AVANT
-   `processWorldEventLifecycle`. La garde principale B, la constante, le contrat `decayEndsAt` et leurs tests
-   (activation refusée, durée) sont des critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`.
+   `processWorldEventLifecycle`. La garde principale B, la file d'attente bornée, la constante, le contrat `decayEndsAt` et leurs tests
+   (activation refusée, file d'attente bornée, durée) sont des critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`.
 2. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
    puis service client et écran (`acceptContract`, `deliverToContract`).
 3. Résorber TD-015 dès qu'un fichier de parsing est touché.

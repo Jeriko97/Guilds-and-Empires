@@ -40,7 +40,9 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - **Mode autonome supervisé (D-REPRISE-003)** : Claude Code orchestre ; deux relecteurs read-only
   (sous-agent `auditeur` + Codex) relisent chaque ticket puis chaque diff ; le founder n'intervient que sur
   escalade (8 cas, `CLAUDE.md`). Règle de « passe courte » (D-ETAPE18-006) : une correction de logique faite
-  après la revue diff est relue par les deux relecteurs sur ce delta uniquement.
+  après la revue diff est relue par les deux relecteurs sur ce delta uniquement. **Règle du founder (2026-11-02)** :
+  toute modification faite après un GO, même de forme, déclenche une passe de revue courte avant le commit (elle prime
+  sur la tolérance « doc, commentaire, style » de `CLAUDE.md` §a.6 ; alignement de `CLAUDE.md` et du skill à décider).
 - État (fin de journée 2026-11-01) :
   - backend 9 CF déployées en **Node 22**, `claimDailyBonus` supprimé, 222/222 tests ; `marketState/state`
     seedé en prod (TD-018 marché close) ;
@@ -198,8 +200,10 @@ Contrats impériaux : backend `processWorldEventLifecycle` + alimentation de `co
 (`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event absolu 9 / 22,
 tests déterministes, D-TD020-002) avant d'implémenter `processWorldEventLifecycle`. Arbitrages figés (D-TD020-003) :
 A — `referencePrices` créé à la volée par `updateMarketPrices`, sans migration (champ absent avec event en cours →
-erreur) ; B — un seul event en cours par ressource (garde à l'activation + échec de toute la relecture si doublon) ;
+erreur) ; B — un seul event en cours par ressource (garde à l'activation + échec de toute la relecture si doublon), et un seul
+event en attente par ressource (décision founder : un 3e est refusé et journalisé,
+définitivement) ;
 C — redescente 60 min exactes, à valider au playtest (`EVENT_DECAY_DURATION_MS`, à créer, `decayEndsAt` calculé
 par le serveur à l'activation). Plus aucun point de design ouvert. Jalons : TD-020 se ferme côté prix
-(`updateMarketPrices`), déployée et constatée avant `processWorldEventLifecycle` ; la garde à l'activation et la durée
-de 60 min sont des critères obligatoires de la sous-étape `processWorldEventLifecycle`.
+(`updateMarketPrices`), déployée et constatée avant `processWorldEventLifecycle` ; la garde à l'activation, la file d'attente
+bornée et la durée de 60 min sont des critères obligatoires de la sous-étape `processWorldEventLifecycle`.
