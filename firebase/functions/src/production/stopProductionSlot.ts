@@ -33,15 +33,15 @@ interface StopProductionSlotData {
 
 export type StopProductionSlotRequest  = CallableRequest<StopProductionSlotData>;
 export type StopProductionSlotResponse = {
-  /** Cycles terminés crédités avant l'arrêt. */
+  /** Cycles terminés crédités avant l'arrêt, sur tous les slots du bâtiment (règlement complet). */
   collected: Partial<Record<ResourceKey, number>>;
-  /** Production perdue à saturation. */
+  /** Production perdue à saturation lors de ce règlement. */
   discarded: Partial<Record<ResourceKey, number>>;
   /** Intrants des cycles non commencés rendus, dans la limite du plafond. */
   refunded:  Partial<Record<ResourceKey, number>>;
   /** Intrants à rendre perdus au plafond. */
   refundDiscarded: Partial<Record<ResourceKey, number>>;
-  /** Building mis à jour, slot libéré (sans id Firestore — injecté par le service client). */
+  /** Building mis à jour : tous les slots réglés, slot arrêté libéré (sans id Firestore — injecté par le service client). */
   building:  BuildingDocument;
   inventory: InventoryState;
   /** true = clé d'idempotence déjà appliquée avec le même contenu : aucun effet, état courant renvoyé. */
@@ -62,8 +62,10 @@ const RATE_LIMIT_SECONDS = 2;
  * - Idempotence (D-ETAPE19-003) : trace productionOps lue juste après le joueur, AVANT les
  *   contrôles métier — un renvoi après un arrêt réussi trouve le slot libre et doit recevoir
  *   alreadyApplied = true.
- * - Calcul entièrement délégué à computeSlotStop (shared/production.ts) : crédit, remboursement
- *   plafonné, libération. Le handler ne fait que les lectures, les contrôles et les écritures.
+ * - Calcul entièrement délégué à computeSlotStop (shared/production.ts) : règlement de tous les slots
+ *   du bâtiment comme la collecte (D-ETAPE19-007), remboursement plafonné, libération. Un état
+ *   corrompu sur n'importe quel slot, voisin compris, refuse l'arrêt sans écriture. Le handler ne
+ *   fait que les lectures, les contrôles et les écritures.
  * - La transaction est atomique : toute vérification échouée annule l'ensemble.
  */
 export async function stopProductionSlotHandler(
@@ -170,9 +172,12 @@ export async function stopProductionSlotHandler(
       try {
         stop = computeSlotStop(buildingData, playerData.inventory, slotIndex, now, createTimestamp);
       } catch (helperErr) {
+        // Le slot fautif (corrupt.slotIndex) peut être un voisin du slot demandé (règlement complet).
         const corrupt = corruptSlotDetails(helperErr);
         if (corrupt) {
-          logger.error("stopProductionSlot: état de slot corrompu", { uid, buildingId, ...corrupt });
+          logger.error("stopProductionSlot: état de slot corrompu", {
+            uid, buildingId, stoppedSlotIndex: slotIndex, ...corrupt,
+          });
         }
         throw helperErr; // Error (recette inconnue) → internal, journalisée par le catch externe.
       }

@@ -292,18 +292,145 @@ describe("stopProductionSlot", () => {
       expect((await readPlayer(uid))?.inventory.logs.quantity).toBe(4);
       expect((await readSlots(uid))[0]).toEqual(FREED_SLOT(0));
     });
+  });
 
-    it("Seul le slot arrêté est recalculé : un slot de logs voisin n'est pas collecté", async () => {
-      const uid = "stop-other-slot";
-      const neighbour = logsSlot(1, 5 * LOG_DURATION_MS);
-      await createTestPlayer(uid, { inventory: inventory(0, 0) });
-      await createTestBuilding(uid, [batchSlot(0, "planks", 0, 2), neighbour, makeIdleSlot(2)]);
+  describe("règlement de tous les slots avant l'arrêt (D-ETAPE19-007)", () => {
 
-      await stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 0 }));
+    it("Logs voisin non collecté : sa production est créditée d'abord, le remboursement est plafonné sur le stock réglé", async () => {
+      // Logs 40/50 ; voisin : 6 cycles terminés → 46. Lot de planks N = 5 arrêté sans cycle terminé :
+      // 5 − 0 − 1 = 4 cycles à rendre = 8 logs dus, 4 de place → 4 rendus, 4 perdus.
+      // (Ancien calcul : 8 rendus, puis 4 des 6 logs du voisin perdus à la collecte suivante.)
+      const uid = "stop-settle-logs";
+      await createTestPlayer(uid, { inventory: inventory(40, 0) });
+      await createTestBuilding(uid, [
+        logsSlot(0, 6.5 * LOG_DURATION_MS),
+        batchSlot(1, "planks", 0.5 * PLANKS_DURATION_MS, 5),
+        makeIdleSlot(2),
+      ]);
 
+      const result = await stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1 }));
+
+      expect(result.collected).toEqual({ logs: 6 });
+      expect(result.discarded).toEqual({ logs: 0 });
+      expect(result.refunded).toEqual({ logs: 4 });
+      expect(result.refundDiscarded).toEqual({ logs: 4 * PLANKS_INPUT_LOGS - 4 });
+
+      const player = await readPlayer(uid);
+      expect(player?.inventory.logs.quantity).toBe(50);
       const slots = await readSlots(uid);
-      expect(slots[1]).toEqual(neighbour);
-      expect((await readPlayer(uid))?.inventory.logs.quantity).toBe(1 * PLANKS_INPUT_LOGS);
+      // Voisin réglé comme par une collecte : référence avancée de 6 cycles, slot toujours actif.
+      expect(slots[0].recipeId).toBe("logs");
+      expect(slots[0].lastProcessedAt?.toMillis()).toBe(NOW_MS - 6.5 * LOG_DURATION_MS + 6 * LOG_DURATION_MS);
+      expect(slots[1]).toEqual(FREED_SLOT(1));
+      // La réponse reflète l'état écrit après le règlement complet.
+      expect(result.inventory).toEqual(player?.inventory);
+      expect(result.building.slots).toEqual(slots);
+    });
+
+    it("Planks voisin d'indice inférieur : crédité d'abord (ordre du tableau), le crédit du lot arrêté est limité sur le stock réglé", async () => {
+      // Planks 26/30. Slot 0 (voisin, N = 10) : 3 cycles → 29. Slot 1 (arrêté, N = 6) : 2 cycles,
+      // 1 crédité, 1 perdu à saturation → 30. Rendu : 6 − 2 − 1 = 3 cycles = 6 logs.
+      const uid = "stop-settle-planks";
+      await createTestPlayer(uid, { inventory: inventory(0, 26) });
+      await createTestBuilding(uid, [
+        batchSlot(0, "planks", 3.5 * PLANKS_DURATION_MS, 10),
+        batchSlot(1, "planks", 2.5 * PLANKS_DURATION_MS, 6),
+        makeIdleSlot(2),
+      ]);
+
+      const result = await stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1 }));
+
+      expect(result.collected).toEqual({ planks: 4 });
+      expect(result.discarded).toEqual({ planks: 1 });
+      expect(result.refunded).toEqual({ logs: 3 * PLANKS_INPUT_LOGS });
+      expect(result.refundDiscarded).toEqual({ logs: 0 });
+
+      const player = await readPlayer(uid);
+      expect(player?.inventory.planks.quantity).toBe(30);
+      expect(player?.inventory.logs.quantity).toBe(3 * PLANKS_INPUT_LOGS);
+      const slots = await readSlots(uid);
+      // Voisin réglé, non libéré : 3 cycles traités sur 10.
+      expect(slots[0].recipeId).toBe("planks");
+      expect(slots[0].cyclesProcessed).toBe(3);
+      expect(slots[0].lastProcessedAt?.toMillis()).toBe(NOW_MS - 3.5 * PLANKS_DURATION_MS + 3 * PLANKS_DURATION_MS);
+      expect(slots[1]).toEqual(FREED_SLOT(1));
+      expect(result.inventory).toEqual(player?.inventory);
+      expect(result.building.slots).toEqual(slots);
+    });
+
+    it("Slot voisin corrompu (lot épuisé non libéré) → failed-precondition, journalisé avec les deux slots, rien n'est écrit", async () => {
+      const uid = "stop-settle-corrupt";
+      const key = randomUUID();
+      const slots = [
+        batchSlot(0, "planks", 3 * PLANKS_DURATION_MS, 2, 2), // voisin corrompu
+        batchSlot(1, "planks", 2.5 * PLANKS_DURATION_MS, 6),  // arrêté
+      ];
+      await createTestPlayer(uid, { inventory: inventory(10, 0) });
+      await createTestBuilding(uid, slots);
+      const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
+
+      try {
+        await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key })))
+          .rejects.toMatchObject({ code: "failed-precondition" } satisfies Partial<HttpsError>);
+        expect(errorSpy).toHaveBeenCalledWith(
+          "stopProductionSlot: état de slot corrompu",
+          expect.objectContaining({
+            uid, buildingId: "sawmill_0", reason: "corrupt-slot", slotIndex: 0, stoppedSlotIndex: 1,
+            motif: expect.stringMatching(/lot épuisé/),
+          }),
+        );
+      } finally {
+        errorSpy.mockRestore();
+      }
+      expect(await readSlots(uid)).toEqual(slots);
+      expect((await readPlayer(uid))?.inventory).toEqual(inventory(10, 0));
+      expect((await opRef(uid, key).get()).exists).toBe(false);
+    });
+
+    it("Slot voisin de recette inconnue → internal, journalisé, rien n'est écrit", async () => {
+      const uid = "stop-settle-unknown";
+      const key = randomUUID();
+      const slots = [
+        { ...logsSlot(0, LOG_DURATION_MS), recipeId: "dragon_scales" as unknown as "logs" },
+        batchSlot(1, "planks", 2.5 * PLANKS_DURATION_MS, 6),
+      ];
+      await createTestPlayer(uid, { inventory: inventory(10, 0) });
+      await createTestBuilding(uid, slots);
+      const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
+
+      try {
+        await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key })))
+          .rejects.toMatchObject({ code: "internal", message: "Erreur interne du serveur." } satisfies Partial<HttpsError>);
+        expect(errorSpy).toHaveBeenCalledWith("stopProductionSlot: erreur inattendue", expect.objectContaining({ uid }));
+      } finally {
+        errorSpy.mockRestore();
+      }
+      expect(await readSlots(uid)).toEqual(slots);
+      expect((await readPlayer(uid))?.inventory).toEqual(inventory(10, 0));
+      expect((await opRef(uid, key).get()).exists).toBe(false);
+    });
+
+    it("Rejeu d'un arrêt avec voisin réglé : alreadyApplied, aucun double crédit du voisin", async () => {
+      const uid = "stop-settle-replay";
+      const key = randomUUID();
+      await createTestPlayer(uid, { inventory: inventory(0, 0) });
+      await createTestBuilding(uid, [
+        logsSlot(0, 6.5 * LOG_DURATION_MS),
+        batchSlot(1, "planks", 0.5 * PLANKS_DURATION_MS, 5),
+      ]);
+
+      const first = await stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key }));
+      const playerAfterFirst = await readPlayer(uid);
+      const slotsAfterFirst = await readSlots(uid);
+      await resetRateLimit(uid);
+      const second = await stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key }));
+
+      expect(first.collected).toEqual({ logs: 6 });
+      expect(second.alreadyApplied).toBe(true);
+      expect(second.collected).toEqual({});
+      expect(await readPlayer(uid)).toEqual(playerAfterFirst);
+      expect(await readSlots(uid)).toEqual(slotsAfterFirst);
+      expect(playerAfterFirst?.inventory.logs.quantity).toBe(6 + 4 * PLANKS_INPUT_LOGS);
     });
   });
 

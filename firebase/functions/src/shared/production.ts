@@ -189,31 +189,35 @@ export function processBuildingSlots(
 export type SlotStopResult = {
   updatedSlots: ProductionSlotState[];
   updatedInventory: InventoryState;
-  /** Cycles terminés crédités (effet 1). */
+  /** Cycles terminés crédités par le règlement de tous les slots du bâtiment (effet 1). */
   collected: Partial<Record<ResourceKey, number>>;
-  /** Production perdue à saturation (effet 1). */
+  /** Production perdue à saturation lors de ce règlement (effet 1). */
   discarded: Partial<Record<ResourceKey, number>>;
-  /** Intrants des cycles non commencés rendus, dans la limite du plafond (effet 3). */
+  /** Intrants des cycles non commencés rendus, dans la limite du plafond de l'inventaire réglé (effet 3). */
   refunded: Partial<Record<ResourceKey, number>>;
   /** Intrants à rendre perdus au plafond (effet 3, décision founder du 2026-11-02). */
   refundDiscarded: Partial<Record<ResourceKey, number>>;
 };
 
 /**
- * Calcule l'arrêt d'un slot occupé, dans l'ordre de la spec (D-ETAPE19-002, 19.0 / 19.1) :
- *  1. recalcul et crédit des cycles terminés du SEUL slot arrêté (processBuildingSlots : saturation
- *     comprise, jamais plus que N pour un lot) — les autres slots ne sont ni collectés ni contrôlés ;
+ * Calcule l'arrêt d'un slot occupé, dans l'ordre de la spec (D-ETAPE19-002, D-ETAPE19-007) :
+ *  1. règlement de TOUS les slots du bâtiment, exactement comme la collecte (processBuildingSlots :
+ *     même ordre, saturation comprise, jamais plus que N pour un lot) — le slot arrêté y est crédité
+ *     de ses cycles terminés ; une production en attente sur un voisin est comptée avant le
+ *     remboursement, qui ne peut donc plus la faire perdre après coup (D-ETAPE19-007) ;
  *  2. cycle en cours perdu, avec ses intrants (arrêt pile en fin de cycle compris : le cycle suivant
  *     compte comme commencé, règle 19.0) ;
  *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs, où
  *     cyclesProcessed est compté après l'effet 1 (lot entièrement écoulé : N, rien à rendre). Chaque
- *     ressource rendue est limitée à sa place libre après le crédit ; l'excédent est perdu (décision
- *     founder : « remboursement limité au plafond, l'excédent est perdu »). Logs : rien à rendre ;
+ *     ressource rendue est limitée à sa place libre dans l'inventaire réglé (tous slots crédités) ;
+ *     l'excédent est perdu (décision founder : « remboursement limité au plafond, l'excédent est
+ *     perdu »). Logs : rien à rendre ;
  *  4. slot libéré.
  *
  * PUR — même contrat que processBuildingSlots (aucun I/O, `now` injecté, arguments non mutés).
  * Throws Error si le slot est absent ou libre (contrôlé par le handler avant l'appel), et les
- * erreurs de processBuildingSlots (recette inconnue, état de slot corrompu).
+ * erreurs de processBuildingSlots pour N'IMPORTE QUEL slot du bâtiment, voisin compris (recette
+ * inconnue ; état de slot corrompu, dont details.slotIndex désigne le slot fautif).
  */
 export function computeSlotStop(
   building: BuildingDocument,
@@ -228,12 +232,13 @@ export function computeSlotStop(
     throw new Error(`computeSlotStop: slot ${slotIndex} absent ou libre`);
   }
 
-  // Effets 1-2 : crédit du seul slot arrêté.
-  const processed = processBuildingSlots({ ...building, slots: [target] }, inventory, now, createTimestamp);
-  const afterCredit = processed.updatedSlots[0];
+  // Effets 1-2 : règlement de tous les slots, comme la collecte.
+  const processed = processBuildingSlots(building, inventory, now, createTimestamp);
+  // Toujours trouvé : cible contrôlée ci-dessus, processBuildingSlots conserve les slotIndex.
+  const afterCredit = processed.updatedSlots.find((s) => s.slotIndex === slotIndex) as ProductionSlotState;
   const updatedInventory = processed.updatedInventory;
 
-  // Effet 3 : remboursement plafonné.
+  // Effet 3 : remboursement plafonné sur l'inventaire réglé.
   const refunded: Partial<Record<ResourceKey, number>> = {};
   const refundDiscarded: Partial<Record<ResourceKey, number>> = {};
   const recipe = RECIPES[target.recipeId];
@@ -268,7 +273,7 @@ export function computeSlotStop(
     cyclesPlanned:   null,
     cyclesProcessed: null,
   };
-  const updatedSlots = building.slots.map((s) => s.slotIndex === slotIndex ? freedSlot : { ...s });
+  const updatedSlots = processed.updatedSlots.map((s) => s.slotIndex === slotIndex ? freedSlot : s);
 
   return {
     updatedSlots,

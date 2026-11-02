@@ -487,22 +487,43 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
     const at = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
     const PLANKS_INPUT_LOGS = RECIPES["planks"].inputs!["logs"]!; // 2
 
-    it("27. Ne touche que le slot arrêté : un état corrompu sur un autre slot ne bloque pas l'arrêt", () => {
+    it("27. Règlement de tous les slots (D-ETAPE19-007) : voisin crédité d'abord, remboursement plafonné sur le stock réglé", () => {
+      // Logs 40/50 ; voisin logs : 6 cycles → 46 ; lot de planks N = 5 arrêté sans cycle terminé :
+      // 4 cycles à rendre = 8 logs dus, 4 de place → 4 rendus, 4 perdus.
+      const now = T0 + 6 * LOG_DURATION_MS + 1;
       const building = makeBuilding([
-        makeBatchSlot(0, "planks", T0, 5, 5),            // corrompu, non arrêté
-        makeSlot(1, "logs", T0),                         // non arrêté : pas collecté
-        makeBatchSlot(2, "planks", T0, 4),               // arrêté
+        makeSlot(0, "logs", T0),                                  // voisin, réglé
+        makeBatchSlot(1, "planks", now - PLANKS_DURATION_MS / 2, 5), // arrêté
+        makeSlot(2, "logs", now),                                 // voisin sans cycle terminé : inchangé
       ]);
-      const result = computeSlotStop(building, makeInventory(), 2, at(T0 + PLANKS_DURATION_MS + 1), createTs);
+      const result = computeSlotStop(building, makeInventory({ quantity: 40, cap: 50 }), 1, at(now), createTs);
 
-      expect(result.collected).toEqual({ planks: 1 });
-      // 4 − 1 traité − 1 en cours = 2 cycles rendus.
-      expect(result.refunded).toEqual({ logs: 2 * PLANKS_INPUT_LOGS });
-      expect(result.updatedSlots[0]).toEqual(building.slots[0]);
-      expect(result.updatedSlots[1]).toEqual(building.slots[1]);
-      expect(result.updatedSlots[2]).toEqual({
-        slotIndex: 2, recipeId: null, startedAt: null, lastProcessedAt: null, cyclesPlanned: null, cyclesProcessed: null,
+      expect(result.collected).toEqual({ logs: 6 });
+      expect(result.discarded).toEqual({ logs: 0 });
+      expect(result.refunded).toEqual({ logs: 4 });
+      expect(result.refundDiscarded).toEqual({ logs: 4 * PLANKS_INPUT_LOGS - 4 });
+      expect(result.updatedInventory.logs.quantity).toBe(50);
+      expect(result.updatedSlots[0]).toEqual({ ...building.slots[0], lastProcessedAt: at(T0 + 6 * LOG_DURATION_MS) });
+      expect(result.updatedSlots[1]).toEqual({
+        slotIndex: 1, recipeId: null, startedAt: null, lastProcessedAt: null, cyclesPlanned: null, cyclesProcessed: null,
       });
+      expect(result.updatedSlots[2]).toEqual(building.slots[2]);
+    });
+
+    it("27b. Voisin corrompu → failed-precondition (règle unique), details.slotIndex = slot fautif", () => {
+      const building = makeBuilding([
+        makeBatchSlot(0, "planks", T0, 5, 5), // voisin corrompu (lot épuisé non libéré)
+        makeBatchSlot(2, "planks", T0, 4),    // arrêté
+      ]);
+      let caught: unknown;
+      try {
+        computeSlotStop(building, makeInventory(), 2, at(T0 + PLANKS_DURATION_MS + 1), createTs);
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(HttpsError);
+      expect((caught as HttpsError).code).toBe("failed-precondition");
+      expect(corruptSlotDetails(caught)).toMatchObject({ reason: "corrupt-slot", slotIndex: 0, recipeId: "planks" });
     });
 
     it("28. Lot entièrement écoulé : N crédités (libéré par le calcul), rien à rendre", () => {
