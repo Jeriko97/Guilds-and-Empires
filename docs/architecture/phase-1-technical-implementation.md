@@ -78,9 +78,9 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
 **Champs ajoutés par l'ÉTAPE 19 (implémentés en 19.1, `fcaa47a`, non déployés)** : `cyclesPlanned` et `cyclesProcessed` sur chaque slot, sous-collection
 de traces `/players/{uid}/productionOps/{idempotencyKey}`. Champ absent = `null` (slot de logs ou slot libre) :
 pas de migration pour ces slots. Un slot de transformation sans ces champs (lancé avant l'ÉTAPE 19) imposerait une
-décision de reprise : voir `schema-migrations.md`, note ÉTAPE 19. Implémenté en 19.1 : `processBuildingSlots` lève une
-`Error` sur un tel slot, convertie en `HttpsError` `internal` par `collectProduction` et `resolveLoginState` ; tout le
-compte devient illisible (login et collecte) tant que la donnée n'est pas reprise (escalade cas 1).
+décision de reprise : voir `schema-migrations.md`, note ÉTAPE 19. Depuis 19.2 (D-ETAPE19-006) : `processBuildingSlots`
+lève `HttpsError` `failed-precondition` (journalisé) sur un tel slot comme sur tout état de slot corrompu ; la connexion,
+la collecte et l'arrêt de ce slot sont refusés tant que la donnée n'est pas reprise (escalade cas 1).
 
 ---
 
@@ -252,7 +252,9 @@ export const startProductionSlot = functions.https.onCall(
  * Rate limit: 10 appels / min par uid.
  * Side effect: si production continue et cap atteint, slot reste actif mais yield = 0.
  * ÉTAPE 19 (implémenté en 19.1) : un lot dont tous les cycles sont traités libère son slot dans la même
- * écriture. Slot de transformation hérité (sans cyclesPlanned) → internal.
+ * écriture. États de slot corrompus (règle unique, ÉTAPE 19.2, D-ETAPE19-006 : slot hérité sans
+ * cyclesPlanned, compteurs de lot invalides, lot épuisé non libéré, slot occupé sans startedAt)
+ * → failed-precondition, journalisé (logger.error), rien n'est écrit. Recette inconnue → internal, journalisé.
  * Renvoie l'état mis à jour (building sans id Firestore — injecté par le service client,
  * D-ETAPE16-004) ainsi que collected/discarded. Aligné sur startProductionSlot (17.B-0).
  */
@@ -268,23 +270,28 @@ export const collectProduction = functions.https.onCall(
 );
 
 /**
- * ÉTAPE 19.2 (PRÉVU, D-ETAPE19-002) — Arrête un slot actif et le libère.
+ * ÉTAPE 19.2 (implémenté, non déployé ; D-ETAPE19-002 et 006) — Arrête un slot actif et le libère.
  * Entrée : buildingId, slotIndex, idempotencyKey. Aucun temps ni aucune quantité reçus du client.
  * Validations (dans cet ordre) :
  *  - non authentifié → unauthenticated ; rate limit → resource-exhausted ;
- *  - buildingId non vide, slotIndex ∈ {0,1,2}, idempotencyKey au format UUID (comme le lancement,
- *    D-ETAPE19-005) → invalid-argument sinon ;
+ *  - buildingId identifiant de document valide (non vide, sans « / », ni « . », « .. », « __x__ »),
+ *    slotIndex ∈ {0,1,2}, idempotencyKey au format UUID (comme le lancement, D-ETAPE19-005)
+ *    → invalid-argument sinon ;
  *  - transaction : player absent → not-found ; schemaVersion invalide → failed-precondition ;
- *    trace productionOps existante avec un autre contenu → failed-precondition ; même contenu → aucun
- *    effet, état courant renvoyé avec alreadyApplied = true (contrôle AVANT l'état du building et du
- *    slot, comme sellToMarket : un renvoi après un arrêt réussi trouve le slot libre, il doit
- *    recevoir alreadyApplied = true ; scénario à tester en 19.2) ;
+ *    trace productionOps existante avec un autre contenu (contenu comparé : uid, op "stop", buildingId,
+ *    slotIndex ; une trace de lancement est un autre contenu) → failed-precondition ; même contenu →
+ *    aucun effet, état courant renvoyé avec alreadyApplied = true et collected, discarded, refunded,
+ *    refundDiscarded vides ; bâtiment absent sur ce rejeu → not-found (contrôle AVANT l'état du
+ *    building et du slot, comme sellToMarket : un renvoi après un arrêt réussi trouve le slot libre,
+ *    il doit recevoir alreadyApplied = true ; testé en 19.2) ;
  *    building ou slot absent → not-found ; slot libre (recipeId == null) → failed-precondition ;
- *    recette inconnue (donnée corrompue) → internal.
+ *    recette inconnue (donnée corrompue) → internal, journalisé ; état de slot corrompu (règle unique,
+ *    D-ETAPE19-006) → failed-precondition, journalisé, rien n'est écrit.
  * Effets, dans la même transaction et dans cet ordre (le recalcul et le crédit précèdent
  * toujours le remboursement) :
  *  1. cycles terminés jusqu'à maintenant : recalculés et crédités comme à la collecte
  *     (processBuildingSlots : bornés par la place libre, le reste perdu), sans dépasser N pour un lot ;
+ *     seul le slot arrêté est recalculé (les autres slots ne sont ni collectés ni contrôlés) ;
  *  2. cycle en cours : il en existe un seulement si, après l'effet 1, cyclesProcessed < N (lot) ;
  *     il est perdu, avec ses intrants. Arrêt pile en fin de cycle (temps écoulé depuis
  *     lastProcessedAt — ou startedAt s'il est null — multiple exact de la durée) : le cycle suivant
@@ -292,13 +299,15 @@ export const collectProduction = functions.https.onCall(
  *     une modification de règle économique, escalade cas 4) ;
  *     logs : le cycle en cours est perdu, sans intrant à perdre ;
  *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs,
- *     arrêt pile en fin de cycle compris ;
+ *     arrêt pile en fin de cycle compris ; chaque ressource rendue est limitée à sa place libre après
+ *     l'effet 1, l'excédent est perdu et renvoyé dans refundDiscarded (décision du founder,
+ *     D-ETAPE19-006 : « remboursement limité au plafond, l'excédent est perdu ») ;
  *     lot déjà entièrement écoulé (cyclesProcessed = N après l'effet 1) : aucun cycle en cours,
  *     rien à rendre, crédit puis libération ; logs : rien à rendre ;
  *  4. slot libéré (recipeId, startedAt, lastProcessedAt, cyclesPlanned, cyclesProcessed → null) ;
- *  5. trace productionOps écrite.
- * Point ouvert, tranché dans le ticket 19.2 : intrants rendus au-delà du plafond de la ressource
- *  rendue (perdus, ou dépassement toléré). Une perte de ressources → escalade cas 4.
+ *  5. trace productionOps écrite (op "stop", buildingId, slotIndex, recipeId arrêtée — informatif).
+ * Calcul : fonction pure computeSlotStop (shared/production.ts) ; le handler ne fait que les lectures,
+ * les contrôles et les écritures.
  */
 export const stopProductionSlot = functions.https.onCall(
   async (request: CallableRequest<{
@@ -309,6 +318,7 @@ export const stopProductionSlot = functions.https.onCall(
     collected: Partial<Record<ResourceKey, number>>;
     discarded: Partial<Record<ResourceKey, number>>;
     refunded:  Partial<Record<ResourceKey, number>>;
+    refundDiscarded: Partial<Record<ResourceKey, number>>;  // ÉTAPE 19.2 : intrants perdus au plafond
     building:  BuildingDocument;
     inventory: InventoryState;
     alreadyApplied: boolean;
@@ -432,7 +442,9 @@ resolveLoginState():
       completedCycles = floor(elapsed / recipe.durationMs)
 
       // ÉTAPE 19 (implémenté en 19.1, D-ETAPE19-001) — lot : jamais plus que les cycles restants du lot
-      // Slot de transformation sans cyclesPlanned (hérité) → Error → HttpsError internal
+      // État de slot corrompu (hérité sans cyclesPlanned, compteurs invalides, lot épuisé non libéré,
+      // slot occupé sans startedAt) → HttpsError failed-precondition, journalisé, rien n'est écrit
+      // (ÉTAPE 19.2, D-ETAPE19-006)
       if slot.cyclesPlanned != null:
         completedCycles = min(completedCycles, slot.cyclesPlanned - slot.cyclesProcessed)
       rawYield = completedCycles * recipe.outputQty

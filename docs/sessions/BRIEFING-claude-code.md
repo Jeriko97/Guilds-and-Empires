@@ -26,7 +26,7 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   sur les erreurs des CF planifiées, prérequis du déploiement de `processWorldEventLifecycle`.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
-- Tests : **260/260** verts le 11-02 après l'ÉTAPE 19.1 (222 au 11-01, dont 13 du seed marché TD-018).
+- Tests : **318/318** verts le 11-02 après l'ÉTAPE 19.2 (260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
 
 ### Pilotage de l'Éditeur Unity (D-REPRISE-001) — l'agent câble et valide lui-même
@@ -141,7 +141,7 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
   (D-TD020-001/002 : prix d'event absolu 9 / 22), **prérequis bloquant** de l'étape qui activera `processWorldEventLifecycle`.
   Arbitrages figés le 11-02 (D-TD020-003) : création à la volée, un seul event par ressource, redescente 60 min.
 - **TD-023** (11-02) : production infinie de planks et de kits par appel direct de `startProductionSlot` — à
-  résoudre avant tout testeur externe (déploiement 19.1 et 19.2).
+  résoudre avant tout testeur externe ; fermeture au déploiement 19.5 (19.1 et 19.2 implémentés, non déployés).
 - **TD-021** (11-02) : erreurs des Cloud Functions planifiées sans alerte — à résoudre avant le premier event en
   production, prérequis du déploiement de `processWorldEventLifecycle` (ordre imposé dans TD-020).
 - **TO_PLAYTEST** (economy-values §4) : prix des Logs immobile hors event (points fixes 3-6).
@@ -350,11 +350,21 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
 - 19.1 — backend : lot et consommation (`startProductionSlot`, `processBuildingSlots`, collecte et login), traces
   d'idempotence, Security Rules ; vérification des slots de transformation en production — fait le 11-02 (`fcaa47a`, non
   déployé ; aucun slot de transformation en prod) ;
-- 19.2 — backend : arrêt d'un slot (`stopProductionSlot`) ;
+- 19.2 — backend : arrêt d'un slot (`stopProductionSlot`, remboursement limité au plafond) et règle unique des
+  états de slot corrompus (`failed-precondition`, journalisés) — fait le 11-02 (`ba8f108`, non déployé ; D-ETAPE19-006) ;
 - 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
   parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService` ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
+  Conditions écrites de déploiement (founder, ticket 19.2) :
+  (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
+  (b) juste avant le déploiement, revérifier en lecture seule l'absence de slots de planks ou de kits, étendue à tous
+  les états de slot corrompus (D-ETAPE19-006 : slot occupé sans `startedAt`, logs compris ; compteurs de lot
+  invalides ou épuisés) ;
+  (c) TD-021 (alertes) en prérequis, comme pour `processWorldEventLifecycle`, puisqu'un état corrompu bloque la
+  connexion du compte. Note : TD-021 couvre aujourd'hui les fonctions planifiées ; l'étendre aux erreurs « état de
+  slot corrompu » journalisées par la connexion, la collecte et l'arrêt est à décider par le founder à l'escalade
+  19.5 — sans cette extension, (c) ne protège pas de ce risque.
 
 **ÉTAPE 20 — Contrats** :
 

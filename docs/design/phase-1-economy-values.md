@@ -41,7 +41,8 @@ Un joueur peut lancer 3 cycles de Logs simultanément, ou mixer Logs/Planks selo
   Cette vérification ne protège pas d'un autre slot qui remplirait la même ressource en parallèle : l'interface
   affiche ce risque (ÉTAPE 19.4).
 - **Arrêt d'un slot** : toujours possible. Les cycles terminés sont crédités ; le cycle en cours est perdu, avec ses
-  intrants ; les intrants des cycles non commencés sont rendus.
+  intrants ; les intrants des cycles non commencés sont rendus, dans la limite du plafond de chaque ressource :
+  l'excédent est perdu (décision du founder, 2026-11-02, D-ETAPE19-006).
 - **Bâtiment** : les trois recettes, Kits compris, sont produites à la Sawmill en Phase 1.
 
 **TO_PLAYTEST** — Toutes ces durées. Question clé de game feel : est-ce que le joueur ressent de l'anticipation au retour, ou de la frustration d'avoir "pas grand chose" après 30 minutes ?
