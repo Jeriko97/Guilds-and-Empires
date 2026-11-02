@@ -17,6 +17,7 @@ import {
 
 const LOG_DURATION_MS = RECIPES["logs"].durationMs; // 20 min
 const LOG_OUTPUT_QTY  = RECIPES["logs"].outputQty;  // 1
+const KITS_DURATION_MS = RECIPES["reconstruction_kits"].durationMs; // 60 min
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -225,6 +226,33 @@ describe("resolveLoginState", () => {
     const lastProcessedAtAfter = buildingSnap.data()?.slots[0].lastProcessedAt;
     expect(lastProcessedAtAfter).not.toBeNull();
     expect(lastProcessedAtAfter).not.toEqual(lastProcessedAtBefore);
+  });
+
+  it("ÉTAPE 19.1 — lot de kits partiellement écoulé au login : cycles crédités, slot toujours actif", async () => {
+    const uid = "test-user-batch-login";
+    await createTestPlayer(uid);
+    await createTestBuilding(uid, [
+      { ...makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS + 60_000), cyclesPlanned: 5, cyclesProcessed: 0 },
+    ]);
+
+    const result = await resolveLoginStateHandler(makeRequest(uid));
+
+    expect(result.player.inventory.reconstructionKits.quantity).toBe(3);
+    const slot = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get())
+      .data()?.slots[0];
+    expect(slot.recipeId).toBe("reconstruction_kits");
+    expect(slot.cyclesPlanned).toBe(5);
+    expect(slot.cyclesProcessed).toBe(3);
+  });
+
+  it("ÉTAPE 19.1 — slot hérité de transformation au login → internal", async () => {
+    const uid = "test-user-legacy-login";
+    await createTestPlayer(uid);
+    await createTestBuilding(uid, [makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS)]);
+
+    await expect(resolveLoginStateHandler(makeRequest(uid))).rejects.toMatchObject(
+      { code: "internal" } satisfies Partial<HttpsError>
+    );
   });
 
   it("Rate limit : deuxième appel rapide rejeté avec resource-exhausted", async () => {

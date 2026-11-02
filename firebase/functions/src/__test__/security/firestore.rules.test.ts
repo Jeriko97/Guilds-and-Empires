@@ -50,6 +50,7 @@ beforeAll(async () => {
     await db.collection("players").doc(OWNER_UID).collection("marketTrades").doc("t1").set({ uid: OWNER_UID });
     await db.collection("players").doc(OWNER_UID).collection("inventoryUpgrades").doc("u1").set({ uid: OWNER_UID });
     await db.collection("players").doc(OWNER_UID).collection("guildPurchases").doc("g1").set({ uid: OWNER_UID });
+    await db.collection("players").doc(OWNER_UID).collection("productionOps").doc("op1").set({ uid: OWNER_UID });
     await db.collection("marketState").doc("state").set({ prices: {} });
     await db.collection("activeWorldEvents").doc("event1").set({ eventType: "test" });
     await db.collection("contractPool").doc("pool1").set({ tier: 1 });
@@ -228,4 +229,14 @@ test("22. OWNER query guildPurchases → assertSucceeds", async () => {
   await assertSucceeds(
     db.collection("players").doc(OWNER_UID).collection("guildPurchases").get()
   );
+});
+
+// ─── G. players/{uid}/productionOps — aucun accès client (ÉTAPE 19.1, D-ETAPE19-003) ───
+// Non listée dans firestore.rules : couverte par la règle de repli deny-all.
+
+test("23. productionOps : OWNER read / OWNER query / OWNER write → assertFails", async () => {
+  const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
+  await assertFails(ownerDb.collection("players").doc(OWNER_UID).collection("productionOps").doc("op1").get());
+  await assertFails(ownerDb.collection("players").doc(OWNER_UID).collection("productionOps").get());
+  await assertFails(ownerDb.collection("players").doc(OWNER_UID).collection("productionOps").doc("op2").set({ uid: OWNER_UID }));
 });

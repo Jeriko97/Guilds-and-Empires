@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 
 import { processBuildingSlots } from "../shared/production";
-import { RECIPES } from "../shared/recipes";
+import { RECIPES, PLANKS_MAX_BATCH_CYCLES, KITS_MAX_BATCH_CYCLES } from "../shared/recipes";
 import type { BuildingDocument, InventoryState, ProductionSlotState } from "../shared/types";
 
 // Admin initialisé sans connexion Firestore — Timestamp est une classe utilitaire pure.
@@ -13,6 +13,8 @@ if (!admin.apps.length) {
 
 const LOG_DURATION_MS = RECIPES["logs"].durationMs; // 20 min
 const LOG_OUTPUT_QTY  = RECIPES["logs"].outputQty;  // 1
+const PLANKS_DURATION_MS = RECIPES["planks"].durationMs;              // 25 min
+const KITS_DURATION_MS   = RECIPES["reconstruction_kits"].durationMs; // 60 min
 
 // ── Factories ─────────────────────────────────────────────────────────────────
 
@@ -44,6 +46,21 @@ function makeSlot(
       : null,
   };
 }
+
+/** Slot de lot (ÉTAPE 19.1) : cyclesPlanned = N, cyclesProcessed déjà traités. */
+function makeBatchSlot(
+  slotIndex: 0 | 1 | 2,
+  recipeId: "planks" | "reconstruction_kits",
+  startedAtMs: number,
+  cyclesPlanned: number,
+  cyclesProcessed = 0,
+  lastProcessedAtMs: number | null = null,
+): ProductionSlotState {
+  return { ...makeSlot(slotIndex, recipeId, startedAtMs, lastProcessedAtMs), cyclesPlanned, cyclesProcessed };
+}
+
+/** Slot libre attendu après la fin d'un lot. */
+const FREED = { recipeId: null, startedAt: null, lastProcessedAt: null, cyclesPlanned: null, cyclesProcessed: null };
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -255,6 +272,132 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
     // lastProcessedAt avance de 3 cycles (Option B) — PAS de 0 cycle (yield effectif).
     const expectedLastProcessedAtMs = startedAtMs + 3 * LOG_DURATION_MS;
     expect(result.updatedSlots[0].lastProcessedAt?.toMillis()).toBe(expectedLastProcessedAtMs);
+  });
+
+  // ── ÉTAPE 19.1 — production par lot (D-ETAPE19-001, 004) ───────────────────
+  // Horloge contrôlée : startedAt = T0 fixe, now = T0 + k × durée (+ marge).
+
+  describe("lot de N cycles", () => {
+    const T0 = 1_700_000_000_000;
+    const at = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
+
+    it("11. Lot complet de planks (24) : 24 crédités, slot libéré, rien au-delà de N", () => {
+      const building = makeBuilding([makeBatchSlot(0, "planks", T0, PLANKS_MAX_BATCH_CYCLES)]);
+      // 100 cycles écoulés : seuls les 24 du lot comptent.
+      const result = processBuildingSlots(building, makeInventory(), at(T0 + 100 * PLANKS_DURATION_MS), createTs);
+
+      expect(result.collected.planks).toBe(PLANKS_MAX_BATCH_CYCLES);
+      expect(result.discarded.planks).toBe(0);
+      expect(result.updatedInventory.planks.quantity).toBe(PLANKS_MAX_BATCH_CYCLES);
+      expect(result.updatedSlots[0]).toEqual({ slotIndex: 0, ...FREED });
+      expect(result.hasProcessedCycles).toBe(true);
+    });
+
+    it("12. Lot complet de kits (10) : 10 crédités, slot libéré", () => {
+      const building = makeBuilding([makeBatchSlot(1, "reconstruction_kits", T0, KITS_MAX_BATCH_CYCLES)]);
+      const result = processBuildingSlots(
+        building, makeInventory(), at(T0 + KITS_MAX_BATCH_CYCLES * KITS_DURATION_MS + 1), createTs,
+      );
+
+      expect(result.collected.reconstructionKits).toBe(KITS_MAX_BATCH_CYCLES);
+      expect(result.updatedInventory.reconstructionKits.quantity).toBe(KITS_MAX_BATCH_CYCLES);
+      expect(result.updatedSlots[0]).toEqual({ slotIndex: 1, ...FREED });
+    });
+
+    it("13. Lot partiel collecté plusieurs fois : 2 puis 3 cycles, résiduel préservé, libéré à la fin", () => {
+      const N = 5;
+      // 1re collecte : 2 cycles + 10 min.
+      const first = processBuildingSlots(
+        makeBuilding([makeBatchSlot(0, "planks", T0, N)]),
+        makeInventory(),
+        at(T0 + 2 * PLANKS_DURATION_MS + 10 * 60 * 1000),
+        createTs,
+      );
+      expect(first.collected.planks).toBe(2);
+      expect(first.updatedSlots[0].recipeId).toBe("planks");
+      expect(first.updatedSlots[0].cyclesPlanned).toBe(N);
+      expect(first.updatedSlots[0].cyclesProcessed).toBe(2);
+      expect(first.updatedSlots[0].lastProcessedAt?.toMillis()).toBe(T0 + 2 * PLANKS_DURATION_MS);
+
+      // 2e collecte bien après la fin théorique : 3 cycles restants, puis libération.
+      const second = processBuildingSlots(
+        makeBuilding(first.updatedSlots), first.updatedInventory, at(T0 + 40 * PLANKS_DURATION_MS), createTs,
+      );
+      expect(second.collected.planks).toBe(3);
+      expect(second.updatedInventory.planks.quantity).toBe(N);
+      expect(second.updatedSlots[0]).toEqual({ slotIndex: 0, ...FREED });
+    });
+
+    it("14. Pile en fin de lot (temps écoulé = N × durée exactement) : slot libéré", () => {
+      const N = 3;
+      const result = processBuildingSlots(
+        makeBuilding([makeBatchSlot(0, "planks", T0, N)]), makeInventory(), at(T0 + N * PLANKS_DURATION_MS), createTs,
+      );
+      expect(result.collected.planks).toBe(N);
+      expect(result.updatedSlots[0]).toEqual({ slotIndex: 0, ...FREED });
+    });
+
+    it("15. Cycle du lot pas encore terminé : slot inchangé", () => {
+      const slot = makeBatchSlot(0, "reconstruction_kits", T0, 4);
+      const result = processBuildingSlots(
+        makeBuilding([slot]), makeInventory(), at(T0 + KITS_DURATION_MS - 1), createTs,
+      );
+      expect(result.hasProcessedCycles).toBe(false);
+      expect(result.updatedSlots[0]).toEqual(slot);
+    });
+
+    it("16. Saturation au milieu d'un lot : les cycles comptent, production perdue, slot libéré", () => {
+      const N = 5;
+      // Planks 28/30 : place pour 2 ; les 5 cycles du lot sont écoulés.
+      const result = processBuildingSlots(
+        makeBuilding([makeBatchSlot(0, "planks", T0, N)]),
+        makeInventory({ quantity: 0, cap: 50 }, { quantity: 28, cap: 30 }),
+        at(T0 + N * PLANKS_DURATION_MS + 1),
+        createTs,
+      );
+      expect(result.collected.planks).toBe(2);
+      expect(result.discarded.planks).toBe(3);
+      expect(result.updatedInventory.planks.quantity).toBe(30);
+      expect(result.updatedSlots[0]).toEqual({ slotIndex: 0, ...FREED });
+    });
+
+    it("17. Saturation sur une partie du lot : cycles perdus comptés dans cyclesProcessed", () => {
+      const N = 6;
+      // Planks pleins ; 4 cycles écoulés → 4 cycles traités, tous perdus, slot toujours actif.
+      const result = processBuildingSlots(
+        makeBuilding([makeBatchSlot(0, "planks", T0, N)]),
+        makeInventory({ quantity: 0, cap: 50 }, { quantity: 30, cap: 30 }),
+        at(T0 + 4 * PLANKS_DURATION_MS + 1),
+        createTs,
+      );
+      expect(result.collected.planks).toBe(0);
+      expect(result.discarded.planks).toBe(4);
+      expect(result.updatedSlots[0].cyclesProcessed).toBe(4);
+      expect(result.updatedSlots[0].recipeId).toBe("planks");
+    });
+
+    it("18. Logs inchangés : production continue, slot toujours actif après 100 cycles, sans champ de lot", () => {
+      const result = processBuildingSlots(
+        makeBuilding([makeSlot(0, "logs", T0)]),
+        makeInventory({ quantity: 0, cap: 1000 }),
+        at(T0 + 100 * LOG_DURATION_MS),
+        createTs,
+      );
+      expect(result.collected.logs).toBe(100 * LOG_OUTPUT_QTY);
+      expect(result.updatedSlots[0].recipeId).toBe("logs");
+      expect(result.updatedSlots[0].lastProcessedAt?.toMillis()).toBe(T0 + 100 * LOG_DURATION_MS);
+      expect(result.updatedSlots[0].cyclesPlanned).toBeUndefined();
+    });
+
+    it.each(["planks", "reconstruction_kits"] as const)(
+      "19. Slot hérité de transformation (%s, sans cyclesPlanned) → throw Error, jamais production continue",
+      (recipeId) => {
+        const building = makeBuilding([makeSlot(0, recipeId, T0)]);
+        expect(() =>
+          processBuildingSlots(building, makeInventory(), at(T0 + 10 * KITS_DURATION_MS), createTs)
+        ).toThrow(/legacy transformation slot without cyclesPlanned/);
+      },
+    );
   });
 
 });

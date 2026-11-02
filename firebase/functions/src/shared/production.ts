@@ -20,7 +20,16 @@ export type ProcessBuildingResult = {
  * `now` est injecté par le call site (handler) pour garantir la testabilité unitaire.
  * Ne mute pas les arguments.
  *
- * Throws Error (pas HttpsError) si une recette est inconnue — le handler convertit.
+ * - Logs (maxBatchCycles null) : production continue jusqu'à saturation (D3.1).
+ * - Planks / kits : lot de cyclesPlanned cycles (D-ETAPE19-001). Cycles crédités =
+ *   min(cycles écoulés, cyclesPlanned − cyclesProcessed). Un cycle terminé à saturation compte
+ *   quand même, sa production est perdue (D-ETAPE19-004). Slot libéré quand
+ *   cyclesProcessed atteint cyclesPlanned.
+ *
+ * Throws Error (pas HttpsError) — le handler convertit en `internal` :
+ * - recette inconnue (donnée corrompue) ;
+ * - slot de transformation sans cyclesPlanned (lancé avant l'ÉTAPE 19) : donnée à reprendre,
+ *   jamais traitée comme une production continue (TD-023).
  */
 export function processBuildingSlots(
   building: BuildingDocument,
@@ -48,9 +57,21 @@ export function processBuildingSlots(
       throw new Error(`unknown recipe: ${slot.recipeId}`);
     }
 
+    // Lot (transformation) : cyclesPlanned obligatoire. Logs : jamais de lot.
+    const cyclesPlanned = recipe.maxBatchCycles === null ? null : (slot.cyclesPlanned ?? null);
+    if (recipe.maxBatchCycles !== null && cyclesPlanned === null) {
+      throw new Error(
+        `legacy transformation slot without cyclesPlanned: ${slot.recipeId} (slot ${slot.slotIndex})`
+      );
+    }
+    const cyclesProcessed = slot.cyclesProcessed ?? 0;
+
     const referenceTimestamp = slot.lastProcessedAt ?? slot.startedAt;
     const elapsedMs = now.toMillis() - referenceTimestamp.toMillis();
-    const completedCycles = Math.floor(elapsedMs / recipe.durationMs);
+    const elapsedCycles = Math.floor(elapsedMs / recipe.durationMs);
+    const completedCycles = cyclesPlanned === null
+      ? elapsedCycles
+      : Math.min(elapsedCycles, cyclesPlanned - cyclesProcessed);
 
     if (completedCycles <= 0) return { ...slot };
 
@@ -75,7 +96,23 @@ export function processBuildingSlots(
     const newLastProcessedAt = createTimestamp(
       referenceTimestamp.toMillis() + completedCycles * recipe.durationMs,
     );
-    return { ...slot, lastProcessedAt: newLastProcessedAt };
+
+    // Logs : production continue, le slot reste actif.
+    if (cyclesPlanned === null) return { ...slot, lastProcessedAt: newLastProcessedAt };
+
+    // Lot : cycles traités (crédités ou perdus à saturation) ; libération en fin de lot.
+    const newCyclesProcessed = cyclesProcessed + completedCycles;
+    if (newCyclesProcessed >= cyclesPlanned) {
+      return {
+        slotIndex:       slot.slotIndex,
+        recipeId:        null,
+        startedAt:       null,
+        lastProcessedAt: null,
+        cyclesPlanned:   null,
+        cyclesProcessed: null,
+      };
+    }
+    return { ...slot, lastProcessedAt: newLastProcessedAt, cyclesProcessed: newCyclesProcessed };
   });
 
   return { updatedSlots, updatedInventory, collected, discarded, hasProcessedCycles };

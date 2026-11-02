@@ -100,7 +100,7 @@ describe("collectProduction", () => {
     await createTestPlayer(uid);
     await createTestBuilding(uid, [
       makeActiveSlot(0, "logs",   LOG_DURATION_MS    + 1000),
-      makeActiveSlot(1, "planks", PLANKS_DURATION_MS + 1000),
+      { ...makeActiveSlot(1, "planks", PLANKS_DURATION_MS + 1000), cyclesPlanned: 3, cyclesProcessed: 0 },
       makeIdleSlot(2),
     ]);
 
@@ -314,6 +314,45 @@ describe("collectProduction", () => {
     ).rejects.toMatchObject(
       { code: "invalid-argument" } satisfies Partial<HttpsError>
     );
+  });
+
+  it("12b. ÉTAPE 19.1 — slot hérité de transformation (planks sans cyclesPlanned) → internal, rien n'est écrit", async () => {
+    const uid = "collect-prod-legacy";
+    await createTestPlayer(uid);
+    await createTestBuilding(uid, [
+      makeActiveSlot(0, "planks", 10 * PLANKS_DURATION_MS), // pas de cyclesPlanned : lancé avant l'ÉTAPE 19
+      makeIdleSlot(1),
+      makeIdleSlot(2),
+    ]);
+
+    await expect(
+      collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
+    ).rejects.toMatchObject(
+      { code: "internal" } satisfies Partial<HttpsError>
+    );
+    const player = (await db.collection("players").doc(uid).get()).data();
+    expect(player?.inventory.planks.quantity).toBe(0);
+  });
+
+  it("12c. ÉTAPE 19.1 — lot de planks terminé : production créditée et slot libéré dans Firestore", async () => {
+    const uid = "collect-prod-batch-done";
+    const N = 4;
+    await createTestPlayer(uid);
+    await createTestBuilding(uid, [
+      { ...makeActiveSlot(0, "planks", 9 * PLANKS_DURATION_MS + 1000), cyclesPlanned: N, cyclesProcessed: 0 },
+      makeIdleSlot(1),
+      makeIdleSlot(2),
+    ]);
+
+    const result = await collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }));
+
+    expect(result.collected.planks).toBe(N);
+    const slot = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get())
+      .data()?.slots[0];
+    expect(slot).toEqual({
+      slotIndex: 0, recipeId: null, startedAt: null, lastProcessedAt: null, cyclesPlanned: null, cyclesProcessed: null,
+    });
+    expect((await db.collection("players").doc(uid).get()).data()?.inventory.planks.quantity).toBe(N);
   });
 
   it("12. Recipe inconnue (corruption data) → internal", async () => {

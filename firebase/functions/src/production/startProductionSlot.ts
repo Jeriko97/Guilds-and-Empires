@@ -15,6 +15,7 @@ import type {
   PlayerDocument,
   BuildingDocument,
   InventoryState,
+  ProductionOpDocument,
   ProductionSlotState,
   RecipeId,
 } from "../shared/types";
@@ -23,9 +24,13 @@ import type {
 
 /** Données envoyées par le client. Toutes les valeurs sont unknown — validées au runtime. */
 interface StartProductionSlotData {
-  buildingId: unknown;
-  slotIndex:  unknown;
-  recipeId:   unknown;
+  buildingId:     unknown;
+  slotIndex:      unknown;
+  recipeId:       unknown;
+  /** N du lot (planks, kits — D-ETAPE19-001). Interdit pour logs (production continue). */
+  cycles?:        unknown;
+  /** UUID par intention, généré par le client (D-ETAPE19-003). */
+  idempotencyKey: unknown;
 }
 
 export type StartProductionSlotRequest  = CallableRequest<StartProductionSlotData>;
@@ -34,21 +39,32 @@ export type StartProductionSlotResponse = {
   building:  BuildingDocument;
   /** Inventaire mis à jour après consommation des inputs. */
   inventory: InventoryState;
+  /** true = clé d'idempotence déjà appliquée avec le même contenu : aucun effet, état courant renvoyé. */
+  alreadyApplied: boolean;
 };
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const RATE_LIMIT_SECONDS = 2;
 
+/**
+ * Clé d'idempotence = UUID par intention (D-ETAPE19-003). Le format strict garantit aussi un
+ * identifiant de document Firestore valide (pas de « / », de « . », ni de nom réservé « __x__ »).
+ */
+const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // ── Handler — logique métier, testé directement sans wrapper Firebase ─────────
 
 /**
- * Démarre un cycle de production sur un slot d'un bâtiment.
+ * Démarre une production sur un slot d'un bâtiment.
  *
- * - Valide les inputs côté serveur (buildingId, slotIndex, recipeId).
- * - Vérifie la compatibilité recette/bâtiment via RECIPES[recipeId].producibleBy.
- * - Vérifie que le slot est libre et que le joueur dispose des ressources requises.
- * - Consomme les inputs d'inventaire et pose startedAt = serverTimestamp().
+ * - Logs : production continue (D3.1), `cycles` refusé.
+ * - Planks / kits : lot de N cycles (D-ETAPE19-001), 1 ≤ N ≤ RECIPES[recipeId].maxBatchCycles
+ *   (D-ETAPE19-004) ; intrants des N cycles débités au lancement ; N × outputQty ≤ place libre.
+ * - Idempotence (D-ETAPE19-003) : trace productionOps lue juste après le joueur, AVANT les
+ *   contrôles métier — un renvoi après un lancement réussi trouve le slot occupé et doit recevoir
+ *   alreadyApplied = true.
+ * - Seule l'intention vient du client ; durées, coûts et bornes viennent de RECIPES.
  * - La transaction est atomique : toute vérification échouée annule l'ensemble.
  */
 export async function startProductionSlotHandler(
@@ -62,7 +78,7 @@ export async function startProductionSlotHandler(
   await checkRateLimit(uid, "startProductionSlot", RATE_LIMIT_SECONDS);
 
   // ── 3. Validation des inputs ──────────────────────────────────────────────
-  const { buildingId, slotIndex, recipeId } = request.data;
+  const { buildingId, slotIndex, recipeId, cycles, idempotencyKey } = request.data;
 
   if (typeof buildingId !== "string" || buildingId.trim() === "") {
     throw new HttpsError(
@@ -74,19 +90,50 @@ export async function startProductionSlotHandler(
   requireValidSlotIndex(slotIndex); // asserts slotIndex is 0 | 1 | 2
   requireValidRecipeId(recipeId);   // asserts recipeId is RecipeId
 
+  if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY_PATTERN.test(idempotencyKey)) {
+    throw new HttpsError("invalid-argument", "idempotencyKey requis (UUID).");
+  }
+
+  // N du lot : intention du client, bornée par la recette (jamais une durée ni un coût).
+  const recipe = RECIPES[recipeId];
+  let batchCycles: number | null;
+  if (recipe.maxBatchCycles === null) {
+    if (cycles !== undefined) {
+      throw new HttpsError(
+        "invalid-argument",
+        `'cycles' est interdit pour '${recipeId}' (production continue).`
+      );
+    }
+    batchCycles = null;
+  } else {
+    if (
+      typeof cycles !== "number" || !Number.isInteger(cycles) ||
+      cycles < 1 || cycles > recipe.maxBatchCycles
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        `'cycles' doit être un entier entre 1 et ${recipe.maxBatchCycles} pour '${recipeId}'. ` +
+        `Valeur reçue : ${JSON.stringify(cycles)}.`
+      );
+    }
+    batchCycles = cycles;
+  }
+
   const db          = admin.firestore();
   const playerRef   = db.collection("players").doc(uid);
   const buildingRef = db.collection("players").doc(uid).collection("buildings").doc(buildingId);
+  const opRef       = db.collection("players").doc(uid).collection("productionOps").doc(idempotencyKey);
 
   try {
 
     // ── 4. Transaction atomique ───────────────────────────────────────────
-    const { building, updatedInventory } = await db.runTransaction(async (tx) => {
+    return await db.runTransaction(async (tx): Promise<StartProductionSlotResponse> => {
 
-      // 4a. Lecture player + building en parallèle
-      const [playerSnap, buildingSnap] = await Promise.all([
+      // 4a. Lecture player + building + trace d'idempotence en parallèle
+      const [playerSnap, buildingSnap, opSnap] = await Promise.all([
         tx.get(playerRef),
         tx.get(buildingRef),
+        tx.get(opRef),
       ]);
 
       // 4b. Player existe + schema valide
@@ -95,6 +142,35 @@ export async function startProductionSlotHandler(
       }
       const playerData = playerSnap.data() as PlayerDocument;
       requireSchemaVersion(playerData);
+
+      // 4b'. Idempotence — AVANT les contrôles métier (D-ETAPE19-003).
+      if (opSnap.exists) {
+        const op = opSnap.data() as ProductionOpDocument;
+        const samePayload =
+          op.uid        === uid        &&
+          op.op         === "start"    &&
+          op.buildingId === buildingId &&
+          op.slotIndex  === slotIndex  &&
+          op.recipeId   === recipeId   &&
+          op.cycles     === batchCycles;
+        if (!samePayload) {
+          throw new HttpsError(
+            "failed-precondition",
+            "idempotency key already used with different payload"
+          );
+        }
+        if (!buildingSnap.exists) {
+          throw new HttpsError(
+            "not-found",
+            `Bâtiment '${buildingId}' introuvable pour ce joueur.`
+          );
+        }
+        return {
+          building:       buildingSnap.data() as BuildingDocument,
+          inventory:      playerData.inventory,
+          alreadyApplied: true,
+        };
+      }
 
       // 4c. Building existe ?
       if (!buildingSnap.exists) {
@@ -106,7 +182,6 @@ export async function startProductionSlotHandler(
       const buildingData = buildingSnap.data() as BuildingDocument;
 
       // 4d. Recette compatible avec ce bâtiment ?
-      const recipe = RECIPES[recipeId];
       if (!recipe.producibleBy.includes(buildingData.buildingType)) {
         throw new HttpsError(
           "failed-precondition",
@@ -139,9 +214,12 @@ export async function startProductionSlotHandler(
 
       // 4g. Vérification complète des ressources avant tout décrément.
       // Fail atomique : si une ressource manque, aucune n'est consommée.
+      // Lot : intrants des N cycles (N × coût unitaire), débités au lancement.
+      const inputMultiplier = batchCycles ?? 1;
       if (recipe.inputs !== null) {
         const missing: string[] = [];
-        for (const [inputId, required] of Object.entries(recipe.inputs) as Array<[RecipeId, number]>) {
+        for (const [inputId, unitCost] of Object.entries(recipe.inputs) as Array<[RecipeId, number]>) {
+          const required  = unitCost * inputMultiplier;
           const available = updatedInventory[RECIPE_TO_INVENTORY_KEY[inputId]].quantity;
           if (available < required) {
             missing.push(`${inputId} (requis : ${required}, disponible : ${available})`);
@@ -154,12 +232,30 @@ export async function startProductionSlotHandler(
           );
         }
 
-        // 4h. Décrément atomique — uniquement si toutes les vérifications ont passé.
-        for (const [inputId, required] of Object.entries(recipe.inputs) as Array<[RecipeId, number]>) {
+      }
+
+      // 4g'. Lot : N × outputQty ≤ place libre de la ressource produite (D-ETAPE19-004).
+      // Ne protège pas d'un autre slot qui remplirait la même ressource en parallèle.
+      if (batchCycles !== null) {
+        const output    = updatedInventory[RECIPE_TO_INVENTORY_KEY[recipeId]];
+        const freeSpace = output.cap - output.quantity;
+        const needed    = batchCycles * recipe.outputQty;
+        if (needed > freeSpace) {
+          throw new HttpsError(
+            "failed-precondition",
+            `Place insuffisante pour un lot de ${batchCycles} '${recipeId}' : ` +
+            `requis ${needed}, place libre ${freeSpace}.`
+          );
+        }
+      }
+
+      // 4h. Décrément atomique — uniquement si toutes les vérifications ont passé.
+      if (recipe.inputs !== null) {
+        for (const [inputId, unitCost] of Object.entries(recipe.inputs) as Array<[RecipeId, number]>) {
           const key = RECIPE_TO_INVENTORY_KEY[inputId];
           updatedInventory[key] = {
             ...updatedInventory[key],
-            quantity: updatedInventory[key].quantity - required,
+            quantity: updatedInventory[key].quantity - unitCost * inputMultiplier,
           };
         }
       }
@@ -175,20 +271,31 @@ export async function startProductionSlotHandler(
         recipeId,
         startedAt:       now,
         lastProcessedAt: null,
+        cyclesPlanned:   batchCycles,
+        cyclesProcessed: batchCycles === null ? null : 0,
       };
 
       const updatedSlots = buildingData.slots.map((s) => s.slotIndex === slotIndex ? updatedSlot : s);
 
-      // 4j-k. Écritures atomiques
+      const op: ProductionOpDocument = {
+        uid,
+        op:        "start",
+        buildingId,
+        slotIndex,
+        recipeId,
+        cycles:    batchCycles,
+        createdAt: now,
+      };
+
+      // 4j-l. Écritures atomiques
       tx.update(buildingRef, { slots: updatedSlots });
       tx.update(playerRef,   { inventory: updatedInventory });
+      tx.set(opRef, op);
 
+      // ── 5. Retour ───────────────────────────────────────────────────────
       const building: BuildingDocument = { ...buildingData, slots: updatedSlots };
-      return { building, updatedInventory };
+      return { building, inventory: updatedInventory, alreadyApplied: false };
     });
-
-    // ── 5. Retour ─────────────────────────────────────────────────────────
-    return { building, inventory: updatedInventory };
 
   } catch (err) {
     // HttpsError remontés tels quels (auth, rate-limit, schema, validations, etc.).

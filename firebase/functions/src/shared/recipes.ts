@@ -18,7 +18,17 @@ export interface RecipeConfig {
    * (ex: planks par Sawmill OU Workshop) sans modifier le handler.
    */
   producibleBy: BuildingType[];
+  /**
+   * Nombre maximal de cycles d'un lot (D-ETAPE19-004). null = production continue (logs, D3.1) :
+   * pas de lot, `cycles` refusé au lancement. Sinon, transformation par lot de N cycles (D-ETAPE19-001).
+   */
+  maxBatchCycles: number | null;
 }
+
+/** Borne max d'un lot de planks : 24 cycles = 10 h, 48 logs pour un plafond de départ de 50 (D-ETAPE19-004). */
+export const PLANKS_MAX_BATCH_CYCLES = 24;
+/** Borne max d'un lot de kits : 10 cycles = 10 h, 30 planks pour un plafond de départ de 30 (D-ETAPE19-004). */
+export const KITS_MAX_BATCH_CYCLES = 10;
 
 /**
  * Mapping de RecipeId vers la clé correspondante dans InventoryState.
@@ -44,17 +54,20 @@ export const RECIPES: Record<RecipeId, RecipeConfig> = {
     outputQty: 1,
     inputs: null,
     producibleBy: ["sawmill"],
+    maxBatchCycles: null,
   },
   planks: {
     durationMs: 25 * 60 * 1000, // 25 minutes — TO_PLAYTEST
     outputQty: 1,
     inputs: { logs: 2 },
     producibleBy: ["sawmill"],
+    maxBatchCycles: PLANKS_MAX_BATCH_CYCLES,
   },
   reconstruction_kits: {
     durationMs: 60 * 60 * 1000, // 60 minutes — TO_PLAYTEST (valeur critique : anchor session pacing)
     outputQty: 1,
     inputs: { planks: 3 },
     producibleBy: ["sawmill"],
+    maxBatchCycles: KITS_MAX_BATCH_CYCLES,
   },
 };

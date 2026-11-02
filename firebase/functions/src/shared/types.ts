@@ -126,6 +126,32 @@ export interface ProductionSlotState {
    * Fallback : resolveLoginState utilise startedAt si lastProcessedAt est null.
    */
   lastProcessedAt: firestore.Timestamp | null;
+
+  /**
+   * N du lot (planks, kits — D-ETAPE19-001), posé par startProductionSlot.
+   * null ou absent = production continue (logs) ou slot libre. Un slot de transformation sans
+   * cette valeur (lancé avant l'ÉTAPE 19) est une donnée à reprendre, jamais une production continue.
+   */
+  cyclesPlanned?: number | null;
+
+  /** Cycles du lot déjà traités, crédités ou perdus à saturation. null ou absent hors lot. */
+  cyclesProcessed?: number | null;
+}
+
+/**
+ * Trace d'idempotence d'une opération de production (D-ETAPE19-003) —
+ * /players/{uid}/productionOps/{idempotencyKey}. Écrite par les Cloud Functions uniquement
+ * (aucun accès client : règle de repli « deny-all » de firestore.rules).
+ */
+export interface ProductionOpDocument {
+  uid: string;
+  op: "start";
+  buildingId: string;
+  slotIndex: 0 | 1 | 2;
+  recipeId: RecipeId;
+  /** N du lot ; null pour une production continue (logs). */
+  cycles: number | null;
+  createdAt: firestore.Timestamp;
 }
 
 export interface BuildingDocument {
