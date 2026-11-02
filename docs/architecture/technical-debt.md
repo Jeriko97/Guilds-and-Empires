@@ -720,6 +720,10 @@ Avant le premier lancement d'un événement en production : prérequis du déplo
 
 ---
 
+*TD-022 : numéro non attribué.*
+
+---
+
 ### TD-023 — Production infinie de planks et de kits par appel direct de `startProductionSlot`
 
 **Identifié :** 2026-11-02 (diagnostic de l'ÉTAPE 19)
@@ -744,6 +748,11 @@ D-ETAPE19-002). Pas de correctif d'urgence : pas de joueurs, app non distribuée
 
 **Trigger de résolution :**
 Avant tout testeur externe.
+
+**Note 2026-11-02 — 19.1 implémenté** (`fcaa47a`, non déployé) : lot de N cycles au lancement, consommation et
+calcul bornés, slot libéré en fin de lot, slot hérité refusé (`internal`). TD-023 reste ouverte : fermeture au
+déploiement 19.5 (avec 19.2, arrêt d'un slot), qui suit le client 19.4 — le client actuel n'envoie ni `cycles` ni
+`idempotencyKey` et serait refusé par la version 19.1.
 
 ---
 

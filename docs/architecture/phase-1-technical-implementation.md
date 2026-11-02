@@ -64,7 +64,7 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
       recipeId: 'logs' | 'planks' | 'reconstruction_kits' | null,
       startedAt: Timestamp | null,    // serverTimestamp() au démarrage
       lastProcessedAt: Timestamp | null, // fin du dernier cycle traité (TD-004)
-      // ÉTAPE 19 (D-ETAPE19-001) — PRÉVU, pas encore implémenté :
+      // ÉTAPE 19 (D-ETAPE19-001) — implémenté en 19.1 (fcaa47a), non déployé :
       cyclesPlanned: number | null,   // N du lot (planks, kits) ; null = production continue (logs)
       cyclesProcessed: number | null, // cycles déjà traités du lot (crédités ou perdus à saturation)
       // ⚠️ PAS de completedAt — le serveur calcule startedAt + duration à la collection
@@ -75,10 +75,12 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
 
 **Pourquoi pas de `completedAt` :** avec la production offline, personne n'est présent pour écrire le document quand la production se termine. Le serveur recalcule `floor(elapsed / duration) × output` à chaque collecte. Zéro scheduled write par slot actif. Un lot (ÉTAPE 19) se termine de la même façon : le slot est libéré par le premier calcul (collecte, login ou arrêt) qui constate `cyclesProcessed = cyclesPlanned`.
 
-**Champs ajoutés par l'ÉTAPE 19 (PRÉVU)** : `cyclesPlanned` et `cyclesProcessed` sur chaque slot, sous-collection
+**Champs ajoutés par l'ÉTAPE 19 (implémentés en 19.1, `fcaa47a`, non déployés)** : `cyclesPlanned` et `cyclesProcessed` sur chaque slot, sous-collection
 de traces `/players/{uid}/productionOps/{idempotencyKey}`. Champ absent = `null` (slot de logs ou slot libre) :
 pas de migration pour ces slots. Un slot de transformation sans ces champs (lancé avant l'ÉTAPE 19) imposerait une
-décision de reprise : voir `schema-migrations.md`, note ÉTAPE 19.
+décision de reprise : voir `schema-migrations.md`, note ÉTAPE 19. Implémenté en 19.1 : `processBuildingSlots` lève une
+`Error` sur un tel slot, convertie en `HttpsError` `internal` par `collectProduction` et `resolveLoginState` ; tout le
+compte devient illisible (login et collecte) tant que la donnée n'est pas reprise (escalade cas 1).
 
 ---
 
@@ -209,9 +211,9 @@ export const resolveLoginState = functions.https.onCall(
  * Logs : production continue (D3.1). Planks / kits : lot de N cycles (D-ETAPE19-001 à 004).
  * Validations serveur : uid authentifié, recipeId dans la liste autorisée,
  * slot disponible (recipeId == null), inventaire input suffisant.
- * ÉTAPE 19 (PRÉVU) :
+ * ÉTAPE 19 (implémenté en 19.1, fcaa47a) :
  *  - `cycles` (N) : intention du client, pas un paramètre économique. Interdit pour logs
- *    (invalid-argument s'il est fourni). Obligatoire pour planks et kits : entier,
+ *    (invalid-argument s'il est fourni, null compris). Obligatoire pour planks et kits : entier,
  *    1 ≤ N ≤ RECIPES[recipeId].maxBatchCycles (planks 24, kits 10), sinon invalid-argument.
  *  - Intrants des N cycles (N × inputs) disponibles, sinon failed-precondition ; débit dans la
  *    même transaction que le lancement (check-then-mutate).
@@ -220,7 +222,9 @@ export const resolveLoginState = functions.https.onCall(
  *    pas d'un autre slot qui remplit la même ressource.
  *  - Aucune durée et aucun coût reçus du client : tout vient de RECIPES (constantes serveur).
  *  - Idempotence obligatoire (D-ETAPE19-003) : `idempotencyKey` (UUID par intention, généré
- *    par le client, réutilisé pour un renvoi de la même intention), trace
+ *    par le client, réutilisé pour un renvoi de la même intention ; format UUID imposé
+ *    8-4-4-4-12 hexadécimal, sinon invalid-argument — garantit aussi un identifiant de document
+ *    Firestore valide), trace
  *    /players/{uid}/productionOps/{idempotencyKey} écrite dans la même transaction. Même clé et
  *    même contenu (op, buildingId, slotIndex, recipeId, cycles) → aucun effet, état courant
  *    renvoyé avec alreadyApplied = true. Même clé, contenu différent → failed-precondition.
@@ -247,7 +251,8 @@ export const startProductionSlot = functions.https.onCall(
  * Le client ne passe que buildingId — jamais un amount, jamais un elapsed.
  * Rate limit: 10 appels / min par uid.
  * Side effect: si production continue et cap atteint, slot reste actif mais yield = 0.
- * ÉTAPE 19 (PRÉVU) : un lot dont tous les cycles sont traités libère son slot dans la même écriture.
+ * ÉTAPE 19 (implémenté en 19.1) : un lot dont tous les cycles sont traités libère son slot dans la même
+ * écriture. Slot de transformation hérité (sans cyclesPlanned) → internal.
  * Renvoie l'état mis à jour (building sans id Firestore — injecté par le service client,
  * D-ETAPE16-004) ainsi que collected/discarded. Aligné sur startProductionSlot (17.B-0).
  */
@@ -267,7 +272,8 @@ export const collectProduction = functions.https.onCall(
  * Entrée : buildingId, slotIndex, idempotencyKey. Aucun temps ni aucune quantité reçus du client.
  * Validations (dans cet ordre) :
  *  - non authentifié → unauthenticated ; rate limit → resource-exhausted ;
- *  - buildingId non vide, slotIndex ∈ {0,1,2}, idempotencyKey chaîne non vide → invalid-argument ;
+ *  - buildingId non vide, slotIndex ∈ {0,1,2}, idempotencyKey au format UUID (comme le lancement,
+ *    D-ETAPE19-005) → invalid-argument sinon ;
  *  - transaction : player absent → not-found ; schemaVersion invalide → failed-precondition ;
  *    trace productionOps existante avec un autre contenu → failed-precondition ; même contenu → aucun
  *    effet, état courant renvoyé avec alreadyApplied = true (contrôle AVANT l'état du building et du
@@ -275,12 +281,18 @@ export const collectProduction = functions.https.onCall(
  *    recevoir alreadyApplied = true ; scénario à tester en 19.2) ;
  *    building ou slot absent → not-found ; slot libre (recipeId == null) → failed-precondition ;
  *    recette inconnue (donnée corrompue) → internal.
- * Effets, dans la même transaction :
- *  1. cycles terminés jusqu'à maintenant : crédités comme à la collecte (bornés par la place libre,
- *     le reste perdu), sans dépasser N pour un lot ;
+ * Effets, dans la même transaction et dans cet ordre (le recalcul et le crédit précèdent
+ * toujours le remboursement) :
+ *  1. cycles terminés jusqu'à maintenant : recalculés et crédités comme à la collecte
+ *     (processBuildingSlots : bornés par la place libre, le reste perdu), sans dépasser N pour un lot ;
  *  2. cycle en cours : il en existe un seulement si, après l'effet 1, cyclesProcessed < N (lot) ;
- *     il est perdu, avec ses intrants ;
- *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs ;
+ *     il est perdu, avec ses intrants. Arrêt pile en fin de cycle (temps écoulé depuis
+ *     lastProcessedAt — ou startedAt s'il est null — multiple exact de la durée) : le cycle suivant
+ *     compte comme commencé, il est perdu avec ses intrants (règle 19.0 inchangée ; la rendre serait
+ *     une modification de règle économique, escalade cas 4) ;
+ *     logs : le cycle en cours est perdu, sans intrant à perdre ;
+ *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs,
+ *     arrêt pile en fin de cycle compris ;
  *     lot déjà entièrement écoulé (cyclesProcessed = N après l'effet 1) : aucun cycle en cours,
  *     rien à rendre, crédit puis libération ; logs : rien à rendre ;
  *  4. slot libéré (recipeId, startedAt, lastProcessedAt, cyclesPlanned, cyclesProcessed → null) ;
@@ -419,7 +431,8 @@ resolveLoginState():
       recipe = RECIPES[recipeId]                  // constantes serveur (shared/recipes.ts), D-ETAPE19-003
       completedCycles = floor(elapsed / recipe.durationMs)
 
-      // ÉTAPE 19 (PRÉVU, D-ETAPE19-001) — lot : jamais plus que les cycles restants du lot
+      // ÉTAPE 19 (implémenté en 19.1, D-ETAPE19-001) — lot : jamais plus que les cycles restants du lot
+      // Slot de transformation sans cyclesPlanned (hérité) → Error → HttpsError internal
       if slot.cyclesPlanned != null:
         completedCycles = min(completedCycles, slot.cyclesPlanned - slot.cyclesProcessed)
       rawYield = completedCycles * recipe.outputQty

@@ -26,7 +26,7 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   sur les erreurs des CF planifiées, prérequis du déploiement de `processWorldEventLifecycle`.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
-- Tests : **222/222** verts (dont 13 du seed marché TD-018).
+- Tests : **260/260** verts le 11-02 après l'ÉTAPE 19.1 (222 au 11-01, dont 13 du seed marché TD-018).
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
 
 ### Pilotage de l'Éditeur Unity (D-REPRISE-001) — l'agent câble et valide lui-même
@@ -348,7 +348,8 @@ place libre au lancement ; arrêt d'un slot (cycles terminés crédités, cycle 
 rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-023 (production infinie). Découpage :
 - 19.0 — documentation (fait le 11-02) ;
 - 19.1 — backend : lot et consommation (`startProductionSlot`, `processBuildingSlots`, collecte et login), traces
-  d'idempotence, Security Rules ; vérification des slots de transformation en production (escalade cas 1) ;
+  d'idempotence, Security Rules ; vérification des slots de transformation en production — fait le 11-02 (`fcaa47a`, non
+  déployé ; aucun slot de transformation en prod) ;
 - 19.2 — backend : arrêt d'un slot (`stopProductionSlot`) ;
 - 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation

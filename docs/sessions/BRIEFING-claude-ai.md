@@ -229,7 +229,8 @@ place libre au lancement ; arrêt d'un slot (cycles terminés crédités, cycle 
 rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-023 (production infinie). Découpage :
 - 19.0 — documentation (fait le 11-02) ;
 - 19.1 — backend : lot et consommation (`startProductionSlot`, `processBuildingSlots`, collecte et login), traces
-  d'idempotence, Security Rules ; vérification des slots de transformation en production (escalade cas 1) ;
+  d'idempotence, Security Rules ; vérification des slots de transformation en production — fait le 11-02 (`fcaa47a`, non
+  déployé ; aucun slot de transformation en prod) ;
 - 19.2 — backend : arrêt d'un slot (`stopProductionSlot`) ;
 - 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation

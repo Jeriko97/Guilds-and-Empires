@@ -108,16 +108,21 @@ hors event, suivi à part du prix publié (D-TD020-002).
   AVANT tout déploiement de `processWorldEventLifecycle` (autre prérequis, hors schéma : TD-021, voir TD-020).
 - Détail, cas d'erreur et tests : `technical-debt.md`, TD-020.
 
-**Note ÉTAPE 19 — statut : PRÉVU, pas encore implémenté (D-ETAPE19-001 à 004) :**
+**Note ÉTAPE 19 — statut : implémenté en 19.1 (`fcaa47a`), non déployé (D-ETAPE19-001 à 004) :**
 - `/players/{uid}/buildings/{buildingId}.slots[]` : deux champs ajoutés, `cyclesPlanned` (N du lot) et
   `cyclesProcessed` (cycles traités). Champ absent = `null` : slot de logs (production continue) ou slot libre. Pas
   de migration pour ces slots ; `schemaVersion` reste 1 (champ ajouté avec repli).
 - `/players/{uid}/productionOps/{idempotencyKey}` : nouvelle sous-collection de traces d'idempotence (lancement et
-  arrêt), écrite par les Cloud Functions uniquement ; à couvrir par les Security Rules (refus client) en 19.1.
-- **Migration possible, à vérifier en 19.1** : un slot `planks` ou `reconstruction_kits` lancé avant l'ÉTAPE 19 n'a
-  pas ces champs et produit sans fin (TD-023). Sa présence en production n'a pas été vérifiée. La vérification et
-  toute reprise de ces slots (lecture ou écriture en production) sont une escalade cas 1 dans le ticket 19.1 ; si un
-  tel slot existe, la reprise est décrite ici avant déploiement. Un slot de transformation sans `cyclesPlanned`
+  arrêt), écrite par les Cloud Functions uniquement ; refus client couvert en 19.1 par la règle de repli
+  `/{document=**}` de `firestore.rules` (test rules 23).
+- **Vérifié le 2026-11-02 (lecture seule autorisée par le founder, ADC, `guildsandempires-ca543`)** : 1 bâtiment,
+  3 slots, tous `logs` ; **aucun slot `planks` ou `reconstruction_kits`** → aucune reprise, aucune migration. À
+  refaire juste avant le déploiement 19.5 : un slot de transformation créé d'ici là par appel direct (TD-023) rendrait
+  le compte illisible (`internal`) après déploiement.
+- **Slot hérité** : un slot `planks` ou `reconstruction_kits` lancé avant l'ÉTAPE 19 n'a pas ces champs et
+  produit sans fin (TD-023). Aucun n'existait en production le 2026-11-02 (ci-dessus) ; le contrôle est refait
+  avant le déploiement 19.5. Toute reprise d'un tel slot (écriture en production) est une escalade cas 1, décrite
+  ici avant déploiement. Un slot de transformation sans `cyclesPlanned`
   n'est jamais traité comme une production continue : c'est une donnée à reprendre (erreur explicite, ou reprise
   décidée en escalade), sinon TD-023 persisterait pour ce slot.
 
