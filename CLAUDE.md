@@ -31,9 +31,10 @@ la « validation par étape » du briefing.
 5. modification d'une doctrine ou d'une convention verrouillée ;
 6. point BLOQUANT levé par un relecteur et non résoluble sans sortir du ticket ;
 7. les deux relecteurs se contredisent sur un point bloquant ;
-8. tests rouges après deux tentatives de correction.
+8. tests rouges après deux tentatives de correction ;
+9. « Cas 9 : relecteur indisponible, ou point bloquant non résolu → pas de commit, arrêt et escalade. » (décision du founder, D-REPRISE-005, 2026-11-02).
 
-Hors de ces 8 cas : Claude Code tranche, avance, et documente dans le rapport.
+Hors de ces 9 cas : Claude Code tranche, avance, et documente dans le rapport.
 
 ### c. Message d'escalade — français simple, pour un founder NON technique
 - **Ce qui bloque** : une ou deux phrases, sans jargon (ou jargon expliqué).

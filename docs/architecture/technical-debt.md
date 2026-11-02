@@ -506,7 +506,9 @@ n'échappe pas aux gardes.
   - **Ordre de déploiement imposé** (comme D-TD018-001) : `updateMarketPrices` corrigée est déployée, puis on
     constate dans `marketState/state` (ou dans les logs) que `referencePrices` a été créé, AVANT tout déploiement
     de `processWorldEventLifecycle`. Sinon, un event activé avant ce premier passage rend le cas interdit
-    permanent : erreur à chaque tick pendant ≈ 5 h (4 h d'event + 60 min), prix figés.
+    permanent : erreur à chaque tick pendant ≈ 5 h (4 h d'event + 60 min), prix figés. Autre prérequis du
+    déploiement de `processWorldEventLifecycle`, décidé par le founder le 2026-11-02 (D-TD021-001) : TD-021 résolue
+    (alerte sur les erreurs des Cloud Functions planifiées).
 - **B — Un seul event par ressource.**
   - **Garde principale** : `processWorldEventLifecycle` refuse d'activer un event sur une ressource où un event
     est déjà en cours (check-then-mutate dans une transaction : lecture des events `active`/`decaying`, puis
@@ -679,6 +681,42 @@ correction n'a plus de point de design ouvert. **Reste une escalade (cas 4)** : 
 autre modification de l'algorithme ou de ses valeurs (`DRIFT_FACTOR`, `NOISE_AMPLITUDE`, bornes, durée du decay,
 multiplicateurs).
 Les deux escalades annoncées par la version précédente (départ hors prix normal ; bruit des Planks) sont sans objet.
+
+**Points ouverts pour la sous-étape `processWorldEventLifecycle`** — remarques secondaires de l'auditeur à la
+dernière passe de `ae6b40d`, reportées sans être appliquées (demande du founder du 2026-11-02). Les trois
+dernières concernent le processus de revue : elles sont aussi suivies dans les briefings, rubrique « Prochaine
+retouche de CLAUDE.md ».
+- Concurrence (TD-020, étape 0 du déroulé) : si une transaction d'activation ou de mise en attente trouve plus d'un `pending` (corruption apparue après l'étape 0), les expirations déjà validées le restent, alors que « aucune expiration » est promis ; le ticket tranche entre arrêt immédiat et fin de passage en erreur.
+- Donnée corrompue, event `decaying` : « le prix publié revient au prix de référence » décrit le calcul après la correction TD-020 (aujourd'hui le multiplicateur 1 s'applique au prix courant, `computeMarketPrice.ts:37-38`) ; préciser « après la correction TD-020 », ici et dans D-TD020-003.
+- Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).
+- Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).
+- `CLAUDE.md` §a.6 ne cite que le delta depuis le dernier GO ; le départ depuis la passe précédente (`prev.tree`) tant qu'aucun GO des deux n'existe n'est que dans le skill §5 et D-REPRISE-004 : aligner la formulation.
+
+---
+
+### TD-021 — Erreurs des Cloud Functions planifiées sans alerte
+
+**Identifié :** 2026-11-02 (audit du founder sur `ae6b40d`)
+**Criticité actuelle :** MOYENNE (aucun event en production aujourd'hui)
+**Composant :** Cloud Functions planifiées : `updateMarketPrices` (toutes les 5 min), puis
+`processWorldEventLifecycle` (à créer, toutes les 10 min)
+
+**Description :**
+Ces fonctions échouent de façon explicite (erreur levée : D-ETAPE14c, D-TD018-001, TD-020), mais personne n'est
+alerté : l'erreur ne se voit que dans les logs. Exemple (TD-020) : une donnée corrompue (plus d'un event en attente
+sur une ressource) bloque les expirations, et un event `active` garde son prix d'event (9 / 22) au-delà de ses 4 h.
+
+**Impact :**
+Une erreur répétée à chaque passage peut durer sans que personne le sache : prix figés ou events bloqués pour tous
+les joueurs.
+
+**Résolution :**
+Alerte sur les erreurs de ces fonctions ; canal à définir à ce moment-là. Rien à implémenter avant le déclencheur.
+
+**Trigger de résolution :**
+Avant le premier lancement d'un événement en production : prérequis du déploiement de
+`processWorldEventLifecycle`, inscrit dans l'ordre de déploiement imposé de TD-020 (décision du founder du
+2026-11-02, citée dans D-TD021-001).
 
 ---
 

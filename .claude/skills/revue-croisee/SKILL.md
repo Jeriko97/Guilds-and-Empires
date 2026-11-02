@@ -70,9 +70,8 @@ Attendre les deux notifications. Ne pas lire une sortie avant d'avoir lancé l'a
 
 ## 4. Échec d'un relecteur
 Codex : exit ≠ 0 ou `codex-<mode>.md` vide → une relance. Auditeur sans sortie au format imposé → une relance.
-Toujours en échec → **pas de commit** : sans le GO des deux relecteurs, rien ne se commite. L'arrêt découle de
-la règle du founder (D-REPRISE-004) : il n'existe aucune autre issue. Claude Code s'arrête et escalade au
-founder, avec « Codex : ÉCHEC » et les 20 dernières lignes de
+Toujours en échec → **pas de commit** : sans le GO des deux relecteurs, rien ne se commite. Claude Code s'arrête
+et escalade au founder au titre du cas 9 (`CLAUDE.md`, liste d'escalade), avec « Codex : ÉCHEC » et les 20 dernières lignes de
 `codex-<mode>.log`, ou « Auditeur : ÉCHEC » et la sortie brute de l'auditeur.
 
 ## 5. Arbitrage (Claude Code, jamais automatique)
@@ -80,9 +79,10 @@ Coller les deux sorties **brutes**, puis un tableau : point · relecteur(s) · d
 - **Accepté** → corrigé seulement si c'est dans le périmètre du ticket.
 - **Rejeté** → raison factuelle (règle, fichier, test) ; un bloquant ne se rejette que preuve à l'appui.
   Un bloquant rejeté ne vaut pas GO : **pas de commit** (D-REPRISE-004). Si l'autre relecteur n'a pas levé ce
-  point et a rendu GO → escalade cas 7 ; sinon → arrêt et escalade au founder au titre de D-REPRISE-004.
+  point et a rendu GO → escalade cas 7 ; sinon → escalade cas 9.
 - **Escalade** (CLAUDE.md, liste d'escalade) → bloquant non résoluble dans le périmètre (cas 6),
-  ou les deux relecteurs se contredisent sur un bloquant (cas 7), ou valeur économique touchée (cas 4).
+  ou les deux relecteurs se contredisent sur un bloquant (cas 7), ou valeur économique touchée (cas 4),
+  ou relecteur indisponible ou bloquant non résolu (cas 9).
 
 Modifications faites APRÈS un GO — règle du founder (D-REPRISE-004, 2026-11-02, remplace D-ETAPE18-006 sur ce
 point) :

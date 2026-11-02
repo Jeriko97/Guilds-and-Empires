@@ -105,7 +105,7 @@ hors event, suivi à part du prix publié (D-TD020-002).
   au lieu de rester null jusqu'à la fin de l'event (D-TD020-003, arbitrage C), dans la sous-étape
   `processWorldEventLifecycle`. Aucun event n'existe en production : pas de donnée à migrer.
 - Ordre de déploiement : `updateMarketPrices` corrigée, puis `referencePrices` constaté dans `marketState/state`,
-  AVANT tout déploiement de `processWorldEventLifecycle`.
+  AVANT tout déploiement de `processWorldEventLifecycle` (autre prérequis, hors schéma : TD-021, voir TD-020).
 - Détail, cas d'erreur et tests : `technical-debt.md`, TD-020.
 
 **Note legacy :**

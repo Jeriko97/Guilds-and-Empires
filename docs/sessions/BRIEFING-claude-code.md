@@ -21,6 +21,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Revue croisée — **règle du founder (D-REPRISE-004, 2026-11-02, remplace D-ETAPE18-006 sur ce point)** :
   « Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
   Inscrite dans `CLAUDE.md` §a.6 et le skill `revue-croisee` §5.
+- Escalade : **9 cas** dans `CLAUDE.md` §b, cas 9 ajouté le 11-02 (D-REPRISE-005) : relecteur indisponible ou
+  point bloquant non résolu → pas de commit, arrêt et escalade. TD-021 ouverte le 11-02 (D-TD021-001) : alerte
+  sur les erreurs des CF planifiées, prérequis du déploiement de `processWorldEventLifecycle`.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **222/222** verts (dont 13 du seed marché TD-018).
@@ -134,7 +137,19 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 - **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction actée le 11-02
   (D-TD020-001/002 : prix d'event absolu 9 / 22), **prérequis bloquant** de l'étape qui activera `processWorldEventLifecycle`.
   Arbitrages figés le 11-02 (D-TD020-003) : création à la volée, un seul event par ressource, redescente 60 min.
+- **TD-021** (11-02) : erreurs des Cloud Functions planifiées sans alerte — à résoudre avant le premier event en
+  production, prérequis du déploiement de `processWorldEventLifecycle` (ordre imposé dans TD-020).
 - **TO_PLAYTEST** (economy-values §4) : prix des Logs immobile hors event (points fixes 3-6).
+
+### Prochaine retouche de CLAUDE.md
+
+Remarques secondaires de l'auditeur (dernière passe de `ae6b40d`), reportées sans être appliquées (demande du
+founder du 2026-11-02, après l'ajout du cas 9, D-REPRISE-005, qui ne les traite pas) ; à traiter
+dans la prochaine retouche de `CLAUDE.md` et du skill `revue-croisee` (revue croisée, cas 5 si une convention
+change). Aussi listées dans TD-020, « Points ouverts pour la sous-étape `processWorldEventLifecycle` ».
+- `CLAUDE.md` §a.6 ne cite que le delta depuis le dernier GO ; le départ depuis la passe précédente (`prev.tree`) tant qu'aucun GO des deux n'existe n'est que dans le skill §5 et D-REPRISE-004 : aligner la formulation.
+- Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).
+- Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).
 
 ### Couche client Unity (Assets/_Project/)
 
@@ -323,8 +338,8 @@ Vente de test en prod autorisée par le founder pour cette validation seulement 
      `shared/marketPrices.ts` ; `decayEndsAt` calculé par le serveur à l'activation.
    Première sous-étape de l'étape contrats / world events, avant toute ligne de `processWorldEventLifecycle`.
    **Jalons** : TD-020 se ferme sur `computeMarketPrice` / `updateMarketPrices` (A + garde secondaire B). Ordre
-   de déploiement imposé : `updateMarketPrices` corrigée, puis `referencePrices` constaté en prod, AVANT
-   `processWorldEventLifecycle`. La garde principale B, la file d'attente bornée, la constante, le contrat `decayEndsAt` et leurs tests
+   de déploiement imposé : `updateMarketPrices` corrigée, puis `referencePrices` constaté en prod, et TD-021
+   résolue (alerte sur les erreurs des CF planifiées), AVANT `processWorldEventLifecycle`. La garde principale B, la file d'attente bornée, la constante, le contrat `decayEndsAt` et leurs tests
    (activation refusée, file d'attente bornée, durée) sont des critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`.
 2. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
    puis service client et écran (`acceptContract`, `deliverToContract`).
