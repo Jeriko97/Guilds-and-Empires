@@ -694,21 +694,29 @@ retouche de CLAUDE.md ».
 
 ---
 
-### TD-021 — Erreurs des Cloud Functions planifiées sans alerte
+### TD-021 — Erreurs des Cloud Functions planifiées sans alerte (étendue par D-ETAPE19-008 aux erreurs « slot corrompu »)
 
 **Identifié :** 2026-11-02 (audit du founder sur `ae6b40d`)
-**Criticité actuelle :** MOYENNE (aucun event en production aujourd'hui)
+**Criticité actuelle :** MOYENNE (aucun event en production aujourd'hui ; production par lot de l'ÉTAPE 19 non
+déployée)
 **Composant :** Cloud Functions planifiées : `updateMarketPrices` (toutes les 5 min), puis
-`processWorldEventLifecycle` (à créer, toutes les 10 min)
+`processWorldEventLifecycle` (à créer, toutes les 10 min) ; depuis le 2026-11-02 (D-ETAPE19-008), erreurs « slot
+corrompu » (`failed-precondition`, `details.reason = "corrupt-slot"`) journalisées par `resolveLoginState`,
+`collectProduction` et `stopProductionSlot`
 
 **Description :**
 Ces fonctions échouent de façon explicite (erreur levée : D-ETAPE14c, D-TD018-001, TD-020), mais personne n'est
 alerté : l'erreur ne se voit que dans les logs. Exemple (TD-020) : une donnée corrompue (plus d'un event en attente
 sur une ressource) bloque les expirations, et un event `active` garde son prix d'event (9 / 22) au-delà de ses 4 h.
 
+Extension, décision du founder (ticket 19.2b, 2026-11-02), citée telle quelle : « TD-021 couvre aussi les erreurs
+"slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à l'arrêt), prérequis du
+déploiement 19.5. » Un état de slot corrompu (D-ETAPE19-006) bloque la connexion, la collecte et l'arrêt du compte
+touché ; il n'est visible que dans les journaux.
+
 **Impact :**
 Une erreur répétée à chaque passage peut durer sans que personne le sache : prix figés ou events bloqués pour tous
-les joueurs.
+les joueurs ; compte bloqué par un état de slot corrompu.
 
 **Résolution :**
 Alerte sur les erreurs de ces fonctions ; canal à définir à ce moment-là. Rien à implémenter avant le déclencheur.
@@ -717,6 +725,8 @@ Alerte sur les erreurs de ces fonctions ; canal à définir à ce moment-là. Ri
 Avant le premier lancement d'un événement en production : prérequis du déploiement de
 `processWorldEventLifecycle`, inscrit dans l'ordre de déploiement imposé de TD-020 (décision du founder du
 2026-11-02, citée dans D-TD021-001).
+Et avant le déploiement de 19.5 (production par lot) : prérequis, condition (c) de D-ETAPE19-008, alertes sur les
+erreurs « slot corrompu » comprises. Au premier des deux déploiements.
 
 ---
 
@@ -758,6 +768,10 @@ déploiement 19.5 (avec 19.2, arrêt d'un slot), qui suit le client 19.4 — le 
 limité au plafond). Les états de slot corrompus, dont le slot hérité refusé en `internal` par 19.1, lèvent désormais
 `failed-precondition`, journalisés, sans écriture (D-ETAPE19-006). TD-023 reste ouverte : fermeture au déploiement
 19.5, aux conditions écrites dans les briefings (ÉTAPE 19, ligne 19.5).
+
+**Note 2026-11-02 — 19.2b implémenté** (non déployé) : l'arrêt règle d'abord tous les slots du bâtiment, comme une
+collecte ; un slot voisin corrompu refuse l'arrêt (D-ETAPE19-007). Conditions du déploiement 19.5 consignées dans
+D-ETAPE19-008. TD-023 reste ouverte : fermeture au déploiement 19.5.
 
 ---
 

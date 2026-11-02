@@ -192,9 +192,12 @@ Au début de chaque session, demander que ces docs soient attachés :
   première sous-étape de l'étape qui activera `processWorldEventLifecycle`. 3 arbitrages figés (D-TD020-003 :
   création à la volée, un seul event par ressource, redescente 60 min).
 - **TD-023** (11-02) : production infinie de planks et de kits par appel direct de `startProductionSlot` — à
-  résoudre avant tout testeur externe ; fermeture au déploiement 19.5 (19.1 et 19.2 implémentés, non déployés).
+  résoudre avant tout testeur externe ; fermeture au déploiement 19.5 (19.1, 19.2 et 19.2b implémentés, non
+  déployés).
 - **TD-021** (11-02) : erreurs des Cloud Functions planifiées sans alerte — à résoudre avant le premier event en
-  production, prérequis du déploiement de `processWorldEventLifecycle` (ordre imposé dans TD-020).
+  production, prérequis du déploiement de `processWorldEventLifecycle` (ordre imposé dans TD-020). Étendue aux
+  erreurs « slot corrompu » (connexion, collecte, arrêt) et prérequis du déploiement 19.5 (D-ETAPE19-008) : à
+  résoudre au premier des deux déploiements.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
 
 ### Prochaine retouche de CLAUDE.md
@@ -219,6 +222,10 @@ Remarques secondaires de l'auditeur sur `263d3da`, reportées sans être appliqu
 - Le bloc des remarques sur `559f188` est rangé sous « Prochaine retouche de CLAUDE.md », mais sa 2e remarque vise `BRIEFING-claude-code.md` et non `CLAUDE.md`, et il ne dit pas quand le traiter : ajouter « à traiter dans la même retouche (revue croisée, cas 5 si une convention change) ».
 - La 4e puce de ce bloc est un constat (« Rien à corriger ») rangé dans une liste de choses à faire : la marquer comme constat, ou la sortir de la liste.
 
+Règle de rédaction des tickets — décision du founder (escalade 19.2b, 2026-11-02), citée telle quelle, à inscrire
+dans `CLAUDE.md` à la prochaine retouche (revue croisée, cas 5) : « Une clause STOP renvoie à une décision du
+journal attribuée au founder, jamais à un texte de spec rédigé par un agent. »
+
 ## Prochaine étape attendue
 
 **ÉTAPE 19 — chaîne Planks / Kits (en cours ; feuille de route : 18 Marché → 19 → 20 Contrats → 21 Charte)** :
@@ -233,19 +240,26 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   déployé ; aucun slot de transformation en prod) ;
 - 19.2 — backend : arrêt d'un slot (`stopProductionSlot`, remboursement limité au plafond) et règle unique des
   états de slot corrompus (`failed-precondition`, journalisés) — fait le 11-02 (`ba8f108`, non déployé ; D-ETAPE19-006) ;
+- 19.2b — backend : l'arrêt règle d'abord tous les slots du bâtiment, comme une collecte ; un slot voisin corrompu
+  refuse l'arrêt ; validation commune de `buildingId` (lancement, collecte, arrêt ; 128 octets max) — fait le 11-02
+  (non déployé ; D-ETAPE19-007) ; conditions 19.5 et extension de TD-021 consignées (D-ETAPE19-008) ;
 - 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
-  parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService` ;
+  parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService`. État de slot corrompu
+  (`failed-precondition`, `details.reason = "corrupt-slot"`, à la connexion, à la collecte ou à l'arrêt) :
+  l'écran affiche « compte en maintenance », pas le texte technique (ticket 19.2b du founder). Résultat de
+  l'arrêt : `collected` et `discarded` couvrent tout le bâtiment, affichés comme une collecte, et
+  `refundDiscarded` (intrants perdus au plafond) est affiché (D-ETAPE19-007) ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
-  Conditions écrites de déploiement (founder, ticket 19.2) :
+  Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
   (b) juste avant le déploiement, revérifier en lecture seule l'absence de slots de planks ou de kits, étendue à tous
   les états de slot corrompus (D-ETAPE19-006 : slot occupé sans `startedAt`, logs compris ; compteurs de lot
   invalides ou épuisés) ;
   (c) TD-021 (alertes) en prérequis, comme pour `processWorldEventLifecycle`, puisqu'un état corrompu bloque la
-  connexion du compte. Note : TD-021 couvre aujourd'hui les fonctions planifiées ; l'étendre aux erreurs « état de
-  slot corrompu » journalisées par la connexion, la collecte et l'arrêt est à décider par le founder à l'escalade
-  19.5 — sans cette extension, (c) ne protège pas de ce risque.
+  connexion du compte. TD-021 étendue par décision du founder (ticket 19.2b, D-ETAPE19-008) : « TD-021 couvre
+  aussi les erreurs "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à
+  l'arrêt), prérequis du déploiement 19.5. »
 
 **ÉTAPE 20 — Contrats impériaux** : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
 (`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event absolu 9 / 22,

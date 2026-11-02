@@ -40,7 +40,9 @@ Un joueur peut lancer 3 cycles de Logs simultanément, ou mixer Logs/Planks selo
   inférieur ou égal à la place libre de la ressource produite (plafond − stock) ; sinon le lancement est refusé.
   Cette vérification ne protège pas d'un autre slot qui remplirait la même ressource en parallèle : l'interface
   affiche ce risque (ÉTAPE 19.4).
-- **Arrêt d'un slot** : toujours possible. Les cycles terminés sont crédités ; le cycle en cours est perdu, avec ses
+- **Arrêt d'un slot** : toujours possible, sauf état de slot corrompu dans le bâtiment (refus sans effet,
+  D-ETAPE19-006 et D-ETAPE19-007). Les cycles terminés de tous les slots du bâtiment sont d'abord crédités,
+  comme une collecte (D-ETAPE19-007) ; le cycle en cours est perdu, avec ses
   intrants ; les intrants des cycles non commencés sont rendus, dans la limite du plafond de chaque ressource :
   l'excédent est perdu (décision du founder, 2026-11-02, D-ETAPE19-006).
 - **Bâtiment** : les trois recettes, Kits compris, sont produites à la Sawmill en Phase 1.

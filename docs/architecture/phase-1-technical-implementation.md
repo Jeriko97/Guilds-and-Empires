@@ -209,7 +209,9 @@ export const resolveLoginState = functions.https.onCall(
 /**
  * Lance une production sur un slot de la Sawmill.
  * Logs : production continue (D3.1). Planks / kits : lot de N cycles (D-ETAPE19-001 à 004).
- * Validations serveur : uid authentifié, recipeId dans la liste autorisée,
+ * Validations serveur : uid authentifié, buildingId valide (règle commune, ÉTAPE 19.2b, D-ETAPE19-007 :
+ * chaîne d'au plus 128 octets UTF-8, non vide hors espaces, sans « / », ni « . », « .. », « __x__ » ;
+ * sinon invalid-argument), recipeId dans la liste autorisée,
  * slot disponible (recipeId == null), inventaire input suffisant.
  * ÉTAPE 19 (implémenté en 19.1, fcaa47a) :
  *  - `cycles` (N) : intention du client, pas un paramètre économique. Interdit pour logs
@@ -249,6 +251,7 @@ export const startProductionSlot = functions.https.onCall(
  * Collecte la production disponible sur tous les slots actifs.
  * Le serveur calcule elapsed = serverTimestamp - slot.startedAt.
  * Le client ne passe que buildingId — jamais un amount, jamais un elapsed.
+ * buildingId : même règle commune que le lancement (ÉTAPE 19.2b, D-ETAPE19-007), sinon invalid-argument.
  * Rate limit: 10 appels / min par uid.
  * Side effect: si production continue et cap atteint, slot reste actif mais yield = 0.
  * ÉTAPE 19 (implémenté en 19.1) : un lot dont tous les cycles sont traités libère son slot dans la même
@@ -270,11 +273,12 @@ export const collectProduction = functions.https.onCall(
 );
 
 /**
- * ÉTAPE 19.2 (implémenté, non déployé ; D-ETAPE19-002 et 006) — Arrête un slot actif et le libère.
+ * ÉTAPE 19.2 et 19.2b (implémenté, non déployé ; D-ETAPE19-002, 006 et 007) — Arrête un slot actif et le libère.
  * Entrée : buildingId, slotIndex, idempotencyKey. Aucun temps ni aucune quantité reçus du client.
  * Validations (dans cet ordre) :
  *  - non authentifié → unauthenticated ; rate limit → resource-exhausted ;
- *  - buildingId identifiant de document valide (non vide, sans « / », ni « . », « .. », « __x__ »),
+ *  - buildingId identifiant de document valide (règle commune, D-ETAPE19-007 : chaîne d'au plus
+ *    128 octets UTF-8, non vide hors espaces, sans « / », ni « . », « .. », « __x__ »),
  *    slotIndex ∈ {0,1,2}, idempotencyKey au format UUID (comme le lancement, D-ETAPE19-005)
  *    → invalid-argument sinon ;
  *  - transaction : player absent → not-found ; schemaVersion invalide → failed-precondition ;
@@ -286,12 +290,19 @@ export const collectProduction = functions.https.onCall(
  *    il doit recevoir alreadyApplied = true ; testé en 19.2) ;
  *    building ou slot absent → not-found ; slot libre (recipeId == null) → failed-precondition ;
  *    recette inconnue (donnée corrompue) → internal, journalisé ; état de slot corrompu (règle unique,
- *    D-ETAPE19-006) → failed-precondition, journalisé, rien n'est écrit.
+ *    D-ETAPE19-006) → failed-precondition, journalisé, rien n'est écrit. ÉTAPE 19.2b (D-ETAPE19-007) :
+ *    ces deux cas valent pour n'importe quel slot du bâtiment, voisin compris ; journal de l'état
+ *    corrompu : slotIndex = slot fautif, stoppedSlotIndex = slot demandé.
  * Effets, dans la même transaction et dans cet ordre (le recalcul et le crédit précèdent
  * toujours le remboursement) :
  *  1. cycles terminés jusqu'à maintenant : recalculés et crédités comme à la collecte
  *     (processBuildingSlots : bornés par la place libre, le reste perdu), sans dépasser N pour un lot ;
- *     seul le slot arrêté est recalculé (les autres slots ne sont ni collectés ni contrôlés) ;
+ *     [remplacé par D-ETAPE19-007, ÉTAPE 19.2b — texte 19.2 :] seul le slot arrêté est recalculé (les
+ *     autres slots ne sont ni collectés ni contrôlés) ;
+ *     [règle en vigueur, D-ETAPE19-007 :] TOUS les slots du bâtiment sont d'abord réglés
+ *     exactement comme par une collecte (processBuildingSlots, même ordre, saturation comprise) ;
+ *     collected et discarded de la réponse couvrent donc tout le bâtiment, pas seulement le slot
+ *     arrêté (le client 19.4 les affiche comme une collecte) ;
  *  2. cycle en cours : il en existe un seulement si, après l'effet 1, cyclesProcessed < N (lot) ;
  *     il est perdu, avec ses intrants. Arrêt pile en fin de cycle (temps écoulé depuis
  *     lastProcessedAt — ou startedAt s'il est null — multiple exact de la durée) : le cycle suivant
@@ -300,7 +311,8 @@ export const collectProduction = functions.https.onCall(
  *     logs : le cycle en cours est perdu, sans intrant à perdre ;
  *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs,
  *     arrêt pile en fin de cycle compris ; chaque ressource rendue est limitée à sa place libre après
- *     l'effet 1, l'excédent est perdu et renvoyé dans refundDiscarded (décision du founder,
+ *     l'effet 1 (inventaire réglé : tous les slots crédités, D-ETAPE19-007), l'excédent est perdu et
+ *     renvoyé dans refundDiscarded (décision du founder,
  *     D-ETAPE19-006 : « remboursement limité au plafond, l'excédent est perdu ») ;
  *     lot déjà entièrement écoulé (cyclesProcessed = N après l'effet 1) : aucun cycle en cours,
  *     rien à rendre, crédit puis libération ; logs : rien à rendre ;
