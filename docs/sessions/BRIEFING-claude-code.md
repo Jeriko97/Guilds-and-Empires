@@ -154,6 +154,13 @@ change). Aussi listées dans TD-020, « Points ouverts pour la sous-étape `proc
 - Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).
 - Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).
 
+Remarques secondaires de l'auditeur sur `559f188` (D-REPRISE-006), reportées sans être appliquées (demande du
+founder du 2026-11-02) :
+- `CLAUDE.md`, section « Pilotage de l'Éditeur Unity — installation obligatoire » : retour à la ligne au milieu de la phrase « Ne jamais / relancer `set_run_in_background --enable true` » ; l'écrire sur une seule ligne.
+- `BRIEFING-claude-code.md`, pilotage de l'Éditeur : regrouper en une seule vérification de début de session de pilotage les trois clés de `EditorPipelineConfig.json` (`m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`, `m_AllowBrowserClients: false`), et dire si le réglage d'installation survit à la réécriture du fichier « à chaque session ».
+- La consigne d'installation de l'outil de pilotage figure en entier dans `CLAUDE.md` et dans `BRIEFING-claude-code.md` : n'en garder qu'une version complète et faire pointer l'autre vers elle.
+- D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2, ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` : `runInBackground: 0`, `scriptingDefineSymbols: {}`). Rien à corriger, constat seulement.
+
 ### Couche client Unity (Assets/_Project/)
 
 - `ServiceLocator` (static) — Register/Resolve/TryResolve
