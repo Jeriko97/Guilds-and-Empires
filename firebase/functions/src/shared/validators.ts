@@ -9,6 +9,12 @@ const VALID_CONTRACT_TIERS: ContractTier[] = ["standard", "reinforced", "priorit
 const VALID_SLOT_INDICES: Array<0 | 1 | 2> = [0, 1, 2];
 
 /**
+ * Clé d'idempotence = UUID par intention (D-ETAPE19-003). Le format strict garantit aussi un
+ * identifiant de document Firestore valide (pas de « / », de « . », ni de nom réservé « __x__ »).
+ */
+const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
  * Extrait l'uid depuis request.auth.
  * Throw si la requête n'est pas authentifiée.
  *
@@ -96,6 +102,44 @@ export function requireValidSlotIndex(
     throw new HttpsError(
       "invalid-argument",
       `'${fieldName}' doit être 0, 1 ou 2. Valeur reçue : ${JSON.stringify(value)}.`
+    );
+  }
+}
+
+/**
+ * Vérifie que value est une clé d'idempotence au format UUID (8-4-4-4-12 hexadécimal).
+ * Throw invalid-argument sinon (D-ETAPE19-005). Utilisé par startProductionSlot et stopProductionSlot.
+ *
+ * @example
+ * requireValidIdempotencyKey(request.data.idempotencyKey);
+ * // idempotencyKey: string garanti après cet appel
+ */
+export function requireValidIdempotencyKey(value: unknown): asserts value is string {
+  if (typeof value !== "string" || !IDEMPOTENCY_KEY_PATTERN.test(value)) {
+    throw new HttpsError("invalid-argument", "idempotencyKey requis (UUID).");
+  }
+}
+
+/**
+ * Vérifie que value peut servir d'identifiant de document Firestore : chaîne non vide (hors espaces),
+ * sans « / », différente de « . » et « .. », hors noms réservés « __x__ ». Throw invalid-argument
+ * sinon — évite l'Error synchrone de `.doc()` (qui deviendrait `internal`). Utilisé par
+ * stopProductionSlot (ÉTAPE 19.2) ; alignement des autres Cloud Functions : ticket transverse.
+ *
+ * @param fieldName - Nom du champ affiché dans le message d'erreur.
+ *
+ * @example
+ * requireValidDocumentId(request.data.buildingId, "buildingId");
+ * // buildingId: string garanti après cet appel
+ */
+export function requireValidDocumentId(value: unknown, fieldName: string): asserts value is string {
+  if (
+    typeof value !== "string" || value.trim() === "" || value.includes("/") ||
+    value === "." || value === ".." || /^__.*__$/.test(value)
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      `'${fieldName}' doit être un identifiant de document valide. Valeur reçue : ${JSON.stringify(value)}.`
     );
   }
 }

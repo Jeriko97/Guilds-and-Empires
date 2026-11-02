@@ -5,7 +5,7 @@ import { logger } from "firebase-functions/logger";
 
 import { requireAuth, requireSchemaVersion } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
-import { processBuildingSlots } from "../shared/production";
+import { processBuildingSlots, corruptSlotDetails } from "../shared/production";
 import type { ProcessBuildingResult, ResourceKey } from "../shared/production";
 import type { PlayerDocument, BuildingDocument, InventoryState } from "../shared/types";
 
@@ -104,11 +104,21 @@ export async function collectProductionHandler(
         try {
           processResult = processBuildingSlots(buildingData, playerData.inventory, now, createTimestamp);
         } catch (helperErr) {
-          // Error standard du helper (recipe inconnue = corruption data) → internal.
-          throw new HttpsError(
-            "internal",
-            helperErr instanceof Error ? helperErr.message : "Erreur interne du serveur."
-          );
+          // État de slot corrompu (HttpsError failed-precondition) : journalisé, renvoyé tel quel.
+          const corrupt = corruptSlotDetails(helperErr);
+          if (corrupt) {
+            logger.error("collectProduction: état de slot corrompu", { uid, buildingId, ...corrupt });
+            throw helperErr;
+          }
+          // Error standard du helper (recipe inconnue = corruption data) → internal, journalisée.
+          logger.error("collectProduction: erreur du calcul de production", {
+            uid,
+            buildingId,
+            error: helperErr instanceof Error
+              ? { message: helperErr.message, stack: helperErr.stack }
+              : helperErr,
+          });
+          throw new HttpsError("internal", "Erreur interne du serveur.");
         }
 
         const { updatedSlots, updatedInventory, collected, discarded, hasProcessedCycles } = processResult;

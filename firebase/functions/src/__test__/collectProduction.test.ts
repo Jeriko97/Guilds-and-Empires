@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import { HttpsError } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/logger";
 
 import { collectProductionHandler } from "../production/collectProduction";
 import type { CollectProductionRequest } from "../production/collectProduction";
@@ -316,22 +317,59 @@ describe("collectProduction", () => {
     );
   });
 
-  it("12b. ÉTAPE 19.1 — slot hérité de transformation (planks sans cyclesPlanned) → internal, rien n'est écrit", async () => {
+  it("12b. ÉTAPE 19.2 — slot hérité de transformation (planks sans cyclesPlanned) → failed-precondition, journalisé, rien n'est écrit", async () => {
     const uid = "collect-prod-legacy";
+    const legacySlot = makeActiveSlot(0, "planks", 10 * PLANKS_DURATION_MS); // pas de cyclesPlanned : lancé avant l'ÉTAPE 19
     await createTestPlayer(uid);
-    await createTestBuilding(uid, [
-      makeActiveSlot(0, "planks", 10 * PLANKS_DURATION_MS), // pas de cyclesPlanned : lancé avant l'ÉTAPE 19
-      makeIdleSlot(1),
-      makeIdleSlot(2),
-    ]);
+    await createTestBuilding(uid, [legacySlot, makeIdleSlot(1), makeIdleSlot(2)]);
+    const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
-    await expect(
-      collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
-    ).rejects.toMatchObject(
-      { code: "internal" } satisfies Partial<HttpsError>
-    );
+    try {
+      await expect(
+        collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
+      ).rejects.toMatchObject(
+        { code: "failed-precondition" } satisfies Partial<HttpsError>
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        "collectProduction: état de slot corrompu",
+        expect.objectContaining({ uid, buildingId: "sawmill_0", reason: "corrupt-slot", slotIndex: 0, recipeId: "planks" }),
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
     const player = (await db.collection("players").doc(uid).get()).data();
     expect(player?.inventory.planks.quantity).toBe(0);
+    const slot = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get())
+      .data()?.slots[0];
+    expect(slot).toEqual(legacySlot);
+  });
+
+  it("12d. ÉTAPE 19.2 — lot corrompu (cyclesProcessed ≥ cyclesPlanned, slot non libéré) → failed-precondition, journalisé, rien n'est écrit", async () => {
+    const uid = "collect-prod-corrupt-batch";
+    const corruptSlot = { ...makeActiveSlot(1, "planks", 10 * PLANKS_DURATION_MS), cyclesPlanned: 4, cyclesProcessed: 4 };
+    await createTestPlayer(uid);
+    await createTestBuilding(uid, [makeActiveSlot(0, "logs", 3 * LOG_DURATION_MS), corruptSlot, makeIdleSlot(2)]);
+    const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
+
+    try {
+      await expect(
+        collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
+      ).rejects.toMatchObject(
+        { code: "failed-precondition" } satisfies Partial<HttpsError>
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        "collectProduction: état de slot corrompu",
+        expect.objectContaining({ uid, buildingId: "sawmill_0", slotIndex: 1, motif: expect.stringMatching(/lot épuisé/) }),
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+    // Le slot de logs sain n'est pas collecté non plus : la transaction entière est refusée.
+    const player = (await db.collection("players").doc(uid).get()).data();
+    expect(player?.inventory.logs.quantity).toBe(0);
+    const slots = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get())
+      .data()?.slots;
+    expect(slots[1]).toEqual(corruptSlot);
   });
 
   it("12c. ÉTAPE 19.1 — lot de planks terminé : production créditée et slot libéré dans Firestore", async () => {
@@ -382,11 +420,21 @@ describe("collectProduction", () => {
         ],
       });
 
-    await expect(
-      collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
-    ).rejects.toMatchObject(
-      { code: "internal" } satisfies Partial<HttpsError>
-    );
+    const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
+    try {
+      await expect(
+        collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
+      ).rejects.toMatchObject(
+        { code: "internal", message: "Erreur interne du serveur." } satisfies Partial<HttpsError>
+      );
+      // ÉTAPE 19.2 : journalisé, et le message interne n'est plus renvoyé au client.
+      expect(errorSpy).toHaveBeenCalledWith(
+        "collectProduction: erreur du calcul de production",
+        expect.objectContaining({ uid, buildingId: "sawmill_0" }),
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it("13. Idempotence faible — 2e appel (après rate limit) collecte {} car lastProcessedAt=now", async () => {

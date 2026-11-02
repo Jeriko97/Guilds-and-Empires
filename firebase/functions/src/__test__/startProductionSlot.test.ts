@@ -1,3 +1,4 @@
+import * as admin from "firebase-admin";
 import { randomUUID } from "crypto";
 import { HttpsError } from "firebase-functions/v2/https";
 
@@ -521,7 +522,36 @@ describe("startProductionSlot", () => {
       expect(op?.cycles).toBeNull();
     });
 
+    it("Chemin de la trace (déterministe) : trace de lancement posée en base, slot libre et intrants absents → alreadyApplied, rien ne change", async () => {
+      // Sans lecture de la trace AVANT les contrôles métier, cet appel serait refusé (intrants
+      // insuffisants) : alreadyApplied = true prouve que le rejeu passe par la trace.
+      const uid = "sps-lot-trace-path";
+      const key = randomUUID();
+      const data = { buildingId: "sawmill_0", slotIndex: 0, recipeId: "planks", cycles: 5, idempotencyKey: key };
+      await createTestPlayer(uid); // 0 log : un vrai lancement de 5 planks échouerait
+      await createTestBuilding(uid, [makeIdleSlot(0), makeIdleSlot(1), makeIdleSlot(2)]);
+      const opRef = db.collection("players").doc(uid).collection("productionOps").doc(key);
+      await opRef.set({
+        uid, op: "start", buildingId: "sawmill_0", slotIndex: 0, recipeId: "planks", cycles: 5,
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+      const traceBefore = await opRef.get();
+      const playerBefore = (await db.collection("players").doc(uid).get()).data();
+
+      const result = await startProductionSlotHandler(makeStartRequest(uid, data));
+
+      expect(result.alreadyApplied).toBe(true);
+      const slots = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get())
+        .data()?.slots;
+      expect(slots[0].recipeId).toBeNull();
+      expect((await db.collection("players").doc(uid).get()).data()?.inventory).toEqual(playerBefore?.inventory);
+      const traceAfter = await opRef.get();
+      expect(traceAfter.updateTime?.isEqual(traceBefore.updateTime!)).toBe(true);
+    });
+
     it("Appels concurrents avec la même clé : intrants débités une seule fois, une seule trace", async () => {
+      // Conservé de 19.1 ; ne prouve pas le chemin de la trace (le rate limit peut couper l'un des
+      // deux appels) — voir le test « Chemin de la trace (déterministe) » ci-dessus.
       const uid = "sps-lot-concurrent";
       const data = { buildingId: "sawmill_0", slotIndex: 0, recipeId: "planks", cycles: 10, idempotencyKey: randomUUID() };
       await createTestPlayer(uid, {

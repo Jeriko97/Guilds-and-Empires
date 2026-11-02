@@ -143,7 +143,10 @@ export interface ProductionSlotState {
  * /players/{uid}/productionOps/{idempotencyKey}. Écrite par les Cloud Functions uniquement
  * (aucun accès client : règle de repli « deny-all » de firestore.rules).
  */
-export interface ProductionOpDocument {
+export type ProductionOpDocument = ProductionStartOpDocument | ProductionStopOpDocument;
+
+/** Trace d'un lancement (startProductionSlot). */
+export interface ProductionStartOpDocument {
   uid: string;
   op: "start";
   buildingId: string;
@@ -151,6 +154,17 @@ export interface ProductionOpDocument {
   recipeId: RecipeId;
   /** N du lot ; null pour une production continue (logs). */
   cycles: number | null;
+  createdAt: firestore.Timestamp;
+}
+
+/** Trace d'un arrêt (stopProductionSlot, ÉTAPE 19.2). Contenu comparé : uid, op, buildingId, slotIndex. */
+export interface ProductionStopOpDocument {
+  uid: string;
+  op: "stop";
+  buildingId: string;
+  slotIndex: 0 | 1 | 2;
+  /** Recette du slot arrêté — informatif, non comparé au rejeu. */
+  recipeId: RecipeId;
   createdAt: firestore.Timestamp;
 }
 

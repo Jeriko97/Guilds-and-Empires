@@ -1,4 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/logger";
 
 import { resolveLoginStateHandler } from "../login/resolveLoginState";
 import { RECIPES } from "../shared/recipes";
@@ -245,14 +246,35 @@ describe("resolveLoginState", () => {
     expect(slot.cyclesProcessed).toBe(3);
   });
 
-  it("ÉTAPE 19.1 — slot hérité de transformation au login → internal", async () => {
-    const uid = "test-user-legacy-login";
+  it.each([
+    ["slot hérité de transformation", "test-user-legacy-login",
+      () => makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS), /hérité/],
+    ["lot corrompu (cyclesProcessed ≥ cyclesPlanned)", "test-user-corrupt-batch-login",
+      () => ({ ...makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS), cyclesPlanned: 2, cyclesProcessed: 2 }), /lot épuisé/],
+  ])("ÉTAPE 19.2 — %s au login → failed-precondition, journalisé, rien n'est écrit", async (_label, uid, makeSlot, motif) => {
+    const slot = makeSlot();
     await createTestPlayer(uid);
-    await createTestBuilding(uid, [makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS)]);
+    await createTestBuilding(uid, [slot]);
+    const before = (await db.collection("players").doc(uid).get()).data();
+    const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
-    await expect(resolveLoginStateHandler(makeRequest(uid))).rejects.toMatchObject(
-      { code: "internal" } satisfies Partial<HttpsError>
-    );
+    try {
+      await expect(resolveLoginStateHandler(makeRequest(uid))).rejects.toMatchObject(
+        { code: "failed-precondition" } satisfies Partial<HttpsError>
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        "resolveLoginState: état de slot corrompu",
+        expect.objectContaining({ uid, buildingId: "sawmill_0", reason: "corrupt-slot", motif: expect.stringMatching(motif) }),
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+    const after = (await db.collection("players").doc(uid).get()).data();
+    expect(after?.lastLoginAt).toEqual(before?.lastLoginAt); // transaction refusée : aucune écriture
+    expect(after?.inventory).toEqual(before?.inventory);
+    const stored = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get())
+      .data()?.slots[0];
+    expect(stored).toEqual(slot);
   });
 
   it("Rate limit : deuxième appel rapide rejeté avec resource-exhausted", async () => {

@@ -1,5 +1,6 @@
 import type { firestore } from "firebase-admin";
-import type { BuildingDocument, InventoryState, ProductionSlotState } from "./types";
+import { HttpsError } from "firebase-functions/v2/https";
+import type { BuildingDocument, InventoryState, ProductionSlotState, RecipeId } from "./types";
 import { RECIPES, RECIPE_TO_INVENTORY_KEY } from "./recipes";
 import type { RecipeConfig } from "./recipes";
 
@@ -12,6 +13,47 @@ export type ProcessBuildingResult = {
   discarded: Partial<Record<ResourceKey, number>>;
   hasProcessedCycles: boolean;
 };
+
+// ── États corrompus (ÉTAPE 19.2, règle unique) ──────────────────────────────
+
+/** Motif porté par `HttpsError.details.reason` pour un état de slot corrompu. */
+export const CORRUPT_SLOT_REASON = "corrupt-slot";
+
+export type CorruptSlotDetails = {
+  reason:    typeof CORRUPT_SLOT_REASON;
+  slotIndex: number;
+  recipeId:  string;
+  motif:     string;
+};
+
+function corruptSlotError(slot: ProductionSlotState, motif: string): HttpsError {
+  const details: CorruptSlotDetails = {
+    reason:    CORRUPT_SLOT_REASON,
+    slotIndex: slot.slotIndex,
+    recipeId:  String(slot.recipeId),
+    motif,
+  };
+  return new HttpsError(
+    "failed-precondition",
+    `État de slot corrompu (slot ${slot.slotIndex}, ${slot.recipeId}) : ${motif}. ` +
+    "Reprise manuelle des données requise.",
+    details,
+  );
+}
+
+/**
+ * Détails d'un état de slot corrompu levé par le calcul partagé, ou null pour toute autre erreur.
+ * Les handlers s'en servent pour journaliser (logger.error) avant de renvoyer l'erreur.
+ */
+export function corruptSlotDetails(err: unknown): CorruptSlotDetails | null {
+  if (!(err instanceof HttpsError)) return null;
+  const details = err.details as Partial<CorruptSlotDetails> | undefined;
+  return details?.reason === CORRUPT_SLOT_REASON ? details as CorruptSlotDetails : null;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
 
 /**
  * Calcule la production différée pour tous les slots d'un bâtiment.
@@ -27,9 +69,16 @@ export type ProcessBuildingResult = {
  *   cyclesProcessed atteint cyclesPlanned.
  *
  * Throws Error (pas HttpsError) — le handler convertit en `internal` :
- * - recette inconnue (donnée corrompue) ;
- * - slot de transformation sans cyclesPlanned (lancé avant l'ÉTAPE 19) : donnée à reprendre,
- *   jamais traitée comme une production continue (TD-023).
+ * - recette inconnue (donnée corrompue).
+ *
+ * Throws HttpsError `failed-precondition` (details.reason = "corrupt-slot") — état de slot corrompu,
+ * levé avant tout calcul, donc sans aucune écriture ; donnée à reprendre (escalade cas 1) :
+ * - slot occupé sans startedAt ;
+ * - slot de transformation sans cyclesPlanned (lancé avant l'ÉTAPE 19), jamais traité comme une
+ *   production continue (TD-023) ;
+ * - lot aux compteurs invalides (cyclesPlanned non entier ou < 1 ; cyclesProcessed absent, non
+ *   entier ou < 0) ou épuisé sans libération (cyclesProcessed ≥ cyclesPlanned).
+ * Logs : les champs de lot ne sont pas lus (production continue, D3.1).
  */
 export function processBuildingSlots(
   building: BuildingDocument,
@@ -50,21 +99,38 @@ export function processBuildingSlots(
   let hasProcessedCycles = false;
 
   const updatedSlots: ProductionSlotState[] = building.slots.map((slot) => {
-    if (slot.recipeId === null || slot.startedAt === null) return { ...slot };
+    if (slot.recipeId === null) return { ...slot };
 
     const recipe = (RECIPES as Record<string, RecipeConfig | undefined>)[slot.recipeId];
     if (!recipe) {
       throw new Error(`unknown recipe: ${slot.recipeId}`);
     }
-
-    // Lot (transformation) : cyclesPlanned obligatoire. Logs : jamais de lot.
-    const cyclesPlanned = recipe.maxBatchCycles === null ? null : (slot.cyclesPlanned ?? null);
-    if (recipe.maxBatchCycles !== null && cyclesPlanned === null) {
-      throw new Error(
-        `legacy transformation slot without cyclesPlanned: ${slot.recipeId} (slot ${slot.slotIndex})`
-      );
+    if (slot.startedAt === null || slot.startedAt === undefined) {
+      throw corruptSlotError(slot, "slot occupé sans startedAt");
     }
-    const cyclesProcessed = slot.cyclesProcessed ?? 0;
+
+    // Lot (transformation) : compteurs obligatoires et cohérents. Logs : jamais de lot.
+    let cyclesPlanned: number | null = null;
+    let cyclesProcessed = 0;
+    if (recipe.maxBatchCycles !== null) {
+      if (slot.cyclesPlanned === undefined || slot.cyclesPlanned === null) {
+        throw corruptSlotError(slot, "slot de transformation hérité, sans cyclesPlanned (lancé avant l'ÉTAPE 19)");
+      }
+      if (!isNonNegativeInteger(slot.cyclesPlanned) || slot.cyclesPlanned < 1) {
+        throw corruptSlotError(slot, `cyclesPlanned invalide (${JSON.stringify(slot.cyclesPlanned)})`);
+      }
+      if (!isNonNegativeInteger(slot.cyclesProcessed)) {
+        throw corruptSlotError(slot, `cyclesProcessed invalide (${JSON.stringify(slot.cyclesProcessed)})`);
+      }
+      if (slot.cyclesProcessed >= slot.cyclesPlanned) {
+        throw corruptSlotError(
+          slot,
+          `lot épuisé non libéré (cyclesProcessed ${slot.cyclesProcessed} ≥ cyclesPlanned ${slot.cyclesPlanned})`,
+        );
+      }
+      cyclesPlanned   = slot.cyclesPlanned;
+      cyclesProcessed = slot.cyclesProcessed;
+    }
 
     const referenceTimestamp = slot.lastProcessedAt ?? slot.startedAt;
     const elapsedMs = now.toMillis() - referenceTimestamp.toMillis();
@@ -116,4 +182,100 @@ export function processBuildingSlots(
   });
 
   return { updatedSlots, updatedInventory, collected, discarded, hasProcessedCycles };
+}
+
+// ── Arrêt d'un slot (ÉTAPE 19.2, D-ETAPE19-002) ───────────────────────────────
+
+export type SlotStopResult = {
+  updatedSlots: ProductionSlotState[];
+  updatedInventory: InventoryState;
+  /** Cycles terminés crédités (effet 1). */
+  collected: Partial<Record<ResourceKey, number>>;
+  /** Production perdue à saturation (effet 1). */
+  discarded: Partial<Record<ResourceKey, number>>;
+  /** Intrants des cycles non commencés rendus, dans la limite du plafond (effet 3). */
+  refunded: Partial<Record<ResourceKey, number>>;
+  /** Intrants à rendre perdus au plafond (effet 3, décision founder du 2026-11-02). */
+  refundDiscarded: Partial<Record<ResourceKey, number>>;
+};
+
+/**
+ * Calcule l'arrêt d'un slot occupé, dans l'ordre de la spec (D-ETAPE19-002, 19.0 / 19.1) :
+ *  1. recalcul et crédit des cycles terminés du SEUL slot arrêté (processBuildingSlots : saturation
+ *     comprise, jamais plus que N pour un lot) — les autres slots ne sont ni collectés ni contrôlés ;
+ *  2. cycle en cours perdu, avec ses intrants (arrêt pile en fin de cycle compris : le cycle suivant
+ *     compte comme commencé, règle 19.0) ;
+ *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs, où
+ *     cyclesProcessed est compté après l'effet 1 (lot entièrement écoulé : N, rien à rendre). Chaque
+ *     ressource rendue est limitée à sa place libre après le crédit ; l'excédent est perdu (décision
+ *     founder : « remboursement limité au plafond, l'excédent est perdu »). Logs : rien à rendre ;
+ *  4. slot libéré.
+ *
+ * PUR — même contrat que processBuildingSlots (aucun I/O, `now` injecté, arguments non mutés).
+ * Throws Error si le slot est absent ou libre (contrôlé par le handler avant l'appel), et les
+ * erreurs de processBuildingSlots (recette inconnue, état de slot corrompu).
+ */
+export function computeSlotStop(
+  building: BuildingDocument,
+  inventory: InventoryState,
+  slotIndex: 0 | 1 | 2,
+  now: firestore.Timestamp,
+  createTimestamp: (ms: number) => firestore.Timestamp,
+): SlotStopResult {
+
+  const target = building.slots.find((s) => s.slotIndex === slotIndex);
+  if (target === undefined || target.recipeId === null) {
+    throw new Error(`computeSlotStop: slot ${slotIndex} absent ou libre`);
+  }
+
+  // Effets 1-2 : crédit du seul slot arrêté.
+  const processed = processBuildingSlots({ ...building, slots: [target] }, inventory, now, createTimestamp);
+  const afterCredit = processed.updatedSlots[0];
+  const updatedInventory = processed.updatedInventory;
+
+  // Effet 3 : remboursement plafonné.
+  const refunded: Partial<Record<ResourceKey, number>> = {};
+  const refundDiscarded: Partial<Record<ResourceKey, number>> = {};
+  const recipe = RECIPES[target.recipeId];
+  if (recipe.maxBatchCycles !== null && recipe.inputs !== null) {
+    // Compteurs validés par processBuildingSlots. Lot entièrement écoulé : libéré par
+    // processBuildingSlots (compteurs à null), il a traité ses N cycles.
+    const cyclesPlanned = target.cyclesPlanned as number;
+    const cyclesProcessed = afterCredit.recipeId === null
+      ? cyclesPlanned
+      : afterCredit.cyclesProcessed as number;
+    const refundCycles = Math.max(0, cyclesPlanned - cyclesProcessed - 1);
+
+    if (refundCycles > 0) {
+      for (const [inputId, unitCost] of Object.entries(recipe.inputs) as Array<[RecipeId, number]>) {
+        const key = RECIPE_TO_INVENTORY_KEY[inputId];
+        const resource = updatedInventory[key];
+        const due = unitCost * refundCycles;
+        const given = Math.min(due, Math.max(0, resource.cap - resource.quantity));
+        updatedInventory[key] = { ...resource, quantity: resource.quantity + given };
+        refunded[key] = (refunded[key] ?? 0) + given;
+        refundDiscarded[key] = (refundDiscarded[key] ?? 0) + (due - given);
+      }
+    }
+  }
+
+  // Effet 4 : slot libéré.
+  const freedSlot: ProductionSlotState = {
+    slotIndex,
+    recipeId:        null,
+    startedAt:       null,
+    lastProcessedAt: null,
+    cyclesPlanned:   null,
+    cyclesProcessed: null,
+  };
+  const updatedSlots = building.slots.map((s) => s.slotIndex === slotIndex ? freedSlot : { ...s });
+
+  return {
+    updatedSlots,
+    updatedInventory,
+    collected: processed.collected,
+    discarded: processed.discarded,
+    refunded,
+    refundDiscarded,
+  };
 }

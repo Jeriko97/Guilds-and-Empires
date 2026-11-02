@@ -1,6 +1,8 @@
 import * as admin from "firebase-admin";
 
-import { processBuildingSlots } from "../shared/production";
+import { HttpsError } from "firebase-functions/v2/https";
+
+import { processBuildingSlots, computeSlotStop, corruptSlotDetails } from "../shared/production";
 import { RECIPES, PLANKS_MAX_BATCH_CYCLES, KITS_MAX_BATCH_CYCLES } from "../shared/recipes";
 import type { BuildingDocument, InventoryState, ProductionSlotState } from "../shared/types";
 
@@ -389,15 +391,143 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
       expect(result.updatedSlots[0].cyclesPlanned).toBeUndefined();
     });
 
+  });
+
+  // ── ÉTAPE 19.2 — états corrompus : une seule règle (failed-precondition, details « corrupt-slot ») ──
+  describe("états corrompus", () => {
+    const T0 = 1_700_000_000_000;
+    const at = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
+
+    /** Vérifie l'erreur levée : HttpsError failed-precondition, motif « corrupt-slot » attendu. */
+    function expectCorrupt(slot: ProductionSlotState, motif: RegExp): void {
+      let caught: unknown;
+      try {
+        processBuildingSlots(makeBuilding([slot]), makeInventory(), at(T0 + 10 * KITS_DURATION_MS), createTs);
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(HttpsError);
+      expect((caught as HttpsError).code).toBe("failed-precondition");
+      expect((caught as HttpsError).message).toMatch(/État de slot corrompu/);
+      const details = corruptSlotDetails(caught);
+      expect(details).toMatchObject({ reason: "corrupt-slot", slotIndex: slot.slotIndex, recipeId: slot.recipeId });
+      expect(details?.motif).toMatch(motif);
+    }
+
     it.each(["planks", "reconstruction_kits"] as const)(
-      "19. Slot hérité de transformation (%s, sans cyclesPlanned) → throw Error, jamais production continue",
+      "19. Slot hérité de transformation (%s, sans cyclesPlanned) → failed-precondition, jamais production continue",
       (recipeId) => {
-        const building = makeBuilding([makeSlot(0, recipeId, T0)]);
-        expect(() =>
-          processBuildingSlots(building, makeInventory(), at(T0 + 10 * KITS_DURATION_MS), createTs)
-        ).toThrow(/legacy transformation slot without cyclesPlanned/);
+        expectCorrupt(makeSlot(0, recipeId, T0), /hérité, sans cyclesPlanned/);
       },
     );
+
+    it("20. Lot épuisé non libéré (cyclesProcessed = cyclesPlanned) → failed-precondition", () => {
+      expectCorrupt(makeBatchSlot(1, "planks", T0, 5, 5), /lot épuisé non libéré/);
+    });
+
+    it("21. Lot épuisé non libéré (cyclesProcessed > cyclesPlanned) → failed-precondition", () => {
+      expectCorrupt(makeBatchSlot(1, "reconstruction_kits", T0, 3, 7), /lot épuisé non libéré/);
+    });
+
+    it.each([
+      ["non entier", 2.5],
+      ["< 1", 0],
+      ["négatif", -3],
+    ])("22. cyclesPlanned %s → failed-precondition", (_label, cyclesPlanned) => {
+      expectCorrupt({ ...makeSlot(0, "planks", T0), cyclesPlanned, cyclesProcessed: 0 }, /cyclesPlanned invalide/);
+    });
+
+    it.each([
+      ["absent (undefined)", undefined],
+      ["absent (null)", null],
+      ["non entier", 1.5],
+      ["négatif", -1],
+    ])("23. cyclesProcessed %s → failed-precondition", (_label, cyclesProcessed) => {
+      expectCorrupt({ ...makeSlot(0, "planks", T0), cyclesPlanned: 4, cyclesProcessed }, /cyclesProcessed invalide/);
+    });
+
+    it.each(["logs", "planks"] as const)("24. Slot occupé sans startedAt (%s) → failed-precondition", (recipeId) => {
+      const slot: ProductionSlotState = {
+        slotIndex: 2, recipeId, startedAt: null, lastProcessedAt: null,
+        ...(recipeId === "planks" ? { cyclesPlanned: 4, cyclesProcessed: 0 } : {}),
+      };
+      expectCorrupt(slot, /slot occupé sans startedAt/);
+    });
+
+    it("24b. Slot occupé, champ startedAt absent (undefined) → failed-precondition", () => {
+      const slot = { slotIndex: 1, recipeId: "logs", lastProcessedAt: null } as unknown as ProductionSlotState;
+      expectCorrupt(slot, /slot occupé sans startedAt/);
+    });
+
+    it("25. Non-régression : slot de logs sans aucun champ de lot (lancé avant 19.1, seed) → pas corrompu", () => {
+      const slot = makeSlot(0, "logs", T0); // ni cyclesPlanned ni cyclesProcessed
+      const result = processBuildingSlots(makeBuilding([slot]), makeInventory(), at(T0 + 3 * LOG_DURATION_MS), createTs);
+      expect(result.collected.logs).toBe(3 * LOG_OUTPUT_QTY);
+      expect(result.updatedSlots[0].recipeId).toBe("logs");
+    });
+
+    it("26. Recette inconnue : reste une Error (→ internal), pas un état « corrupt-slot »", () => {
+      const slot = { ...makeSlot(0, "logs", T0), recipeId: "dragon_scales" as unknown as "logs" };
+      let caught: unknown;
+      try {
+        processBuildingSlots(makeBuilding([slot]), makeInventory(), at(T0 + LOG_DURATION_MS), createTs);
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(Error);
+      expect(caught).not.toBeInstanceOf(HttpsError);
+      expect((caught as Error).message).toBe("unknown recipe: dragon_scales");
+      expect(corruptSlotDetails(caught)).toBeNull();
+    });
+  });
+
+  // ── ÉTAPE 19.2 — computeSlotStop (calcul pur de l'arrêt) ─────────────────────
+  describe("computeSlotStop", () => {
+    const T0 = 1_700_000_000_000;
+    const at = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
+    const PLANKS_INPUT_LOGS = RECIPES["planks"].inputs!["logs"]!; // 2
+
+    it("27. Ne touche que le slot arrêté : un état corrompu sur un autre slot ne bloque pas l'arrêt", () => {
+      const building = makeBuilding([
+        makeBatchSlot(0, "planks", T0, 5, 5),            // corrompu, non arrêté
+        makeSlot(1, "logs", T0),                         // non arrêté : pas collecté
+        makeBatchSlot(2, "planks", T0, 4),               // arrêté
+      ]);
+      const result = computeSlotStop(building, makeInventory(), 2, at(T0 + PLANKS_DURATION_MS + 1), createTs);
+
+      expect(result.collected).toEqual({ planks: 1 });
+      // 4 − 1 traité − 1 en cours = 2 cycles rendus.
+      expect(result.refunded).toEqual({ logs: 2 * PLANKS_INPUT_LOGS });
+      expect(result.updatedSlots[0]).toEqual(building.slots[0]);
+      expect(result.updatedSlots[1]).toEqual(building.slots[1]);
+      expect(result.updatedSlots[2]).toEqual({
+        slotIndex: 2, recipeId: null, startedAt: null, lastProcessedAt: null, cyclesPlanned: null, cyclesProcessed: null,
+      });
+    });
+
+    it("28. Lot entièrement écoulé : N crédités (libéré par le calcul), rien à rendre", () => {
+      const N = 3;
+      const result = computeSlotStop(
+        makeBuilding([makeBatchSlot(0, "planks", T0, N)]), makeInventory(), 0, at(T0 + 10 * PLANKS_DURATION_MS), createTs,
+      );
+      expect(result.collected).toEqual({ planks: N });
+      expect(result.refunded).toEqual({});
+      expect(result.refundDiscarded).toEqual({});
+    });
+
+    it("29. Slot absent ou libre → Error (le handler contrôle avant l'appel)", () => {
+      expect(() =>
+        computeSlotStop(makeBuilding([{ slotIndex: 0, recipeId: null, startedAt: null, lastProcessedAt: null }]), makeInventory(), 0, at(T0), createTs)
+      ).toThrow(/absent ou libre/);
+    });
+
+    it("30. Pas de mutation des arguments d'entrée", () => {
+      const building = makeBuilding([makeBatchSlot(0, "planks", T0, 6, 1, T0 + PLANKS_DURATION_MS)]);
+      const inventory = makeInventory({ quantity: 49, cap: 50 });
+      const snapshot = JSON.stringify({ building, inventory });
+      computeSlotStop(building, inventory, 0, at(T0 + 3 * PLANKS_DURATION_MS), createTs);
+      expect(JSON.stringify({ building, inventory })).toBe(snapshot);
+    });
   });
 
 });

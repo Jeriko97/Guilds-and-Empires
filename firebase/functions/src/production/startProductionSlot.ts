@@ -8,6 +8,7 @@ import {
   requireSchemaVersion,
   requireValidSlotIndex,
   requireValidRecipeId,
+  requireValidIdempotencyKey,
 } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { RECIPES, RECIPE_TO_INVENTORY_KEY } from "../shared/recipes";
@@ -47,12 +48,6 @@ export type StartProductionSlotResponse = {
 
 const RATE_LIMIT_SECONDS = 2;
 
-/**
- * Clé d'idempotence = UUID par intention (D-ETAPE19-003). Le format strict garantit aussi un
- * identifiant de document Firestore valide (pas de « / », de « . », ni de nom réservé « __x__ »).
- */
-const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // ── Handler — logique métier, testé directement sans wrapper Firebase ─────────
 
 /**
@@ -90,9 +85,7 @@ export async function startProductionSlotHandler(
   requireValidSlotIndex(slotIndex); // asserts slotIndex is 0 | 1 | 2
   requireValidRecipeId(recipeId);   // asserts recipeId is RecipeId
 
-  if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY_PATTERN.test(idempotencyKey)) {
-    throw new HttpsError("invalid-argument", "idempotencyKey requis (UUID).");
-  }
+  requireValidIdempotencyKey(idempotencyKey); // UUID strict (D-ETAPE19-005)
 
   // N du lot : intention du client, bornée par la recette (jamais une durée ni un coût).
   const recipe = RECIPES[recipeId];

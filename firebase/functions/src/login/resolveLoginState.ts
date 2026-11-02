@@ -5,7 +5,8 @@ import { logger } from "firebase-functions/logger";
 
 import { requireAuth, requireSchemaVersion } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
-import { processBuildingSlots } from "../shared/production";
+import { processBuildingSlots, corruptSlotDetails } from "../shared/production";
+import type { ProcessBuildingResult } from "../shared/production";
 import { CURRENT_SCHEMA_VERSION } from "../shared/types";
 import type {
   PlayerDocument,
@@ -151,7 +152,23 @@ export async function resolveLoginStateHandler(
       for (const buildingSnap of buildingsSnap.docs) {
         const building = buildingSnap.data() as BuildingDocument;
 
-        const { updatedSlots, updatedInventory, hasProcessedCycles } = processBuildingSlots(building, inventory, now, createTimestamp);
+        let processed: ProcessBuildingResult;
+        try {
+          processed = processBuildingSlots(building, inventory, now, createTimestamp);
+        } catch (helperErr) {
+          // État de slot corrompu : journalisé ici (buildingId connu), renvoyé tel quel —
+          // la connexion du compte est bloquée jusqu'à la reprise des données (escalade cas 1).
+          const corrupt = corruptSlotDetails(helperErr);
+          if (corrupt) {
+            logger.error("resolveLoginState: état de slot corrompu", {
+              uid,
+              buildingId: buildingSnap.id,
+              ...corrupt,
+            });
+          }
+          throw helperErr; // Error (recette inconnue) → internal, journalisée par le catch externe.
+        }
+        const { updatedSlots, updatedInventory, hasProcessedCycles } = processed;
 
         // buildingModified ≡ au moins un slot a eu completedCycles > 0 (Option B incluse).
         if (hasProcessedCycles) {

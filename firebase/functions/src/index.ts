@@ -9,6 +9,7 @@ export { resolveLoginState } from "./login/resolveLoginState";
 // ── Production ────────────────────────────────────────────────────────────────
 export { startProductionSlot }  from "./production/startProductionSlot";
 export { collectProduction }    from "./production/collectProduction";
+export { stopProductionSlot }   from "./production/stopProductionSlot";
 
 // ── Contrats ──────────────────────────────────────────────────────────────────
 export { acceptContract }     from "./contracts/acceptContract";
