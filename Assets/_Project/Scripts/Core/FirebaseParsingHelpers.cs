@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Assembly-CSharp-Editor")]
 namespace GuildsAndEmpires.Core
 {
     internal static class FirebaseParsingHelpers
