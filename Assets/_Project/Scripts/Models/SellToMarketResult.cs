@@ -28,9 +28,12 @@ namespace GuildsAndEmpires.Models
         // Réponse CF : { goldEarned, priceApplied, newGold, alreadySold, inventory: InventoryState }
         // Wire : Dictionary<object,object>, entiers boxés en long.
 
+        // Préfixe des messages de RequireDict (voir FirebaseParsingHelpers.RequireDict).
+        private const string ParseContext = "Firebase";
+
         public static SellToMarketResult Parse(object data)
         {
-            var root = FirebaseParsingHelpers.RequireDict(data, "response root");
+            var root = FirebaseParsingHelpers.RequireDict(data, "response root", ParseContext);
 
             var goldEarned   = (int)FirebaseParsingHelpers.GetLong(root, "goldEarned",   0L);
             var priceApplied = (int)FirebaseParsingHelpers.GetLong(root, "priceApplied", 0L);
@@ -38,8 +41,8 @@ namespace GuildsAndEmpires.Models
             var alreadySold  = FirebaseParsingHelpers.GetBool(root, "alreadySold", false);
 
             var inventoryDict = FirebaseParsingHelpers.RequireDict(
-                                    FirebaseParsingHelpers.GetValue(root, "inventory"), "inventory");
-            var inventory = InventoryParsingHelpers.ParseInventory(inventoryDict);
+                                    FirebaseParsingHelpers.GetValue(root, "inventory"), "inventory", ParseContext);
+            var inventory = InventoryParsingHelpers.ParseInventory(inventoryDict, ParseContext);
 
             return new SellToMarketResult(goldEarned, priceApplied, newGold, alreadySold, inventory);
         }

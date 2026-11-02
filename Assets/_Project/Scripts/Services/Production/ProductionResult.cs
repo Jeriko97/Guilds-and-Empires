@@ -1,3 +1,4 @@
+using GuildsAndEmpires.Core;
 using GuildsAndEmpires.Models;
 
 namespace GuildsAndEmpires.Services.Production
@@ -26,13 +27,13 @@ namespace GuildsAndEmpires.Services.Production
 
         public static ProductionResult Parse(object data, string buildingId)
         {
-            var root = ProductionParsingHelpers.RequireDict(data, "response root");
+            var root = FirebaseParsingHelpers.RequireDict(data, "response root", ProductionParsingHelpers.ParseContext);
 
-            var buildingDict  = ProductionParsingHelpers.RequireDict(ProductionParsingHelpers.GetValue(root, "building"),  "building");
+            var buildingDict  = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "building"),  "building",  ProductionParsingHelpers.ParseContext);
             var building      = ProductionParsingHelpers.ParseBuilding(buildingDict, buildingId);
 
-            var inventoryDict = ProductionParsingHelpers.RequireDict(ProductionParsingHelpers.GetValue(root, "inventory"), "inventory");
-            var inventory     = ProductionParsingHelpers.ParseInventory(inventoryDict);
+            var inventoryDict = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "inventory"), "inventory", ProductionParsingHelpers.ParseContext);
+            var inventory     = InventoryParsingHelpers.ParseInventory(inventoryDict, ProductionParsingHelpers.ParseContext);
 
             return new ProductionResult(building, inventory);
         }

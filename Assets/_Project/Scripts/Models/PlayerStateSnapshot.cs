@@ -1,6 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using GuildsAndEmpires.Core;
+using GuildsAndEmpires.Services.Production;
 
 namespace GuildsAndEmpires.Models
 {
@@ -100,19 +101,24 @@ namespace GuildsAndEmpires.Models
         // The Firebase Functions Unity SDK 13.x deserialises nested JSON objects as
         // Dictionary<object,object> — NOT Dictionary<string,object>.
         // All conversions use Convert.ToXxx to tolerate long/int/double boxing differences.
+        // Primitives : Core.FirebaseParsingHelpers ; inventaire : InventoryParsingHelpers ;
+        // bâtiments et slots : ProductionParsingHelpers (id lu dans le champ "id") — foyers uniques (TD-015).
+
+        private const string ParseContext = "PlayerStateSnapshot";
 
         public static PlayerStateSnapshot Parse(object data, string uid = null)
         {
-            var root = RequireDict(data, "response root");
+            var root = FirebaseParsingHelpers.RequireDict(data, "response root", ParseContext);
 
-            var playerDict = RequireDict(GetValue(root, "player"), "player");
+            var playerDict = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "player"), "player", ParseContext);
             var player     = ParsePlayer(playerDict);
 
             var buildings = new List<BuildingSnapshot>();
             if (root.TryGetValue("buildings", out var rawBuildings) && rawBuildings is IList<object> bl)
                 foreach (var b in bl)
                     if (b is Dictionary<object, object> bd)
-                        buildings.Add(ParseBuilding(bd));
+                        buildings.Add(ProductionParsingHelpers.ParseBuilding(
+                            bd, FirebaseParsingHelpers.GetString(bd, "id", string.Empty)));
 
             int contractCount = 0;
             if (root.TryGetValue("activeContracts", out var rawContracts) && rawContracts is IList<object> cl)
@@ -123,63 +129,18 @@ namespace GuildsAndEmpires.Models
 
         private static PlayerData ParsePlayer(Dictionary<object, object> d)
         {
-            var inventoryDict = RequireDict(GetValue(d, "inventory"), "inventory");
-            var inventory     = ParseInventory(inventoryDict);
+            var inventoryDict = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(d, "inventory"), "inventory", ParseContext);
+            var inventory     = InventoryParsingHelpers.ParseInventory(inventoryDict, ParseContext);
 
             return new PlayerData(
-                displayName:           GetString(d, "displayName",           "Marchand"),
-                gold:                  GetLong(d,   "gold",                  0L),
-                imperialFavor:         GetLong(d,   "imperialFavor",         0L),
+                displayName:           FirebaseParsingHelpers.GetString(d, "displayName",           "Marchand"),
+                gold:                  FirebaseParsingHelpers.GetLong(d,   "gold",                  0L),
+                imperialFavor:         FirebaseParsingHelpers.GetLong(d,   "imperialFavor",         0L),
                 inventory:             inventory,
-                favorRank:             GetString(d, "favorRank",             "local_supplier"),
-                guildCharterUnlocked:  GetBool(d,   "guildCharterUnlocked",  false),
-                firstContractCompleted:GetBool(d,   "firstContractCompleted",false)
+                favorRank:             FirebaseParsingHelpers.GetString(d, "favorRank",             "local_supplier"),
+                guildCharterUnlocked:  FirebaseParsingHelpers.GetBool(d,   "guildCharterUnlocked",  false),
+                firstContractCompleted:FirebaseParsingHelpers.GetBool(d,   "firstContractCompleted",false)
             );
-        }
-
-        private static InventoryState ParseInventory(Dictionary<object, object> d)
-        {
-            return new InventoryState(
-                ParseResourceStack(RequireDict(GetValue(d, "logs"),               "logs")),
-                ParseResourceStack(RequireDict(GetValue(d, "planks"),             "planks")),
-                ParseResourceStack(RequireDict(GetValue(d, "reconstructionKits"), "reconstructionKits"))
-            );
-        }
-
-        private static ResourceStack ParseResourceStack(Dictionary<object, object> d)
-        {
-            return new ResourceStack(
-                quantity:         (int)GetLong(d, "quantity",         0L),
-                cap:              (int)GetLong(d, "cap",              0L),
-                upgradesApplied:  (int)GetLong(d, "upgradesApplied",  0L)
-            );
-        }
-
-        // ── Building / Slot parsers ───────────────────────────────────────────
-
-        private static BuildingSnapshot ParseBuilding(Dictionary<object, object> d)
-        {
-            var id           = GetString(d, "id",           string.Empty);
-            var buildingType = GetString(d, "buildingType", string.Empty);
-            var level        = (int)GetLong(d, "level",     1L);
-
-            var slots = new List<SlotSnapshot>();
-            if (d.TryGetValue("slots", out var rawSlots) && rawSlots is IList<object> sl)
-                foreach (var s in sl)
-                    if (s is Dictionary<object, object> sd)
-                        slots.Add(ParseSlot(sd));
-
-            return new BuildingSnapshot(id, buildingType, level, slots.AsReadOnly());
-        }
-
-        private static SlotSnapshot ParseSlot(Dictionary<object, object> d)
-        {
-            var slotIndex        = (int)GetLong(d,  "slotIndex",        0L);
-            var recipeId         = GetValue(d, "recipeId") as string;    // null si inactif
-            var startedAtMs      = ParseTimestampMs(GetValue(d, "startedAt"));
-            var lastProcessedAtMs= ParseTimestampMs(GetValue(d, "lastProcessedAt"));
-
-            return new SlotSnapshot(slotIndex, recipeId, startedAtMs, lastProcessedAtMs);
         }
 
         /// <summary>
@@ -194,52 +155,11 @@ namespace GuildsAndEmpires.Models
             if (raw == null) return 0L;
             if (raw is Dictionary<object, object> ts)
             {
-                var sec  = GetLong(ts, "_seconds",     0L);
-                var nano = GetLong(ts, "_nanoseconds", 0L);
+                var sec  = FirebaseParsingHelpers.GetLong(ts, "_seconds",     0L);
+                var nano = FirebaseParsingHelpers.GetLong(ts, "_nanoseconds", 0L);
                 return sec * 1000L + nano / 1_000_000L;
             }
             return 0L;
-        }
-
-        // ── Helpers ───────────────────────────────────────────────────────────
-
-        private static Dictionary<object, object> RequireDict(object value, string fieldName)
-        {
-            if (value is Dictionary<object, object> dict) return dict;
-            if (value is Dictionary<string, object> strDict)
-            {
-                var converted = new Dictionary<object, object>(strDict.Count);
-                foreach (var kv in strDict) converted[kv.Key] = kv.Value;
-                return converted;
-            }
-            throw new FormatException($"PlayerStateSnapshot: expected dict for '{fieldName}', got {value?.GetType().Name ?? "null"}");
-        }
-
-        private static object GetValue(Dictionary<object, object> dict, string key)
-        {
-            if (dict.TryGetValue(key, out var val)) return val;
-            return null;
-        }
-
-        private static string GetString(Dictionary<object, object> d, string key, string fallback)
-        {
-            var v = GetValue(d, key);
-            return v is string s ? s : fallback;
-        }
-
-        private static long GetLong(Dictionary<object, object> d, string key, long fallback)
-        {
-            var v = GetValue(d, key);
-            if (v == null) return fallback;
-            try { return Convert.ToInt64(v); }
-            catch { return fallback; }
-        }
-
-        private static bool GetBool(Dictionary<object, object> d, string key, bool fallback)
-        {
-            var v = GetValue(d, key);
-            if (v is bool b) return b;
-            return fallback;
         }
     }
 }

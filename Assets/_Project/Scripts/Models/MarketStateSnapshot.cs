@@ -29,21 +29,24 @@ namespace GuildsAndEmpires.Models
             Prices = prices;
         }
 
+        // Préfixe des messages de RequireDict (voir FirebaseParsingHelpers.RequireDict).
+        private const string ParseContext = "Firebase";
+
         /// <summary>
         /// Parse depuis DocumentSnapshot.ToDictionary() — clés string, valeurs boxées.
         /// Appelé uniquement par FirebaseMarketService après vérification snapshot.Exists.
         /// </summary>
         public static MarketStateSnapshot Parse(Dictionary<string, object> data)
         {
-            var root       = FirebaseParsingHelpers.RequireDict(data, "marketState root");
+            var root       = FirebaseParsingHelpers.RequireDict(data, "marketState root", ParseContext);
             var pricesRaw  = FirebaseParsingHelpers.RequireDict(
-                                 FirebaseParsingHelpers.GetValue(root, "prices"), "prices");
+                                 FirebaseParsingHelpers.GetValue(root, "prices"), "prices", ParseContext);
 
             var prices = new Dictionary<string, ResourcePriceView>();
             foreach (var key in new[] { EconomyResourceKeys.LOGS, EconomyResourceKeys.PLANKS, EconomyResourceKeys.RECONSTRUCTION_KITS })
             {
                 var priceDict = FirebaseParsingHelpers.RequireDict(
-                                    FirebaseParsingHelpers.GetValue(pricesRaw, key), key);
+                                    FirebaseParsingHelpers.GetValue(pricesRaw, key), key, ParseContext);
                 var currentPrice = (int)FirebaseParsingHelpers.GetLong(priceDict, "currentPrice", 0L);
                 var trend        = FirebaseParsingHelpers.GetString(priceDict, "trend", "stable");
                 prices[key]      = new ResourcePriceView(currentPrice, trend);

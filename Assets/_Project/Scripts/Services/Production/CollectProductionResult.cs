@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GuildsAndEmpires.Core;
 using GuildsAndEmpires.Models;
 
 namespace GuildsAndEmpires.Services.Production
@@ -8,7 +9,7 @@ namespace GuildsAndEmpires.Services.Production
     ///
     /// Parsing depuis la réponse Firebase : <see cref="Parse"/>.
     /// Le buildingId est injecté par le service (absent de BuildingDocument côté CF — D-ETAPE16-004).
-    /// Réutilise ProductionParsingHelpers pour building + inventory — pas de parsing dupliqué.
+    /// Réutilise ProductionParsingHelpers (building) et InventoryParsingHelpers (inventory) — pas de parsing dupliqué.
     /// </summary>
     public sealed class CollectProductionResult
     {
@@ -39,16 +40,16 @@ namespace GuildsAndEmpires.Services.Production
 
         public static CollectProductionResult Parse(object data, string buildingId)
         {
-            var root = ProductionParsingHelpers.RequireDict(data, "response root");
+            var root = FirebaseParsingHelpers.RequireDict(data, "response root", ProductionParsingHelpers.ParseContext);
 
-            var buildingDict  = ProductionParsingHelpers.RequireDict(ProductionParsingHelpers.GetValue(root, "building"),  "building");
+            var buildingDict  = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "building"),  "building",  ProductionParsingHelpers.ParseContext);
             var building      = ProductionParsingHelpers.ParseBuilding(buildingDict, buildingId);
 
-            var inventoryDict = ProductionParsingHelpers.RequireDict(ProductionParsingHelpers.GetValue(root, "inventory"), "inventory");
-            var inventory     = ProductionParsingHelpers.ParseInventory(inventoryDict);
+            var inventoryDict = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "inventory"), "inventory", ProductionParsingHelpers.ParseContext);
+            var inventory     = InventoryParsingHelpers.ParseInventory(inventoryDict, ProductionParsingHelpers.ParseContext);
 
-            var collected = ParseResourceMap(ProductionParsingHelpers.GetValue(root, "collected"));
-            var discarded = ParseResourceMap(ProductionParsingHelpers.GetValue(root, "discarded"));
+            var collected = ParseResourceMap(FirebaseParsingHelpers.GetValue(root, "collected"));
+            var discarded = ParseResourceMap(FirebaseParsingHelpers.GetValue(root, "discarded"));
 
             return new CollectProductionResult(building, inventory, collected, discarded);
         }
@@ -60,7 +61,7 @@ namespace GuildsAndEmpires.Services.Production
             if (raw is Dictionary<object, object> d)
                 foreach (var kv in d)
                     if (kv.Key is string key)
-                        result[key] = (int)ProductionParsingHelpers.GetLong(d, key, 0L);
+                        result[key] = (int)FirebaseParsingHelpers.GetLong(d, key, 0L);
             return result;
         }
     }

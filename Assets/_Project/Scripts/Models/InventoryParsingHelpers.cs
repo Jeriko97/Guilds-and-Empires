@@ -4,15 +4,16 @@ namespace GuildsAndEmpires.Models
 {
     internal static class InventoryParsingHelpers
     {
-        internal static InventoryState ParseInventory(System.Collections.Generic.Dictionary<object, object> d)
+        // context : préfixe des messages de RequireDict, celui de l'appelant (voir FirebaseParsingHelpers.RequireDict).
+        internal static InventoryState ParseInventory(System.Collections.Generic.Dictionary<object, object> d, string context)
         {
             return new InventoryState(
                 ParseResourceStack(FirebaseParsingHelpers.RequireDict(
-                    FirebaseParsingHelpers.GetValue(d, EconomyResourceKeys.LOGS),               EconomyResourceKeys.LOGS)),
+                    FirebaseParsingHelpers.GetValue(d, EconomyResourceKeys.LOGS),               EconomyResourceKeys.LOGS,               context)),
                 ParseResourceStack(FirebaseParsingHelpers.RequireDict(
-                    FirebaseParsingHelpers.GetValue(d, EconomyResourceKeys.PLANKS),             EconomyResourceKeys.PLANKS)),
+                    FirebaseParsingHelpers.GetValue(d, EconomyResourceKeys.PLANKS),             EconomyResourceKeys.PLANKS,             context)),
                 ParseResourceStack(FirebaseParsingHelpers.RequireDict(
-                    FirebaseParsingHelpers.GetValue(d, EconomyResourceKeys.RECONSTRUCTION_KITS), EconomyResourceKeys.RECONSTRUCTION_KITS))
+                    FirebaseParsingHelpers.GetValue(d, EconomyResourceKeys.RECONSTRUCTION_KITS), EconomyResourceKeys.RECONSTRUCTION_KITS, context))
             );
         }
 

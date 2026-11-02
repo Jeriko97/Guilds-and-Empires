@@ -6,7 +6,8 @@ namespace GuildsAndEmpires.Core
 {
     internal static class FirebaseParsingHelpers
     {
-        internal static Dictionary<object, object> RequireDict(object value, string fieldName)
+        // context : préfixe du message d'erreur, propre à chaque appelant ("Firebase", "Production", "PlayerStateSnapshot").
+        internal static Dictionary<object, object> RequireDict(object value, string fieldName, string context)
         {
             if (value is Dictionary<object, object> dict) return dict;
             if (value is Dictionary<string, object> strDict)
@@ -16,7 +17,7 @@ namespace GuildsAndEmpires.Core
                 return converted;
             }
             throw new FormatException(
-                $"Firebase: expected dict for '{fieldName}', got {value?.GetType().Name ?? "null"}");
+                $"{context}: expected dict for '{fieldName}', got {value?.GetType().Name ?? "null"}");
         }
 
         internal static object GetValue(Dictionary<object, object> dict, string key)
