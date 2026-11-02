@@ -81,7 +81,7 @@ export async function stopProductionSlotHandler(
   // ── 3. Validation des inputs ──────────────────────────────────────────────
   const { buildingId, slotIndex, idempotencyKey } = request.data;
 
-  requireValidDocumentId(buildingId, "buildingId"); // pas de « / » : sinon Error de .doc() → internal
+  requireValidDocumentId(buildingId, "buildingId"); // règle commune (D-ETAPE19-007)
   requireValidSlotIndex(slotIndex);              // asserts slotIndex is 0 | 1 | 2
   requireValidIdempotencyKey(idempotencyKey);    // UUID strict (D-ETAPE19-005)
 

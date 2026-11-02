@@ -5,6 +5,7 @@ import { logger } from "firebase-functions/logger";
 import { collectProductionHandler } from "../production/collectProduction";
 import type { CollectProductionRequest } from "../production/collectProduction";
 import { RECIPES } from "../shared/recipes";
+import { MAX_DOCUMENT_ID_BYTES } from "../shared/validators";
 import {
   clearTestData,
   db,
@@ -20,6 +21,22 @@ import {
 
 const LOG_DURATION_MS    = RECIPES["logs"].durationMs;   // 20 min
 const PLANKS_DURATION_MS = RECIPES["planks"].durationMs; // 25 min
+
+// Identifiants invalides (D-ETAPE19-007) : règle commune de requireValidDocumentId.
+const INVALID_BUILDING_IDS: Array<[string, string]> = [
+  ["espaces seuls", "  "],
+  ["avec slash", "bad/key"],
+  ["129 octets ASCII", "a".repeat(MAX_DOCUMENT_ID_BYTES + 1)],
+  ["130 octets multioctets (65 × é)", "é".repeat(MAX_DOCUMENT_ID_BYTES / 2 + 1)],
+  ["plusieurs Ko avec slash", "x/".repeat(2048)],
+  ["nom réservé avec retour à la ligne", "__a\nb__"],
+];
+
+// À la limite : acceptés par la validation (le bâtiment n'existe pas → not-found).
+const LIMIT_BUILDING_IDS: Array<[string, string]> = [
+  ["128 octets ASCII", "b".repeat(MAX_DOCUMENT_ID_BYTES)],
+  ["128 octets multioctets (64 × é)", "é".repeat(MAX_DOCUMENT_ID_BYTES / 2)],
+];
 
 // ── Helper local ──────────────────────────────────────────────────────────────
 
@@ -496,6 +513,35 @@ describe("collectProduction", () => {
     ).rejects.toMatchObject(
       { code: "resource-exhausted" } satisfies Partial<HttpsError>
     );
+  });
+
+  describe("validation de buildingId (D-ETAPE19-007)", () => {
+
+    it.each(INVALID_BUILDING_IDS)("buildingId %s → invalid-argument, message sans la valeur, rien n'est écrit", async (label, buildingId) => {
+      const uid = `collect-prod-bid-${label.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`;
+      await createTestPlayer(uid);
+      await createTestBuilding(uid, [makeActiveSlot(0, "logs", 3 * LOG_DURATION_MS), makeIdleSlot(1), makeIdleSlot(2)]);
+      const playerBefore = (await db.collection("players").doc(uid).get()).data();
+      const buildingBefore = (await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get()).data();
+
+      let caught: unknown;
+      try {
+        await collectProductionHandler(makeCollectRequest(uid, { buildingId }));
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toMatchObject({ code: "invalid-argument" } satisfies Partial<HttpsError>);
+      expect((caught as HttpsError).message).not.toContain(buildingId);
+      expect((await db.collection("players").doc(uid).get()).data()).toEqual(playerBefore);
+      expect((await db.collection("players").doc(uid).collection("buildings").doc("sawmill_0").get()).data()).toEqual(buildingBefore);
+    });
+
+    it.each(LIMIT_BUILDING_IDS)("buildingId à la limite (%s) → accepté par la validation, bâtiment introuvable", async (label, buildingId) => {
+      const uid = `collect-prod-bid-${label.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`;
+      await createTestPlayer(uid);
+      await expect(collectProductionHandler(makeCollectRequest(uid, { buildingId })))
+        .rejects.toMatchObject({ code: "not-found", message: `Bâtiment '${buildingId}' introuvable pour ce joueur.` } satisfies Partial<HttpsError>);
+    });
   });
 
 });

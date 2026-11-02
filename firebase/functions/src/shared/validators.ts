@@ -15,6 +15,14 @@ const VALID_SLOT_INDICES: Array<0 | 1 | 2> = [0, 1, 2];
 const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Longueur maximale d'un identifiant de document reçu du client, en octets UTF-8 (unité de Firestore),
+ * D-ETAPE19-007. Identifiants réels ≈ 10 caractères (`sawmill_0`), identifiant automatique Firestore
+ * 20 caractères, limite Firestore 1 500 octets : 128 laisse une large marge sans recopier des Ko
+ * dans les messages et les journaux.
+ */
+export const MAX_DOCUMENT_ID_BYTES = 128;
+
+/**
  * Extrait l'uid depuis request.auth.
  * Throw si la requête n'est pas authentifiée.
  *
@@ -121,10 +129,12 @@ export function requireValidIdempotencyKey(value: unknown): asserts value is str
 }
 
 /**
- * Vérifie que value peut servir d'identifiant de document Firestore : chaîne non vide (hors espaces),
- * sans « / », différente de « . » et « .. », hors noms réservés « __x__ ». Throw invalid-argument
- * sinon — évite l'Error synchrone de `.doc()` (qui deviendrait `internal`). Utilisé par
- * stopProductionSlot (ÉTAPE 19.2) ; alignement des autres Cloud Functions : ticket transverse.
+ * Vérifie que value peut servir d'identifiant de document Firestore : chaîne d'au plus
+ * MAX_DOCUMENT_ID_BYTES octets UTF-8 (contrôlé en premier), non vide hors espaces, sans « / »,
+ * différente de « . » et « .. », hors noms réservés « __x__ ». Throw invalid-argument sinon — évite
+ * l'Error synchrone de `.doc()` (qui deviendrait `internal`). Aucun message ne recopie la valeur reçue.
+ * Règle commune de startProductionSlot, collectProduction et stopProductionSlot (ÉTAPE 19.2b,
+ * D-ETAPE19-007).
  *
  * @param fieldName - Nom du champ affiché dans le message d'erreur.
  *
@@ -133,13 +143,20 @@ export function requireValidIdempotencyKey(value: unknown): asserts value is str
  * // buildingId: string garanti après cet appel
  */
 export function requireValidDocumentId(value: unknown, fieldName: string): asserts value is string {
+  if (typeof value === "string" && Buffer.byteLength(value, "utf8") > MAX_DOCUMENT_ID_BYTES) {
+    throw new HttpsError(
+      "invalid-argument",
+      `'${fieldName}' dépasse ${MAX_DOCUMENT_ID_BYTES} octets.`
+    );
+  }
   if (
     typeof value !== "string" || value.trim() === "" || value.includes("/") ||
-    value === "." || value === ".." || /^__.*__$/.test(value)
+    value === "." || value === ".." || /^__[\s\S]*__$/.test(value)
   ) {
     throw new HttpsError(
       "invalid-argument",
-      `'${fieldName}' doit être un identifiant de document valide. Valeur reçue : ${JSON.stringify(value)}.`
+      `'${fieldName}' doit être un identifiant de document valide : chaîne non vide hors espaces, ` +
+      `sans « / », ni « . », « .. », « __x__ », au plus ${MAX_DOCUMENT_ID_BYTES} octets.`
     );
   }
 }

@@ -8,6 +8,7 @@ import type { StopProductionSlotRequest } from "../production/stopProductionSlot
 import { collectProductionHandler } from "../production/collectProduction";
 import type { CollectProductionRequest } from "../production/collectProduction";
 import { RECIPES } from "../shared/recipes";
+import { MAX_DOCUMENT_ID_BYTES } from "../shared/validators";
 import type { InventoryState, ProductionSlotState } from "../shared/types";
 import {
   clearTestData,
@@ -26,6 +27,22 @@ const PLANKS_DURATION_MS = RECIPES["planks"].durationMs;              // 25 min
 const KITS_DURATION_MS   = RECIPES["reconstruction_kits"].durationMs; // 60 min
 const PLANKS_INPUT_LOGS  = RECIPES["planks"].inputs!["logs"]!;                // 2
 const KITS_INPUT_PLANKS  = RECIPES["reconstruction_kits"].inputs!["planks"]!; // 3
+
+// Identifiants invalides (D-ETAPE19-007) : règle commune de requireValidDocumentId.
+const INVALID_BUILDING_IDS: Array<[string, string]> = [
+  ["espaces seuls", "  "],
+  ["avec slash", "bad/key"],
+  ["129 octets ASCII", "a".repeat(MAX_DOCUMENT_ID_BYTES + 1)],
+  ["130 octets multioctets (65 × é)", "é".repeat(MAX_DOCUMENT_ID_BYTES / 2 + 1)],
+  ["plusieurs Ko avec slash", "x/".repeat(2048)],
+  ["nom réservé avec retour à la ligne", "__a\nb__"],
+];
+
+// À la limite : acceptés par la validation (le bâtiment n'existe pas → not-found).
+const LIMIT_BUILDING_IDS: Array<[string, string]> = [
+  ["128 octets ASCII", "b".repeat(MAX_DOCUMENT_ID_BYTES)],
+  ["128 octets multioctets (64 × é)", "é".repeat(MAX_DOCUMENT_ID_BYTES / 2)],
+];
 
 /**
  * Instant fixe de l'arrêt : horloge contrôlée (Timestamp.now() espionné, renvoie toujours NOW_MS).
@@ -679,4 +696,34 @@ describe("stopProductionSlot", () => {
       expect(collected + collectedByCollect).toBe(2);
     });
   });
+
+  describe("validation de buildingId (D-ETAPE19-007)", () => {
+
+    it.each(INVALID_BUILDING_IDS)("buildingId %s → invalid-argument, message sans la valeur, rien n'est écrit", async (label, buildingId) => {
+      const uid = `stop-bid-${label.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`;
+      const slot = batchSlot(0, "planks", 2.5 * PLANKS_DURATION_MS, 6);
+      await createTestPlayer(uid, { inventory: inventory(10, 0) });
+      await createTestBuilding(uid, [slot]);
+
+      let caught: unknown;
+      try {
+        await stopProductionSlotHandler(makeStopRequest(uid, { buildingId, slotIndex: 0 }));
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toMatchObject({ code: "invalid-argument" } satisfies Partial<HttpsError>);
+      expect((caught as HttpsError).message).not.toContain(buildingId);
+      expect((await readPlayer(uid))?.inventory).toEqual(inventory(10, 0));
+      expect(await readSlots(uid)).toEqual([slot]);
+      expect((await db.collection("players").doc(uid).collection("productionOps").get()).size).toBe(0);
+    });
+
+    it.each(LIMIT_BUILDING_IDS)("buildingId à la limite (%s) → accepté par la validation, bâtiment introuvable", async (label, buildingId) => {
+      const uid = `stop-bid-${label.replace(/[^a-z0-9]/gi, "").slice(0, 24)}`;
+      await createTestPlayer(uid);
+      await expect(stopProductionSlotHandler(makeStopRequest(uid, { buildingId, slotIndex: 0 })))
+        .rejects.toMatchObject({ code: "not-found", message: `Bâtiment '${buildingId}' introuvable pour ce joueur.` } satisfies Partial<HttpsError>);
+    });
+  });
+
 });

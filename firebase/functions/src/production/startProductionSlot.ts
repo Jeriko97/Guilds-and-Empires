@@ -9,6 +9,7 @@ import {
   requireValidSlotIndex,
   requireValidRecipeId,
   requireValidIdempotencyKey,
+  requireValidDocumentId,
 } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { RECIPES, RECIPE_TO_INVENTORY_KEY } from "../shared/recipes";
@@ -75,13 +76,7 @@ export async function startProductionSlotHandler(
   // ── 3. Validation des inputs ──────────────────────────────────────────────
   const { buildingId, slotIndex, recipeId, cycles, idempotencyKey } = request.data;
 
-  if (typeof buildingId !== "string" || buildingId.trim() === "") {
-    throw new HttpsError(
-      "invalid-argument",
-      `'buildingId' doit être une chaîne non vide. Valeur reçue : ${JSON.stringify(buildingId)}.`
-    );
-  }
-
+  requireValidDocumentId(buildingId, "buildingId"); // règle commune (D-ETAPE19-007)
   requireValidSlotIndex(slotIndex); // asserts slotIndex is 0 | 1 | 2
   requireValidRecipeId(recipeId);   // asserts recipeId is RecipeId
 

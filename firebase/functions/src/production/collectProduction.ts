@@ -3,7 +3,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
 
-import { requireAuth, requireSchemaVersion } from "../shared/validators";
+import { requireAuth, requireSchemaVersion, requireValidDocumentId } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { processBuildingSlots, corruptSlotDetails } from "../shared/production";
 import type { ProcessBuildingResult, ResourceKey } from "../shared/production";
@@ -50,12 +50,7 @@ export async function collectProductionHandler(
 
   // ── 3. Validation buildingId ──────────────────────────────────────────────
   const { buildingId } = request.data;
-  if (typeof buildingId !== "string" || buildingId.trim() === "") {
-    throw new HttpsError(
-      "invalid-argument",
-      `'buildingId' doit être une chaîne non vide. Valeur reçue : ${JSON.stringify(buildingId)}.`
-    );
-  }
+  requireValidDocumentId(buildingId, "buildingId"); // règle commune (D-ETAPE19-007)
 
   const db          = admin.firestore();
   const playerRef   = db.collection("players").doc(uid);
