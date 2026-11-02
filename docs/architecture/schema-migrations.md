@@ -108,6 +108,19 @@ hors event, suivi à part du prix publié (D-TD020-002).
   AVANT tout déploiement de `processWorldEventLifecycle` (autre prérequis, hors schéma : TD-021, voir TD-020).
 - Détail, cas d'erreur et tests : `technical-debt.md`, TD-020.
 
+**Note ÉTAPE 19 — statut : PRÉVU, pas encore implémenté (D-ETAPE19-001 à 004) :**
+- `/players/{uid}/buildings/{buildingId}.slots[]` : deux champs ajoutés, `cyclesPlanned` (N du lot) et
+  `cyclesProcessed` (cycles traités). Champ absent = `null` : slot de logs (production continue) ou slot libre. Pas
+  de migration pour ces slots ; `schemaVersion` reste 1 (champ ajouté avec repli).
+- `/players/{uid}/productionOps/{idempotencyKey}` : nouvelle sous-collection de traces d'idempotence (lancement et
+  arrêt), écrite par les Cloud Functions uniquement ; à couvrir par les Security Rules (refus client) en 19.1.
+- **Migration possible, à vérifier en 19.1** : un slot `planks` ou `reconstruction_kits` lancé avant l'ÉTAPE 19 n'a
+  pas ces champs et produit sans fin (TD-023). Sa présence en production n'a pas été vérifiée. La vérification et
+  toute reprise de ces slots (lecture ou écriture en production) sont une escalade cas 1 dans le ticket 19.1 ; si un
+  tel slot existe, la reprise est décrite ici avant déploiement. Un slot de transformation sans `cyclesPlanned`
+  n'est jamais traité comme une production continue : c'est une donnée à reprendre (erreur explicite, ou reprise
+  décidée en escalade), sinon TD-023 persisterait pour ce slot.
+
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction
 `claimDailyBonus` (preuve de concept pré-spec). Elle sera supprimée

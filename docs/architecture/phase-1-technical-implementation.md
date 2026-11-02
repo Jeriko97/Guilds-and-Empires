@@ -63,13 +63,22 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
       slotIndex: 0 | 1 | 2,
       recipeId: 'logs' | 'planks' | 'reconstruction_kits' | null,
       startedAt: Timestamp | null,    // serverTimestamp() au démarrage
+      lastProcessedAt: Timestamp | null, // fin du dernier cycle traité (TD-004)
+      // ÉTAPE 19 (D-ETAPE19-001) — PRÉVU, pas encore implémenté :
+      cyclesPlanned: number | null,   // N du lot (planks, kits) ; null = production continue (logs)
+      cyclesProcessed: number | null, // cycles déjà traités du lot (crédités ou perdus à saturation)
       // ⚠️ PAS de completedAt — le serveur calcule startedAt + duration à la collection
     }
   ]
 }
 ```
 
-**Pourquoi pas de `completedAt` :** avec la production offline continue, personne n'est présent pour écrire le document quand la production se termine. Le serveur recalcule `floor(elapsed / duration) × output` à chaque collecte. Zéro scheduled write par slot actif.
+**Pourquoi pas de `completedAt` :** avec la production offline, personne n'est présent pour écrire le document quand la production se termine. Le serveur recalcule `floor(elapsed / duration) × output` à chaque collecte. Zéro scheduled write par slot actif. Un lot (ÉTAPE 19) se termine de la même façon : le slot est libéré par le premier calcul (collecte, login ou arrêt) qui constate `cyclesProcessed = cyclesPlanned`.
+
+**Champs ajoutés par l'ÉTAPE 19 (PRÉVU)** : `cyclesPlanned` et `cyclesProcessed` sur chaque slot, sous-collection
+de traces `/players/{uid}/productionOps/{idempotencyKey}`. Champ absent = `null` (slot de logs ou slot libre) :
+pas de migration pour ces slots. Un slot de transformation sans ces champs (lancé avant l'ÉTAPE 19) imposerait une
+décision de reprise : voir `schema-migrations.md`, note ÉTAPE 19.
 
 ---
 
@@ -196,10 +205,29 @@ export const resolveLoginState = functions.https.onCall(
 // ─── PRODUCTION ───────────────────────────────────────────────────────────────
 
 /**
- * Lance un cycle de production sur un slot de la Sawmill.
+ * Lance une production sur un slot de la Sawmill.
+ * Logs : production continue (D3.1). Planks / kits : lot de N cycles (D-ETAPE19-001 à 004).
  * Validations serveur : uid authentifié, recipeId dans la liste autorisée,
  * slot disponible (recipeId == null), inventaire input suffisant.
- * Idempotency: uid + buildingId + slotIndex + recipeId (évite double-start).
+ * ÉTAPE 19 (PRÉVU) :
+ *  - `cycles` (N) : intention du client, pas un paramètre économique. Interdit pour logs
+ *    (invalid-argument s'il est fourni). Obligatoire pour planks et kits : entier,
+ *    1 ≤ N ≤ RECIPES[recipeId].maxBatchCycles (planks 24, kits 10), sinon invalid-argument.
+ *  - Intrants des N cycles (N × inputs) disponibles, sinon failed-precondition ; débit dans la
+ *    même transaction que le lancement (check-then-mutate).
+ *  - N × outputQty ≤ place libre de la ressource produite au lancement (cap − quantity),
+ *    sinon failed-precondition (outputQty = 1 pour toutes les recettes Phase 1). Ne protège
+ *    pas d'un autre slot qui remplit la même ressource.
+ *  - Aucune durée et aucun coût reçus du client : tout vient de RECIPES (constantes serveur).
+ *  - Idempotence obligatoire (D-ETAPE19-003) : `idempotencyKey` (UUID par intention, généré
+ *    par le client, réutilisé pour un renvoi de la même intention), trace
+ *    /players/{uid}/productionOps/{idempotencyKey} écrite dans la même transaction. Même clé et
+ *    même contenu (op, buildingId, slotIndex, recipeId, cycles) → aucun effet, état courant
+ *    renvoyé avec alreadyApplied = true. Même clé, contenu différent → failed-precondition.
+ *    Ordre : la trace est lue juste après l'existence du joueur et son schemaVersion, AVANT les
+ *    contrôles métier (building, compatibilité, slot libre, intrants, place libre), comme
+ *    sellToMarket : un renvoi après un lancement réussi trouve le slot occupé, il doit
+ *    recevoir alreadyApplied = true et non failed-precondition. Scénario à tester en 19.1.
  */
 // NOTE (réconcilié 17.A-3) : retourne building + inventory mis à jour (pas void) —
 // permet au client de rendre l'état post-start sans second resolveLoginState.
@@ -208,7 +236,9 @@ export const startProductionSlot = functions.https.onCall(
     buildingId: string;
     slotIndex: 0 | 1 | 2;
     recipeId: 'logs' | 'planks' | 'reconstruction_kits';
-  }>): Promise<{ building: BuildingDocument; inventory: InventoryState }> => { /* ... */ }
+    cycles?: number;          // ÉTAPE 19 — planks et kits uniquement
+    idempotencyKey: string;   // ÉTAPE 19
+  }>): Promise<{ building: BuildingDocument; inventory: InventoryState; alreadyApplied: boolean }> => { /* ... */ }
 );
 
 /**
@@ -217,6 +247,7 @@ export const startProductionSlot = functions.https.onCall(
  * Le client ne passe que buildingId — jamais un amount, jamais un elapsed.
  * Rate limit: 10 appels / min par uid.
  * Side effect: si production continue et cap atteint, slot reste actif mais yield = 0.
+ * ÉTAPE 19 (PRÉVU) : un lot dont tous les cycles sont traités libère son slot dans la même écriture.
  * Renvoie l'état mis à jour (building sans id Firestore — injecté par le service client,
  * D-ETAPE16-004) ainsi que collected/discarded. Aligné sur startProductionSlot (17.B-0).
  */
@@ -228,6 +259,47 @@ export const collectProduction = functions.https.onCall(
     discarded: Partial<Record<ResourceKey, number>>;
     building:  BuildingDocument;
     inventory: InventoryState;
+  }> => { /* ... */ }
+);
+
+/**
+ * ÉTAPE 19.2 (PRÉVU, D-ETAPE19-002) — Arrête un slot actif et le libère.
+ * Entrée : buildingId, slotIndex, idempotencyKey. Aucun temps ni aucune quantité reçus du client.
+ * Validations (dans cet ordre) :
+ *  - non authentifié → unauthenticated ; rate limit → resource-exhausted ;
+ *  - buildingId non vide, slotIndex ∈ {0,1,2}, idempotencyKey chaîne non vide → invalid-argument ;
+ *  - transaction : player absent → not-found ; schemaVersion invalide → failed-precondition ;
+ *    trace productionOps existante avec un autre contenu → failed-precondition ; même contenu → aucun
+ *    effet, état courant renvoyé avec alreadyApplied = true (contrôle AVANT l'état du building et du
+ *    slot, comme sellToMarket : un renvoi après un arrêt réussi trouve le slot libre, il doit
+ *    recevoir alreadyApplied = true ; scénario à tester en 19.2) ;
+ *    building ou slot absent → not-found ; slot libre (recipeId == null) → failed-precondition ;
+ *    recette inconnue (donnée corrompue) → internal.
+ * Effets, dans la même transaction :
+ *  1. cycles terminés jusqu'à maintenant : crédités comme à la collecte (bornés par la place libre,
+ *     le reste perdu), sans dépasser N pour un lot ;
+ *  2. cycle en cours : il en existe un seulement si, après l'effet 1, cyclesProcessed < N (lot) ;
+ *     il est perdu, avec ses intrants ;
+ *  3. lot : intrants des cycles non commencés rendus, max(0, N − cyclesProcessed − 1) × inputs ;
+ *     lot déjà entièrement écoulé (cyclesProcessed = N après l'effet 1) : aucun cycle en cours,
+ *     rien à rendre, crédit puis libération ; logs : rien à rendre ;
+ *  4. slot libéré (recipeId, startedAt, lastProcessedAt, cyclesPlanned, cyclesProcessed → null) ;
+ *  5. trace productionOps écrite.
+ * Point ouvert, tranché dans le ticket 19.2 : intrants rendus au-delà du plafond de la ressource
+ *  rendue (perdus, ou dépassement toléré). Une perte de ressources → escalade cas 4.
+ */
+export const stopProductionSlot = functions.https.onCall(
+  async (request: CallableRequest<{
+    buildingId: string;
+    slotIndex: 0 | 1 | 2;
+    idempotencyKey: string;
+  }>): Promise<{
+    collected: Partial<Record<ResourceKey, number>>;
+    discarded: Partial<Record<ResourceKey, number>>;
+    refunded:  Partial<Record<ResourceKey, number>>;
+    building:  BuildingDocument;
+    inventory: InventoryState;
+    alreadyApplied: boolean;
   }> => { /* ... */ }
 );
 
@@ -344,19 +416,32 @@ resolveLoginState():
     Pour chaque slot où recipeId != null ET startedAt != null:
       reference = slot.lastProcessedAt ?? slot.startedAt  // serveur calcule, jamais le client
       elapsed = now - reference
-      recipe = getRecipeConfig(recipeId)          // depuis Remote Config / cache CF
+      recipe = RECIPES[recipeId]                  // constantes serveur (shared/recipes.ts), D-ETAPE19-003
       completedCycles = floor(elapsed / recipe.durationMs)
+
+      // ÉTAPE 19 (PRÉVU, D-ETAPE19-001) — lot : jamais plus que les cycles restants du lot
+      if slot.cyclesPlanned != null:
+        completedCycles = min(completedCycles, slot.cyclesPlanned - slot.cyclesProcessed)
       rawYield = completedCycles * recipe.outputQty
 
       // Clamp par cap — la saturation est le mécanisme de check-in
+      // Un cycle terminé inventaire plein compte quand même (lot compris) : production perdue
       availableSpace = inventory[recipe.output].cap - inventory[recipe.output].quantity
       actualYield = min(rawYield, availableSpace)
       inventory[recipe.output].quantity += actualYield
 
-      // Production continue : le slot reste actif
-      // startedAt N'EST JAMAIS reset — référence absolue de départ
-      // lastProcessedAt avance de N cycles (résiduel préservé) — TD-004
+      // startedAt N'EST JAMAIS reset pendant la production — référence absolue de départ
+      // lastProcessedAt avance de completedCycles cycles (résiduel préservé) — TD-004
       slot.lastProcessedAt = reference + completedCycles × durationMs
+
+      if slot.cyclesPlanned == null:
+        // Logs : production continue, le slot reste actif (D3.1)
+      else:
+        slot.cyclesProcessed += completedCycles
+        if slot.cyclesProcessed == slot.cyclesPlanned:
+          // Lot terminé : slot libéré dans la même écriture
+          slot = { slotIndex, recipeId: null, startedAt: null, lastProcessedAt: null,
+                   cyclesPlanned: null, cyclesProcessed: null }
 
   player.lastLoginAt = now
   write /players/{uid}                            // 1 write
@@ -556,7 +641,7 @@ public class FirebaseInitializer : MonoBehaviour
 
 | Donnée | Stockage | Raison |
 |---|---|---|
-| Durées de production | `ScriptableObject` (défaut) + **Remote Config** (override) | LiveOps-able sans deploy, fallback offline garanti |
+| Durées de production | **Constantes serveur** (`shared/recipes.ts` : durées, intrants, N max par lot) — corrigé le 2026-11-02, D-ETAPE19-003 (était : `ScriptableObject` + Remote Config) | Phase 1 : valeurs en dur côté serveur, modifiées par déploiement ; Remote Config reporté |
 | Prix de base du marché | `ScriptableObject` + **Remote Config** | Idem |
 | Templates de contrats (quantités, rewards) | **Remote Config** uniquement | Changent fréquemment, doivent être pilotables en live |
 | Favor thresholds | `ScriptableObject` + **Remote Config** | Rarement changés mais doivent l'être sans store update |
@@ -565,7 +650,7 @@ public class FirebaseInitializer : MonoBehaviour
 | Prix courants | **Firestore** (`marketState/state`) | State live, server-authoritative |
 | State joueur (gold, inventory) | **Firestore** uniquement | Server-authoritative, jamais de cache local économique |
 
-**Règle d'or :** si la valeur affecte l'économie → Remote Config. Si c'est du state live → Firestore. ScriptableObject est le fallback offline, jamais la source de vérité en production.
+**Règle d'or :** si la valeur affecte l'économie → Remote Config. Si c'est du state live → Firestore. ScriptableObject est le fallback offline, jamais la source de vérité en production. *Exception Phase 1 (D-ETAPE19-003) : les recettes de production sont des constantes serveur.*
 
 ### Ticker de prix — sans exploser les reads
 

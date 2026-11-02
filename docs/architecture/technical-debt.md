@@ -720,6 +720,33 @@ Avant le premier lancement d'un événement en production : prérequis du déplo
 
 ---
 
+### TD-023 — Production infinie de planks et de kits par appel direct de `startProductionSlot`
+
+**Identifié :** 2026-11-02 (diagnostic de l'ÉTAPE 19)
+**Criticité actuelle :** ÉLEVÉE avant tout testeur externe ; sans effet aujourd'hui (aucun joueur, app non distribuée)
+**Composant :** `firebase/functions/src/production/startProductionSlot.ts:142-165`,
+`firebase/functions/src/shared/production.ts:43-79`
+
+**Description :**
+`startProductionSlot` débite les intrants d'une recette de transformation une seule fois, au lancement ; ensuite
+`processBuildingSlots` produit des cycles sans fin, sans rien consommer, et aucun slot ne peut être arrêté. Constaté
+le 2026-11-02 sur le calcul compilé : un slot de planks et un slot de kits laissés 10 h, depuis 0 logs et 0 planks,
+donnent 24 planks et 10 kits. L'écran de production ne propose que les logs, mais `startProductionSlot` appelé
+directement permet aujourd'hui une production infinie de planks et de kits, revendables contre de l'or : les Cloud
+Functions sont publiques et App Check n'est pas actif (TD-017).
+
+**Impact :**
+Création d'or sans limite pour quiconque appelle la fonction directement ; contrats remplis sans coût à l'ÉTAPE 20.
+
+**Résolution :**
+Déploiement de l'ÉTAPE 19.1 (production par lot, D-ETAPE19-001 et 004) et de l'ÉTAPE 19.2 (arrêt d'un slot,
+D-ETAPE19-002). Pas de correctif d'urgence : pas de joueurs, app non distribuée.
+
+**Trigger de résolution :**
+Avant tout testeur externe.
+
+---
+
 ## TD Résolues
 
 ### TD-013 — Migration Node.js 20 → 22 pour les Cloud Functions

@@ -23,6 +23,27 @@ Ces valeurs constituent un prototype d'équilibre, pas une balance finale. L'obj
 **Remarque sur les 3 slots parallèles de la Sawmill :**
 Un joueur peut lancer 3 cycles de Logs simultanément, ou mixer Logs/Planks selon ses besoins. Résultat : en 20 minutes avec 3 slots Logs actifs, 3 Logs sont prêts. Ça élimine la frustration du "rien à collecter" sans casser la tension d'inventaire.
 
+**Production par lot des transformations (Planks, Reconstruction Kits) — D-ETAPE19-001 à 004 :**
+- **Logs** (sans intrant) : production continue jusqu'à saturation, inchangée (D3.1).
+- **Planks et Kits** : le joueur lance un **lot de N cycles** sur un slot. Les intrants des N cycles sont débités au
+  lancement (2 Logs × N pour des Planks, 3 Planks × N pour des Kits). Le slot produit `min(cycles écoulés, N)`, puis
+  se libère. N est le choix du joueur ; la durée et le coût d'un cycle restent ceux du tableau ci-dessus.
+- **Borne maximale de N** (10 h de production par lot, finançable avec les plafonds de départ) :
+
+| Recette | N max | Durée d'un lot complet | Intrants d'un lot complet |
+|---|---|---|---|
+| **Planks** | 24 | 10 h (24 × 25 min) | 48 Logs (plafond de départ : 50) |
+| **Reconstruction Kits** | 10 | 10 h (10 × 60 min) | 30 Planks (plafond de départ : 30) |
+
+- **Saturation** : la règle des Logs s'applique au lot. Un cycle terminé alors que l'inventaire de la ressource
+  produite est plein compte dans N, et sa production est perdue (ses intrants aussi). Au lancement, N doit être
+  inférieur ou égal à la place libre de la ressource produite (plafond − stock) ; sinon le lancement est refusé.
+  Cette vérification ne protège pas d'un autre slot qui remplirait la même ressource en parallèle : l'interface
+  affiche ce risque (ÉTAPE 19.4).
+- **Arrêt d'un slot** : toujours possible. Les cycles terminés sont crédités ; le cycle en cours est perdu, avec ses
+  intrants ; les intrants des cycles non commencés sont rendus.
+- **Bâtiment** : les trois recettes, Kits compris, sont produites à la Sawmill en Phase 1.
+
 **TO_PLAYTEST** — Toutes ces durées. Question clé de game feel : est-ce que le joueur ressent de l'anticipation au retour, ou de la frustration d'avoir "pas grand chose" après 30 minutes ?
 
 ---
@@ -40,7 +61,7 @@ Un joueur peut lancer 3 cycles de Logs simultanément, ou mixer Logs/Planks selo
 
 | Ressource | Cap initial | Raison design |
 |---|---|---|
-| **Logs** | 50 | ~5h de production avant saturation avec 3 slots actifs (en pratique moins, car la transformation consomme en continu). Confortable pour débuter. |
+| **Logs** | 50 | ~5h de production avant saturation avec 3 slots actifs (en pratique moins, car la transformation consomme en continu — *annotation 2026-11-02 : la transformation consomme par lot, intrants débités au lancement, D-ETAPE19-001*). Confortable pour débuter. |
 | **Planks** | 30 | Plus serré que Logs. La pression arrive plus vite, forçant une décision marché/contrat plus régulière. Reflète la valeur supérieure. |
 | **Reconstruction Kits** | 10 | Très serré. 10 Kits = ~10h de production max avant blocage. Si l'inventaire est plein, le joueur est obligé de vendre ou livrer — décision de trading forcée, pas frustration. |
 

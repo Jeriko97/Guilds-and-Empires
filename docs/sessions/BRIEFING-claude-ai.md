@@ -191,6 +191,8 @@ Au début de chaque session, demander que ces docs soient attachés :
   **prérequis bloquant** :
   première sous-étape de l'étape qui activera `processWorldEventLifecycle`. 3 arbitrages figés (D-TD020-003 :
   création à la volée, un seul event par ressource, redescente 60 min).
+- **TD-023** (11-02) : production infinie de planks et de kits par appel direct de `startProductionSlot` — à
+  résoudre avant tout testeur externe (déploiement 19.1 et 19.2).
 - **TD-021** (11-02) : erreurs des Cloud Functions planifiées sans alerte — à résoudre avant le premier event en
   production, prérequis du déploiement de `processWorldEventLifecycle` (ordre imposé dans TD-020).
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
@@ -212,9 +214,29 @@ founder du 2026-11-02) :
 - La consigne d'installation de l'outil de pilotage figure en entier dans `CLAUDE.md` et dans `BRIEFING-claude-code.md` : n'en garder qu'une version complète et faire pointer l'autre vers elle.
 - D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2, ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` : `runInBackground: 0`, `scriptingDefineSymbols: {}`). Rien à corriger, constat seulement.
 
+Remarques secondaires de l'auditeur sur `263d3da`, reportées sans être appliquées (demande du founder du
+2026-11-02) :
+- Le bloc des remarques sur `559f188` est rangé sous « Prochaine retouche de CLAUDE.md », mais sa 2e remarque vise `BRIEFING-claude-code.md` et non `CLAUDE.md`, et il ne dit pas quand le traiter : ajouter « à traiter dans la même retouche (revue croisée, cas 5 si une convention change) ».
+- La 4e puce de ce bloc est un constat (« Rien à corriger ») rangé dans une liste de choses à faire : la marquer comme constat, ou la sortir de la liste.
+
 ## Prochaine étape attendue
 
-Contrats impériaux : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
+**ÉTAPE 19 — chaîne Planks / Kits (en cours ; feuille de route : 18 Marché → 19 → 20 Contrats → 21 Charte)** :
+production par lot des transformations, décidée le 11-02 (D-ETAPE19-001 à 004) : le joueur lance N cycles, les
+intrants des N cycles sont débités au lancement, le slot produit `min(cycles écoulés, N)` puis se libère ; logs
+inchangés (production continue, D3.1 révisée pour les seules transformations) ; N max planks 24, kits 10 ; N ≤
+place libre au lancement ; arrêt d'un slot (cycles terminés crédités, cycle en cours perdu, intrants non commencés
+rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-023 (production infinie). Découpage :
+- 19.0 — documentation (fait le 11-02) ;
+- 19.1 — backend : lot et consommation (`startProductionSlot`, `processBuildingSlots`, collecte et login), traces
+  d'idempotence, Security Rules ; vérification des slots de transformation en production (escalade cas 1) ;
+- 19.2 — backend : arrêt d'un slot (`stopProductionSlot`) ;
+- 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
+- 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
+  parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService` ;
+- 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
+
+**ÉTAPE 20 — Contrats impériaux** : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
 (`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event absolu 9 / 22,
 tests déterministes, D-TD020-002) avant d'implémenter `processWorldEventLifecycle`. Arbitrages figés (D-TD020-003) :
 A — `referencePrices` créé à la volée par `updateMarketPrices`, sans migration (champ absent avec event en cours →

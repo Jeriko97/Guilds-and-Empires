@@ -136,10 +136,12 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 - **TD-014 RÉSOLUE** : sleeps remplacés par suppression déterministe du doc rateLimits.
 - **TD-015** (requalifiée 11-01) : primitives de parsing dans 4 foyers (`Core/FirebaseParsingHelpers`,
   `InventoryParsingHelpers`, `ProductionParsingHelpers`, `PlayerStateSnapshot`) — FAIBLE. Cible :
-  `Core/FirebaseParsingHelpers`, au plus tard à l'étape contrats.
+  `Core/FirebaseParsingHelpers`, résorbée en 19.3 (au plus tard à l'étape contrats).
 - **TD-020** : multiplicateur d'event cumulatif (prix event Logs ≈ 16 au lieu de 9) — correction actée le 11-02
   (D-TD020-001/002 : prix d'event absolu 9 / 22), **prérequis bloquant** de l'étape qui activera `processWorldEventLifecycle`.
   Arbitrages figés le 11-02 (D-TD020-003) : création à la volée, un seul event par ressource, redescente 60 min.
+- **TD-023** (11-02) : production infinie de planks et de kits par appel direct de `startProductionSlot` — à
+  résoudre avant tout testeur externe (déploiement 19.1 et 19.2).
 - **TD-021** (11-02) : erreurs des Cloud Functions planifiées sans alerte — à résoudre avant le premier event en
   production, prérequis du déploiement de `processWorldEventLifecycle` (ordre imposé dans TD-020).
 - **TO_PLAYTEST** (economy-values §4) : prix des Logs immobile hors event (points fixes 3-6).
@@ -160,6 +162,11 @@ founder du 2026-11-02) :
 - `BRIEFING-claude-code.md`, pilotage de l'Éditeur : regrouper en une seule vérification de début de session de pilotage les trois clés de `EditorPipelineConfig.json` (`m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`, `m_AllowBrowserClients: false`), et dire si le réglage d'installation survit à la réécriture du fichier « à chaque session ».
 - La consigne d'installation de l'outil de pilotage figure en entier dans `CLAUDE.md` et dans `BRIEFING-claude-code.md` : n'en garder qu'une version complète et faire pointer l'autre vers elle.
 - D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2, ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` : `runInBackground: 0`, `scriptingDefineSymbols: {}`). Rien à corriger, constat seulement.
+
+Remarques secondaires de l'auditeur sur `263d3da`, reportées sans être appliquées (demande du founder du
+2026-11-02) :
+- Le bloc des remarques sur `559f188` est rangé sous « Prochaine retouche de CLAUDE.md », mais sa 2e remarque vise `BRIEFING-claude-code.md` et non `CLAUDE.md`, et il ne dit pas quand le traiter : ajouter « à traiter dans la même retouche (revue croisée, cas 5 si une convention change) ».
+- La 4e puce de ce bloc est un constat (« Rien à corriger ») rangé dans une liste de choses à faire : la marquer comme constat, ou la sortir de la liste.
 
 ### Couche client Unity (Assets/_Project/)
 
@@ -333,6 +340,23 @@ les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
 ÉTAPE 18 (marché) FERMÉE le 11-01 : TD-018 marché close, écran Marché complet (D-ETAPE18-001 à 006).
 Vente de test en prod autorisée par le founder pour cette validation seulement (1 log, D-ETAPE18-004).
 
+**ÉTAPE 19 — chaîne Planks / Kits (en cours ; feuille de route : 18 Marché → 19 → 20 Contrats → 21 Charte)** :
+production par lot des transformations, décidée le 11-02 (D-ETAPE19-001 à 004) : le joueur lance N cycles, les
+intrants des N cycles sont débités au lancement, le slot produit `min(cycles écoulés, N)` puis se libère ; logs
+inchangés (production continue, D3.1 révisée pour les seules transformations) ; N max planks 24, kits 10 ; N ≤
+place libre au lancement ; arrêt d'un slot (cycles terminés crédités, cycle en cours perdu, intrants non commencés
+rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-023 (production infinie). Découpage :
+- 19.0 — documentation (fait le 11-02) ;
+- 19.1 — backend : lot et consommation (`startProductionSlot`, `processBuildingSlots`, collecte et login), traces
+  d'idempotence, Security Rules ; vérification des slots de transformation en production (escalade cas 1) ;
+- 19.2 — backend : arrêt d'un slot (`stopProductionSlot`) ;
+- 19.3 — client : consolidation TD-015 avant de toucher au parsing ;
+- 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
+  parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService` ;
+- 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
+
+**ÉTAPE 20 — Contrats** :
+
 1. **Prérequis bloquant — TD-020** (D-TD020-001 amendée par D-TD020-002, complétée par D-TD020-003, founder, 11-02) :
    corriger `computeMarketPrice` — prix d'event ABSOLU `round(basePrice × multiplicateur)` = 9 (Logs) / 22 (Planks)
    à chaque tick actif, quel que soit le prix de départ ; prix de référence hors event suivi à part ; decay
@@ -353,4 +377,4 @@ Vente de test en prod autorisée par le founder pour cette validation seulement 
    (activation refusée, file d'attente bornée, durée) sont des critères d'acceptation obligatoires de la sous-étape `processWorldEventLifecycle`.
 2. Contrats impériaux : `processWorldEventLifecycle` + alimentation de `contractPool` (backend, tests émulateur),
    puis service client et écran (`acceptContract`, `deliverToContract`).
-3. Résorber TD-015 dès qu'un fichier de parsing est touché.
+3. TD-015 : résorbée en 19.3 (au plus tard ici si ce n'est pas fait).
