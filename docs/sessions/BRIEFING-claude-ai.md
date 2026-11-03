@@ -268,7 +268,12 @@ modification d'un garde-fou → F4. Contenu du lot :
   d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
   pour l'arbitre) et nommer « ce dossier » (`.claude/instantanes/executant/`) dans la puce du contrôle de Codex ;
   `CLAUDE.md` §h, exécutant : préciser que « le même » exécutant n'est repris que dans la même sous-étape ; si (f)
-  est retenu, aligner aussi `.claude/agents/auditeur.md` l. 13 (« joint à ta consigne »).
+  est retenu, aligner aussi `.claude/agents/auditeur.md` l. 13 (« joint à ta consigne »). Remarques de l'arbitre à
+  la clôture de `ac61717` : skill `revue-croisee` §3, écrire l'étape de nettoyage de `.claude/instantanes/revue/`
+  avant chaque dépôt (commande explicite, à traiter de la même façon pour `cloture/`) ; `CLAUDE.md` §h, contrôle de
+  l'orchestrateur : noter `HEAD` (`git rev-parse HEAD`) avant de lancer l'exécutant puis, à la reprise de main,
+  vérifier que `HEAD` est inchangé et que `git diff --cached --name-only` est vide avant de préparer l'index ; ce
+  contrôle est une pratique de l'orchestrateur, appliquée dès 19.4c sans attendre le lot.
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -332,7 +337,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     par chemin et sha1 (copie dans `.claude/instantanes/revue/`, lecture complète contrôlée) au lieu d'être collé ;
     contestable par le founder ; écarts de procédure de la sous-étape D-REPRISE-011, à signaler : deux contenus qui
     tenaient en un seul `Read` ont été désignés par fichier, et la consigne commune a une fois dit « désigné » au lieu
-    de « joint » ; le skill §3 aligné ajoute aussi un contrôle du journal de Codex (garde-fou resserré) ;
+    de « joint » ; le skill §3 aligné ajoute aussi un contrôle du journal de Codex (garde-fou resserré) ; pour
+    information, garde-fou resserré (pratique de l'orchestrateur, remarque de l'arbitre à la clôture de `ac61717`) :
+    contrôle de `HEAD` et de l'index à la reprise de main après l'exécutant ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
