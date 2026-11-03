@@ -660,9 +660,9 @@ dernières concernent le processus de revue : elles sont aussi suivies dans les 
 retouche de CLAUDE.md ».
 - Concurrence (TD-020, étape 0 du déroulé) : si une transaction d'activation ou de mise en attente trouve plus d'un `pending` (corruption apparue après l'étape 0), les expirations déjà validées le restent, alors que « aucune expiration » est promis ; le ticket tranche entre arrêt immédiat et fin de passage en erreur.
 - Donnée corrompue, event `decaying` : « le prix publié revient au prix de référence » décrit le calcul après la correction TD-020 (aujourd'hui le multiplicateur 1 s'applique au prix courant, `computeMarketPrice.ts:37-38`) ; préciser « après la correction TD-020 », ici et dans D-TD020-003.
-- Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).
-- Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).
-- `CLAUDE.md` §a.6 ne cite que le delta depuis le dernier GO ; le départ depuis la passe précédente (`prev.tree`) tant qu'aucun GO des deux n'existe n'est que dans le skill §5 et D-REPRISE-004 : aligner la formulation.
+- ~~Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).~~ Traité le 2026-11-03 (D-REPRISE-007).
+- ~~Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).~~ Traité le 2026-11-03 (D-REPRISE-007).
+- ~~`CLAUDE.md` §a.6 ne cite que le delta depuis le dernier GO ; le départ depuis la passe précédente (`prev.tree`) tant qu'aucun GO des deux n'existe n'est que dans le skill §5 et D-REPRISE-004 : aligner la formulation.~~ Traité le 2026-11-03 (D-REPRISE-007).
 
 ---
 
@@ -946,6 +946,32 @@ texte de TD-007 sur décision du founder.
 
 **Trigger de résolution :**
 Prochain ticket qui crée une Cloud Function.
+
+---
+
+### TD-031 — Lecture seule et périmètre de lecture de l'arbitre garantis en partie seulement par la plateforme
+
+**Identifié :** 2026-11-03 (mise en place de l'arbitre stratégique, D-REPRISE-007 / D-REPRISE-008 ; décision du founder)
+**Criticité actuelle :** MOYENNE (indépendance de l'audit de clôture)
+**Composant :** `.claude/agents/arbitre-strategique.md`, `.claude/settings.json`, `.claude/hooks/arbitre-lecture.js`
+
+**Description :**
+Constats du 2026-11-03 : un hook déclaré dans le frontmatter d'un agent ne s'est pas exécuté ; un hook déclaré dans
+`.claude/settings.json` s'exécute, y compris pour les sous-agents, et reçoit `agent_type`. La lecture seule de
+l'arbitre repose donc sur sa liste d'outils (Read, Grep, Glob : ni écriture ni terminal) et son périmètre de lecture
+(interdiction de lire `.revue-croisee/`, donc les verdicts des autres relecteurs à la clôture) sur un filtre du
+projet : la plateforme n'offre pas de permission propre à un agent. Limites : un Grep ou un Glob générique lancé à la
+racine peut encore parcourir `.revue-croisee/` si l'outil ne respecte pas `.gitignore` ; un filtre en échec bloque
+les lectures (Read, Grep, Glob) de toute la session ; une modification de l'agent n'est pas toujours rechargée dans
+la session en cours.
+
+**Compensation :**
+Terminal retiré à l'arbitre ; filtre de lecture du projet (`arbitre-lecture.js`, jeu de tests
+`arbitre-lecture.test.js`) ; à chaque appel, lectures de l'arbitre contrôlées dans sa transcription et consignées au
+rapport, avec le modèle et l'empreinte de son prompt (`CLAUDE.md` §c-§d, skill `revue-croisee` §6).
+
+**Trigger de résolution :**
+Une permission par agent appliquée par la plateforme, ou toute lecture hors périmètre constatée.
 
 ---
 

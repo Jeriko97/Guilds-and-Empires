@@ -21,9 +21,25 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Revue croisée — **règle du founder (D-REPRISE-004, 2026-11-02, remplace D-ETAPE18-006 sur ce point)** :
   « Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
   Inscrite dans `CLAUDE.md` §a.6 et le skill `revue-croisee` §5.
-- Escalade : **9 cas** dans `CLAUDE.md` §b, cas 9 ajouté le 11-02 (D-REPRISE-005) : relecteur indisponible ou
-  point bloquant non résolu → pas de commit, arrêt et escalade. TD-021 ouverte le 11-02 (D-TD021-001) : alerte
-  sur les erreurs des CF planifiées, prérequis du déploiement de `processWorldEventLifecycle`.
+- Escalade : les 9 cas de `CLAUDE.md` §b (cas 9 ajouté le 11-02, D-REPRISE-005) sont **remplacés le 11-03 par
+  F1–F4** (D-REPRISE-007, ci-dessous). TD-021 ouverte le 11-02 (D-TD021-001) : alerte sur les erreurs des CF
+  planifiées, prérequis du déploiement de `processWorldEventLifecycle`.
+- **Arbitre stratégique et escalade F1–F4 (D-REPRISE-007, D-REPRISE-008, 2026-11-03)** : le rôle d'auditeur
+  stratégique et d'arbitre, tenu jusqu'ici dans Claude.ai, est l'agent `.claude/agents/arbitre-strategique.md`
+  (Read, Grep, Glob seulement ; sorties git jointes par Claude Code ; filtre du projet `.claude/settings.json` →
+  `.claude/hooks/arbitre-lecture.js` qui lui interdit `.revue-croisee/` ; TD-031). La consigne commence par le type
+  d'appel : « arbitrage d'une question » (ni diff ni tests) ou « audit de clôture / proposition de modification »
+  (diff de l'index, tests, rapport, décisions). Le founder n'est sollicité que pour **F1** (game
+  design et gameplay, règle d'effet indirect), **F2** (direction artistique, textes affichés), **F3** (actions
+  irréversibles en production), **F4** (garde-fous, skills, désaccord persistant) ; tout le reste est tranché par
+  l'arbitre (`CLAUDE.md` §b, avec la correspondance des 9 anciens cas, qui sert à lire les renvois « cas N »
+  historiques). Dernier GO de D-REPRISE-004 = GO de Codex, de l'auditeur **et** de l'arbitre (audit de clôture sur
+  `git diff --cached`) sur le même arbre ; l'arbitre peut dire NO-GO seul ; toute modification de l'index après un GO
+  → passe courte des deux relecteurs puis nouvel audit de clôture ; après le commit, arbre du commit = arbre audité,
+  avant tout push (`CLAUDE.md` §d, skill §6). Résumé d'arbitrages à chaque clôture d'étape :
+  `docs/sessions/<date>-etape-N-arbitrages.md` (pièce de l'audit indépendant dans Claude.ai). Une modification de
+  l'agent n'est pas toujours rechargée dans la session en cours : vérifier l'empreinte de son prompt (`CLAUDE.md`
+  §d) avant de s'appuyer sur son verdict.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **365/365** verts le 11-03 après l'ÉTAPE 19.4a (dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
@@ -39,8 +55,8 @@ La direction artistique reste au founder.
 - `unity status` → attendre `ready`. Si `PIPELINE_LOAD_PENDING`, donner le focus à la fenêtre Unity.
 - Syntaxe : `unity command <groupe.commande> --param valeur --result-only --no-banner`
   (catalogue : `unity list --format json`).
-- **Installation obligatoire (D-REPRISE-006)** : « Outil de pilotage : activer "Ensure editor runs in background in PlayMode" et couper la consigne permanente. Fichier local non suivi, à refaire sur tout nouveau poste. »
-  Réglage : Project Settings > Pipeline > Editor, case « Ensure editor runs in background in PlayMode » ; consigne permanente coupée par `unity command editor.playmode.set_run_in_background --enable false`. Contrôle dans `ProjectSettings/Packages/com.unity.pipeline/EditorPipelineConfig.json` : `m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`.
+- **Installation obligatoire (D-REPRISE-006)** : consigne complète dans `CLAUDE.md`, section « Pilotage de
+  l'Éditeur Unity — installation obligatoire » (seule version de référence).
 - Mode Play : `editor.playmode.start|stop`. Le réglage ci-dessus force Run In Background pendant le mode Play
   seulement (sinon le jeu se fige quand Unity n'a pas le focus) et remet 0 en sortie. Ne jamais relancer
   `set_run_in_background --enable true` : `runInBackground` reste à 0 dans `ProjectSettings.asset`.
@@ -192,29 +208,26 @@ Slice production complète câblée. Prochaine slice client à arbitrer (marché
 
 ### Prochaine retouche de CLAUDE.md
 
-Remarques secondaires de l'auditeur (dernière passe de `ae6b40d`), reportées sans être appliquées (demande du
-founder du 2026-11-02, après l'ajout du cas 9, D-REPRISE-005, qui ne les traite pas) ; à traiter
-dans la prochaine retouche de `CLAUDE.md` et du skill `revue-croisee` (revue croisée, cas 5 si une convention
-change). Aussi listées dans TD-020, « Points ouverts pour la sous-étape `processWorldEventLifecycle` ».
-- `CLAUDE.md` §a.6 ne cite que le delta depuis le dernier GO ; le départ depuis la passe précédente (`prev.tree`) tant qu'aucun GO des deux n'existe n'est que dans le skill §5 et D-REPRISE-004 : aligner la formulation.
-- Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).
-- Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).
+**Traités le 2026-11-03 dans la retouche D-REPRISE-007** (arbitre stratégique, F1–F4) : `CLAUDE.md` §a.6 aligné
+sur le départ `prev.tree` ; skill `revue-croisee` §1 (staging antérieur non vide hors FICHIERS → arrêt et
+signalement) et §5 (delta vide → pas de passe courte, commit seulement si l'arbre a déjà toutes les validations) ;
+phrase « Ne jamais relancer… » de `CLAUDE.md` sur une seule ligne ; consigne d'installation de l'outil de pilotage
+gardée en entier dans `CLAUDE.md` seul (le briefing Claude Code y renvoie) ; règle du founder sur la clause STOP
+inscrite dans `CLAUDE.md` §a.1.
 
-Remarques secondaires de l'auditeur sur `559f188` (D-REPRISE-006), reportées sans être appliquées (demande du
-founder du 2026-11-02) :
-- `CLAUDE.md`, section « Pilotage de l'Éditeur Unity — installation obligatoire » : retour à la ligne au milieu de la phrase « Ne jamais / relancer `set_run_in_background --enable true` » ; l'écrire sur une seule ligne.
+Restent en attente (remarques secondaires de l'auditeur, reportées par le founder le 2026-11-02 ; à traiter dans la
+prochaine retouche de `CLAUDE.md` ou du briefing ; modification d'un garde-fou → F4, `CLAUDE.md` §b) :
 - `BRIEFING-claude-code.md`, pilotage de l'Éditeur : regrouper en une seule vérification de début de session de pilotage les trois clés de `EditorPipelineConfig.json` (`m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`, `m_AllowBrowserClients: false`), et dire si le réglage d'installation survit à la réécriture du fichier « à chaque session ».
-- La consigne d'installation de l'outil de pilotage figure en entier dans `CLAUDE.md` et dans `BRIEFING-claude-code.md` : n'en garder qu'une version complète et faire pointer l'autre vers elle.
-- D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2, ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` : `runInBackground: 0`, `scriptingDefineSymbols: {}`). Rien à corriger, constat seulement.
+- Sur `263d3da` : le bloc des remarques sur `559f188` mêlait `CLAUDE.md` et le briefing sans dire quand le traiter — réglé par la phrase ci-dessus ; la puce « constat » de ce bloc est sortie de la liste (constat ci-dessous).
 
-Remarques secondaires de l'auditeur sur `263d3da`, reportées sans être appliquées (demande du founder du
-2026-11-02) :
-- Le bloc des remarques sur `559f188` est rangé sous « Prochaine retouche de CLAUDE.md », mais sa 2e remarque vise `BRIEFING-claude-code.md` et non `CLAUDE.md`, et il ne dit pas quand le traiter : ajouter « à traiter dans la même retouche (revue croisée, cas 5 si une convention change) ».
-- La 4e puce de ce bloc est un constat (« Rien à corriger ») rangé dans une liste de choses à faire : la marquer comme constat, ou la sortir de la liste.
+Remarque de l'auditeur (revue du diff de D-REPRISE-007, 2026-11-03), reportée parce qu'elle modifie le corps de
+l'arbitre (nouveau test de réception à prévoir) : dans `.claude/agents/arbitre-strategique.md`, le contrôle du diff
+contre le dépôt ne vérifie que les lignes ajoutées ; vérifier aussi que les lignes retirées sont absentes, et exiger
+avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide (ou joindre ce diff non indexé).
 
-Règle de rédaction des tickets — décision du founder (escalade 19.2b, 2026-11-02), citée telle quelle, à inscrire
-dans `CLAUDE.md` à la prochaine retouche (revue croisée, cas 5) : « Une clause STOP renvoie à une décision du
-journal attribuée au founder, jamais à un texte de spec rédigé par un agent. »
+Constat, rien à faire : D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2,
+ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` :
+`runInBackground: 0`, `scriptingDefineSymbols: {}`).
 
 ### Couche client Unity (Assets/_Project/)
 
@@ -321,7 +334,8 @@ Lire en priorité au démarrage :
 ## Méthode de travail attendue
 
 ⚠️ Depuis D-REPRISE-003, le mode autonome supervisé décrit dans CLAUDE.md prime sur
-les règles de validation ci-dessous. Le founder n'intervient que sur escalade.
+les règles de validation ci-dessous. Le founder n'est sollicité que pour F1–F4 (D-REPRISE-007) ; tout le reste est
+tranché par l'arbitre stratégique.
 
 - Validation par étape (ne pas enchaîner sans validation founder)
 - Tickets précis avec règles strictes

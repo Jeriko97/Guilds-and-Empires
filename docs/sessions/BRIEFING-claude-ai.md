@@ -5,6 +5,18 @@ claude.ai concernant GAE.
 
 ## Mon rôle dans le projet
 
+**Depuis le 2026-11-03 (D-REPRISE-007)** : l'auditeur stratégique et l'arbitre sont un agent de Claude Code
+(`.claude/agents/arbitre-strategique.md`). Mon rôle devient l'**audit indépendant de chaque étape**, à partir du
+résumé d'arbitrages que le founder m'apporte (`docs/sessions/<date>-etape-N-arbitrages.md` : décisions prises sans
+le founder, TD, questions F1/F2 en attente, actions F3, jauge Phase 1, signal skill, coût de coordination). Je vérifie
+que les décisions prises sans le founder ne relevaient pas de F1–F4 (`CLAUDE.md` §b, dont la règle d'effet indirect
+en F1), que l'arbitre ne valide pas par complaisance, et je propose au founder les révisions de garde-fous (F4).
+Le founder n'est sollicité par Claude Code que pour F1 (game design et gameplay), F2 (direction artistique, textes
+affichés), F3 (actions irréversibles en production), F4 (garde-fous, skills, désaccord persistant). Dernier GO d'un
+commit = GO de Codex, de l'auditeur de diff et de l'arbitre, sur le même arbre d'index ; arbre du commit vérifié
+avant le push.
+
+Rôle historique (jusqu'au 2026-11-03), pour mémoire :
 Je suis l'auditeur stratégique et le rédacteur de tickets pour
 Claude Code. Je ne code pas directement. Mes responsabilités :
 
@@ -39,7 +51,8 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   et fournit une capture comme preuve. Le founder reste maître de la direction artistique et des arbitrages.
 - **Mode autonome supervisé (D-REPRISE-003)** : Claude Code orchestre ; deux relecteurs read-only
   (sous-agent `auditeur` + Codex) relisent chaque ticket puis chaque diff ; le founder n'intervient que sur
-  escalade (9 cas, `CLAUDE.md` ; cas 9 ajouté le 11-02, D-REPRISE-005). **Règle du founder (D-REPRISE-004,
+  escalade (9 cas, `CLAUDE.md` ; cas 9 ajouté le 11-02, D-REPRISE-005 ; remplacés le 11-03 par F1–F4,
+  D-REPRISE-007, voir « Mon rôle dans le projet »). **Règle du founder (D-REPRISE-004,
   2026-11-02, remplace D-ETAPE18-006 sur ce point)** : « Ce qui est commité doit être identique à ce qui a reçu en dernier un GO des deux relecteurs. Ce GO peut venir de la revue du diff, d'une passe courte ou d'une passe après correction. Toute modification après ce GO, même de forme, déclenche une passe courte avant le commit. Aucune exception. »
   Inscrite dans `CLAUDE.md` §a.6 et le skill `revue-croisee` §5.
 - État (fin de journée 2026-11-01) :
@@ -206,29 +219,26 @@ Au début de chaque session, demander que ces docs soient attachés :
 
 ### Prochaine retouche de CLAUDE.md
 
-Remarques secondaires de l'auditeur (dernière passe de `ae6b40d`), reportées sans être appliquées (demande du
-founder du 2026-11-02, après l'ajout du cas 9, D-REPRISE-005, qui ne les traite pas) ; à traiter
-dans la prochaine retouche de `CLAUDE.md` et du skill `revue-croisee` (revue croisée, cas 5 si une convention
-change). Aussi listées dans TD-020, « Points ouverts pour la sous-étape `processWorldEventLifecycle` ».
-- `CLAUDE.md` §a.6 ne cite que le delta depuis le dernier GO ; le départ depuis la passe précédente (`prev.tree`) tant qu'aucun GO des deux n'existe n'est que dans le skill §5 et D-REPRISE-004 : aligner la formulation.
-- Skill `revue-croisee` §1 : `git diff --cached --name-only` montre le staging antérieur, mais rien ne dit quoi faire s'il n'est pas vide (proposition : non vide et hors FICHIERS → s'arrêter et le signaler dans le rapport).
-- Skill `revue-croisee` §5 : « non vide : liste les fichiers modifiés » ne dit pas quoi faire si le delta est vide (proposition : vide → pas de passe courte, l'arbre est déjà celui du dernier GO).
+**Traités le 2026-11-03 dans la retouche D-REPRISE-007** (arbitre stratégique, F1–F4) : `CLAUDE.md` §a.6 aligné
+sur le départ `prev.tree` ; skill `revue-croisee` §1 (staging antérieur non vide hors FICHIERS → arrêt et
+signalement) et §5 (delta vide → pas de passe courte, commit seulement si l'arbre a déjà toutes les validations) ;
+phrase « Ne jamais relancer… » de `CLAUDE.md` sur une seule ligne ; consigne d'installation de l'outil de pilotage
+gardée en entier dans `CLAUDE.md` seul (le briefing Claude Code y renvoie) ; règle du founder sur la clause STOP
+inscrite dans `CLAUDE.md` §a.1.
 
-Remarques secondaires de l'auditeur sur `559f188` (D-REPRISE-006), reportées sans être appliquées (demande du
-founder du 2026-11-02) :
-- `CLAUDE.md`, section « Pilotage de l'Éditeur Unity — installation obligatoire » : retour à la ligne au milieu de la phrase « Ne jamais / relancer `set_run_in_background --enable true` » ; l'écrire sur une seule ligne.
+Restent en attente (remarques secondaires de l'auditeur, reportées par le founder le 2026-11-02 ; à traiter dans la
+prochaine retouche de `CLAUDE.md` ou du briefing ; modification d'un garde-fou → F4, `CLAUDE.md` §b) :
 - `BRIEFING-claude-code.md`, pilotage de l'Éditeur : regrouper en une seule vérification de début de session de pilotage les trois clés de `EditorPipelineConfig.json` (`m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`, `m_AllowBrowserClients: false`), et dire si le réglage d'installation survit à la réécriture du fichier « à chaque session ».
-- La consigne d'installation de l'outil de pilotage figure en entier dans `CLAUDE.md` et dans `BRIEFING-claude-code.md` : n'en garder qu'une version complète et faire pointer l'autre vers elle.
-- D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2, ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` : `runInBackground: 0`, `scriptingDefineSymbols: {}`). Rien à corriger, constat seulement.
+- Sur `263d3da` : le bloc des remarques sur `559f188` mêlait `CLAUDE.md` et le briefing sans dire quand le traiter — réglé par la phrase ci-dessus ; la puce « constat » de ce bloc est sortie de la liste (constat ci-dessous).
 
-Remarques secondaires de l'auditeur sur `263d3da`, reportées sans être appliquées (demande du founder du
-2026-11-02) :
-- Le bloc des remarques sur `559f188` est rangé sous « Prochaine retouche de CLAUDE.md », mais sa 2e remarque vise `BRIEFING-claude-code.md` et non `CLAUDE.md`, et il ne dit pas quand le traiter : ajouter « à traiter dans la même retouche (revue croisée, cas 5 si une convention change) ».
-- La 4e puce de ce bloc est un constat (« Rien à corriger ») rangé dans une liste de choses à faire : la marquer comme constat, ou la sortir de la liste.
+Remarque de l'auditeur (revue du diff de D-REPRISE-007, 2026-11-03), reportée parce qu'elle modifie le corps de
+l'arbitre (nouveau test de réception à prévoir) : dans `.claude/agents/arbitre-strategique.md`, le contrôle du diff
+contre le dépôt ne vérifie que les lignes ajoutées ; vérifier aussi que les lignes retirées sont absentes, et exiger
+avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide (ou joindre ce diff non indexé).
 
-Règle de rédaction des tickets — décision du founder (escalade 19.2b, 2026-11-02), citée telle quelle, à inscrire
-dans `CLAUDE.md` à la prochaine retouche (revue croisée, cas 5) : « Une clause STOP renvoie à une décision du
-journal attribuée au founder, jamais à un texte de spec rédigé par un agent. »
+Constat, rien à faire : D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2,
+ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` :
+`runInBackground: 0`, `scriptingDefineSymbols: {}`).
 
 ## Prochaine étape attendue
 

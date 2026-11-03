@@ -55,10 +55,12 @@ Thumbs.db
 Assets/Firebase/Plugins/x86_64/*.bundle
 Assets/Firebase/Plugins/x86_64/*.so
 
-# Claude Code — seuls agents/ et skills/ sont versionnés (D-REPRISE-003)
+# Claude Code — seuls agents/, skills/ (D-REPRISE-003), hooks/ et settings.json (filtre de l'arbitre, D-REPRISE-007) sont versionnés
 .claude/*
 !.claude/agents/
 !.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
 
 # Revue croisée — sorties temporaires (diff, ticket, sortie Codex)
 .revue-croisee/
