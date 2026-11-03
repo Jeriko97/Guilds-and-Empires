@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009)
 
 Claude Code orchestre et exécute. Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
 sous-agent `auditeur` (`.claude/agents/auditeur.md`) et Codex (`AGENTS.md`), via le skill `revue-croisee`.
@@ -41,8 +41,9 @@ selon §e, et le dit.
 
 Précisions d'application (Claude Code, relues en revue croisée ; au doute, vers le founder — D-REPRISE-007) :
 - **F3** couvre le déploiement des Cloud Functions et des Security Rules, et toute écriture sur les données de
-  production (seed, migration, correction manuelle). Y sont assimilés : push sans accord écrit du founder (§g), merge
-  sur `main`, suppression de branche, réécriture d'historique.
+  production (seed, migration, correction manuelle). Y restent, pour git (D-REPRISE-009) : merge vers `main`,
+  force-push ou réécriture d'historique, suppression de branche distante ; push direct sur `main` (assimilé au merge) ;
+  push qui déclencherait un déploiement. Push normal sur la branche de travail : sans question (§g).
 - **Garde-fous (F4)** : cette liste d'escalade et sa correspondance ; la boucle de revue et de commit
   (D-REPRISE-003/004/005/007/008, §a, §d, skill `revue-croisee`) ; les relecteurs et l'arbitre, leurs grilles et
   leurs outils (`AGENTS.md`, `.claude/agents/*.md`, `.claude/settings.json`, `.claude/hooks/`) ; les conventions non
@@ -60,7 +61,7 @@ vers le founder (D-REPRISE-007).
 |---|---|
 | 1. Écriture sur les données de production | F3 |
 | 2. Déploiement de Cloud Functions ou de Security Rules | F3 |
-| 3. Action irréversible : push, merge sur main, suppression de branche, réécriture d'historique | F3 (assimilé) ; push déjà autorisé par écrit par le founder : sans question (§g) |
+| 3. Action irréversible : push, merge sur main, suppression de branche, réécriture d'historique | push normal sur la branche de travail : sans question, après les trois GO et la vérification de l'arbre (§g) ; merge vers `main`, force-push ou réécriture d'historique, suppression de branche distante : F3 (D-REPRISE-009) |
 | 4. Valeur économique ou de game design | F1 |
 | 5. Doctrine ou convention verrouillée | F4 (garde-fou) |
 | 6. Bloquant non résoluble sans sortir du ticket | arbitre ; F1–F4 si la sortie de périmètre en relève |
@@ -153,9 +154,19 @@ page au plus. C'est la pièce que le founder apporte à Claude.ai pour l'audit i
 - **coût de coordination** : pour chaque sous-étape, nombre de passes de revue (par relecteur), de NO-GO et
   d'escalades.
 
-### g. Push
-Aucun push sans accord explicite du founder, donné par écrit par lui (son ticket ou son message, cité au journal ou
-au rapport) ; un ticket rédigé par Claude Code ne vaut jamais accord. Commits locaux sinon.
+### g. Push (D-REPRISE-009)
+Règle du founder (2026-11-03), telle quelle : « Push normal sur la branche de travail autorisé après les trois GO et la vérification de l'arbre. Restent en F3 : merge vers main, force-push ou réécriture d'historique, suppression de branche distante. »
+Précisions d'application (Claude Code ; toutes vers plus de prudence par rapport à la décision citée) :
+- **Branche de travail** : la branche courante de la sous-étape (aujourd'hui `feature/bootstrap-architecture`),
+  **jamais `main`** ; un push direct sur `main` est assimilé au merge vers `main` (F3).
+- Avant le push : la plage `origin/<branche>..HEAD` ne contient que des commits qui ont chacun reçu les trois GO et la
+  vérification de l'arbre (§d) ; sinon, pas de push, arbitre saisi. Premier push d'une branche (pas encore de
+  `origin/<branche>`) : plage `origin/main..HEAD`, ou arbitre saisi en cas de doute.
+- Un push qui déclencherait un déploiement (workflow ajouté plus tard) reste F3, au titre du déploiement.
+- Suppression d'une branche locale dont les commits ne sont poussés nulle part : arbitre.
+- Jusqu'au lot de retouches du corps de l'arbitre (briefings, « Prochaine retouche »), chaque saisine d'audit de
+  clôture rappelle « push normal autorisé (D-REPRISE-009) » : le corps de l'agent range encore le push en F3. Ce
+  rappel est retiré quand le lot est appliqué.
 
 ## Pilotage de l'Éditeur Unity — installation obligatoire (D-REPRISE-006)
 

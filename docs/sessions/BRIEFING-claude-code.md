@@ -40,6 +40,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   `docs/sessions/<date>-etape-N-arbitrages.md` (pièce de l'audit indépendant dans Claude.ai). Une modification de
   l'agent n'est pas toujours rechargée dans la session en cours : vérifier l'empreinte de son prompt (`CLAUDE.md`
   §d) avant de s'appuyer sur son verdict.
+- **Push (D-REPRISE-009, 2026-11-03)** : push normal sur la branche de travail (branche courante de la sous-étape,
+  jamais `main`) autorisé après les trois GO et la vérification de l'arbre ; restent en F3 : merge vers `main`,
+  force-push ou réécriture d'historique, suppression de branche distante (`CLAUDE.md` §g).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **365/365** verts le 11-03 après l'ÉTAPE 19.4a (dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
@@ -220,10 +223,19 @@ prochaine retouche de `CLAUDE.md` ou du briefing ; modification d'un garde-fou �
 - `BRIEFING-claude-code.md`, pilotage de l'Éditeur : regrouper en une seule vérification de début de session de pilotage les trois clés de `EditorPipelineConfig.json` (`m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`, `m_AllowBrowserClients: false`), et dire si le réglage d'installation survit à la réécriture du fichier « à chaque session ».
 - Sur `263d3da` : le bloc des remarques sur `559f188` mêlait `CLAUDE.md` et le briefing sans dire quand le traiter — réglé par la phrase ci-dessus ; la puce « constat » de ce bloc est sortie de la liste (constat ci-dessous).
 
-Remarque de l'auditeur (revue du diff de D-REPRISE-007, 2026-11-03), reportée parce qu'elle modifie le corps de
-l'arbitre (nouveau test de réception à prévoir) : dans `.claude/agents/arbitre-strategique.md`, le contrôle du diff
-contre le dépôt ne vérifie que les lignes ajoutées ; vérifier aussi que les lignes retirées sont absentes, et exiger
-avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide (ou joindre ce diff non indexé).
+**Lot unique « retouches du corps de l'arbitre »** — décision du founder (2026-11-03, D-REPRISE-009), citée telle
+quelle : « Les remarques mineures reportées sur le texte de l'agent seront traitées en un seul lot, avec un seul
+nouveau test de réception. » Une seule retouche de `.claude/agents/arbitre-strategique.md`, revue croisée, puis un
+seul test de réception (4 cas, instantanés, empreinte vérifiée), modification d'un garde-fou → F4. Contenu du lot :
+- (a) contrôle du diff contre le dépôt limité aux lignes ajoutées : vérifier aussi que les lignes retirées sont
+  absentes, et exiger avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide, ou joindre ce diff
+  non indexé (auditeur, revue du diff de D-REPRISE-007) ;
+- (b) F3 du corps : « push, merge sur `main`, suppression de branche, réécriture d'historique non autorisés par le
+  ticket » à aligner sur `CLAUDE.md` §b-§g et D-REPRISE-009 (remarque non bloquante de l'arbitre, audits de clôture
+  du commit `8cd670c`, rapportée au founder). D'ici là, chaque saisine d'audit de clôture rappelle « push normal
+  autorisé (D-REPRISE-009) » ;
+- (c) une fois (a) et (b) appliqués et le test de réception réussi : retirer ce rappel de la consigne d'audit de
+  clôture (`CLAUDE.md` §g, D-REPRISE-009).
 
 Constat, rien à faire : D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2,
 ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` :

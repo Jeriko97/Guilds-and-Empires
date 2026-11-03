@@ -14,7 +14,9 @@ en F1), que l'arbitre ne valide pas par complaisance, et je propose au founder l
 Le founder n'est sollicité par Claude Code que pour F1 (game design et gameplay), F2 (direction artistique, textes
 affichés), F3 (actions irréversibles en production), F4 (garde-fous, skills, désaccord persistant). Dernier GO d'un
 commit = GO de Codex, de l'auditeur de diff et de l'arbitre, sur le même arbre d'index ; arbre du commit vérifié
-avant le push.
+avant le push. Push normal sur la branche de travail (jamais `main`) autorisé après ces trois GO et cette vérification
+(D-REPRISE-009) ; restent en F3 : merge vers `main`, force-push ou réécriture d'historique, suppression de branche
+distante.
 
 Rôle historique (jusqu'au 2026-11-03), pour mémoire :
 Je suis l'auditeur stratégique et le rédacteur de tickets pour
@@ -231,10 +233,19 @@ prochaine retouche de `CLAUDE.md` ou du briefing ; modification d'un garde-fou �
 - `BRIEFING-claude-code.md`, pilotage de l'Éditeur : regrouper en une seule vérification de début de session de pilotage les trois clés de `EditorPipelineConfig.json` (`m_RunInBackgroundInPlayMode: true`, `m_RunInBackgroundCommandOverride: false`, `m_AllowBrowserClients: false`), et dire si le réglage d'installation survit à la réécriture du fichier « à chaque session ».
 - Sur `263d3da` : le bloc des remarques sur `559f188` mêlait `CLAUDE.md` et le briefing sans dire quand le traiter — réglé par la phrase ci-dessus ; la puce « constat » de ce bloc est sortie de la liste (constat ci-dessous).
 
-Remarque de l'auditeur (revue du diff de D-REPRISE-007, 2026-11-03), reportée parce qu'elle modifie le corps de
-l'arbitre (nouveau test de réception à prévoir) : dans `.claude/agents/arbitre-strategique.md`, le contrôle du diff
-contre le dépôt ne vérifie que les lignes ajoutées ; vérifier aussi que les lignes retirées sont absentes, et exiger
-avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide (ou joindre ce diff non indexé).
+**Lot unique « retouches du corps de l'arbitre »** — décision du founder (2026-11-03, D-REPRISE-009), citée telle
+quelle : « Les remarques mineures reportées sur le texte de l'agent seront traitées en un seul lot, avec un seul
+nouveau test de réception. » Une seule retouche de `.claude/agents/arbitre-strategique.md`, revue croisée, puis un
+seul test de réception (4 cas, instantanés, empreinte vérifiée), modification d'un garde-fou → F4. Contenu du lot :
+- (a) contrôle du diff contre le dépôt limité aux lignes ajoutées : vérifier aussi que les lignes retirées sont
+  absentes, et exiger avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide, ou joindre ce diff
+  non indexé (auditeur, revue du diff de D-REPRISE-007) ;
+- (b) F3 du corps : « push, merge sur `main`, suppression de branche, réécriture d'historique non autorisés par le
+  ticket » à aligner sur `CLAUDE.md` §b-§g et D-REPRISE-009 (remarque non bloquante de l'arbitre, audits de clôture
+  du commit `8cd670c`, rapportée au founder). D'ici là, chaque saisine d'audit de clôture rappelle « push normal
+  autorisé (D-REPRISE-009) » ;
+- (c) une fois (a) et (b) appliqués et le test de réception réussi : retirer ce rappel de la consigne d'audit de
+  clôture (`CLAUDE.md` §g, D-REPRISE-009).
 
 Constat, rien à faire : D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2,
 ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` :
