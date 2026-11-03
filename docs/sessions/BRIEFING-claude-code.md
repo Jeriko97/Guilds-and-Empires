@@ -429,6 +429,72 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     backend préalable `fa4a88a` (imports modulaires pour l'émulateur Functions, D-ETAPE19-012, non déployé) ;
     nettoyage CS0168 fait ; TD-026 à TD-030 ouvertes ; TD-024 reportée, déclencheur reformulé ;
   - 19.4b — services et modèles, `data-loss` en tête ; 19.4c — interface ; 19.4d — panneau de maintenance ;
+  - **Diagnostic 19.4 (Tâche 0, 2026-11-03) — constats pour rédiger 19.4b à 19.4d** (lignes relevées au commit
+    `eb3b4d4` ; décisions du founder : D-ETAPE19-010) :
+    - a.1 Lancement : le serveur attend `buildingId`, `slotIndex`, `recipeId`, `cycles?`, `idempotencyKey` (UUID
+      strict, `validators.ts:125`) ; `cycles` obligatoire (1 à `maxBatchCycles`) pour planks et kits, refusé pour les
+      logs même à `null` ; réponse `building`, `inventory`, `alreadyApplied` (`startProductionSlot.ts:46`). Le client
+      n'envoie que 3 champs (`FirebaseProductionService.cs:37-42`), recette figée à `"logs"`
+      (`ProductionScreen.cs:217`), pas d'`AlreadyApplied` dans `ProductionResult`. Sans clé, tout lancement est refusé
+      (`invalid-argument`, constaté au Play 19.4a). **Écart** : après un lancement, l'inventaire renvoyé n'est pas
+      recopié dans le store (`ProductionScreen.cs:221` ; la collecte le fait, `:282-283`) : faux pour planks et kits.
+      Clé par intention : patron `PendingSales` de `MarketScreen.cs:76`, à reproduire pour le lancement et l'arrêt.
+    - a.2 Arrêt : requête `buildingId`, `slotIndex`, `idempotencyKey` ; réponse `collected`, `discarded` (tout le
+      bâtiment), `refunded`, `refundDiscarded`, `building`, `inventory`, `alreadyApplied` ; au rejeu, les quatre maps
+      sont vides. Côté client : ni méthode, ni modèle, ni bouton.
+    - a.3 Collecte : interface inchangée ; un lot se libère à la fin ; un état corrompu est refusé. **Écart** : le
+      serveur écrit `discarded[clé]` même à 0 (`shared/production.ts:159`), le client affiche « perdu (cap plein) »
+      dès que la map n'est pas vide (`ProductionScreen.cs:360`) — constaté au Play 19.4a : « Récolté : 1 logs — perdu
+      (cap plein) : 0 logs ». `collected` peut aussi valoir 0 (inventaire plein, `shared/production.ts:158`), et les
+      quatre maps de l'arrêt (`collected`, `discarded`, `refunded`, `refundDiscarded`) aussi : filtrer les entrées à 0
+      partout.
+    - a.4 État corrompu : aujourd'hui `failed-precondition` + `details.reason = "corrupt-slot"` (`corruptSlotError`,
+      `shared/production.ts:29`), à la connexion, à la collecte et à l'arrêt, jamais au lancement. Le SDK Unity 13.1
+      n'expose que `FunctionsException.ErrorCode` (pas `details`) ; `failed-precondition` couvre plusieurs autres
+      refus ; doctrine C6 : pas de lecture du texte → décision Q1 : `data-loss`. À la connexion, le client ne traite
+      pas ce code (`FirebasePlayerService.cs:77`, « Une erreur est survenue »).
+    - a.5 Recette réelle : le serveur envoie `recipeId`, `startedAt`, `lastProcessedAt`, `cyclesPlanned`,
+      `cyclesProcessed` ; le `SlotSnapshot` client n'a pas les deux compteurs ; l'écran affiche « Logs en cours »
+      quelle que soit la recette (`ProductionScreen.cs:176`) ; le client ne connaît aucune durée de recette.
+    - a.6 Intrants manquants : refus serveur « Ressources insuffisantes » / « Place insuffisante »
+      (`failed-precondition`) ; le client ne vérifie rien ; « Max » calculable pour l'affichage seulement (copie des
+      recettes, Q2, TD-027).
+    - a.7 Message de limite d'appels : « réessaie dans 2s » (`FirebaseProductionService.cs:125`) alors que la collecte
+      impose 6 s (`collectProduction.ts:30`).
+    - b. Modèles et services. À modifier : `IProductionService` / `FirebaseProductionService` (lancement avec `int?
+      cycles` et clé ; `StopProductionSlotAsync` ; erreurs classées selon l'action, dont `data-loss`) ;
+      `ProductionResult` (+ `AlreadyApplied`, par `FirebaseParsingHelpers.GetBool`) ; `SlotSnapshot` + `ParseSlot` (+
+      `int? CyclesPlanned`, `int? CyclesProcessed` : distinguer `null` (logs) de 0, `GetLong` ne le fait pas → test
+      `GetValue == null` dans `ParseSlot`, sans nouvelle primitive) ; `FirebasePlayerService` (état corrompu à la
+      connexion). À créer : `StopProductionResult` (`Services/Production`) ; copie client des recettes pour
+      l'affichage (coût, `outputQty`, borne, durée, clé d'inventaire — les ids de recette `reconstruction_kits` ne
+      sont pas les clés d'inventaire `reconstructionKits`), commentaire « à modifier avec recipes.ts » (Q2) ; registre
+      des intentions en attente (clés) ; tests EditMode des nouveaux parsings. **`ParseResourceMap`** est `private`
+      dans `CollectProductionResult.cs:58` : la DÉPLACER dans `ProductionParsingHelpers` (l'arrêt en lit 4 maps), sans
+      copie.
+    - Options A retenues (détail du rapport de la Tâche 0) : N par boutons 1 / 10 / Max, grisés au-delà de Max =
+      min(borne, intrants ÷ coût, place libre ÷ `outputQty`), aperçu (ex. « 10 planks : 20 logs, 4 h 10 ») ;
+      avertissement de saturation non bloquant si la production restante des autres slots de la même ressource + N ×
+      sortie dépasse la place libre ; arrêt : confirmation sans chiffres (« Le cycle en cours sera perdu. Les intrants
+      des cycles non commencés seront rendus dans la limite de la place libre. »), puis résumé du serveur (crédité,
+      perdu à saturation, rendu, intrants perdus), lignes à zéro masquées, rejeu → « Arrêt déjà enregistré » ; slot
+      actif : recette réelle, « lot 3/10 » estimé (`cyclesProcessed` + cycles écoulés, plafonné à `cyclesPlanned`),
+      temps restant rafraîchi ~1 s, « Lot terminé — collecter » (horloge locale, falsifiable : affichage seulement,
+      aucune action bloquée ou débloquée selon cette estimation, le serveur tranche ; mettre à jour l'en-tête de
+      `ProductionScreen.cs:20`, « aucun calcul temporel local ») ; maintenance : panneau à la place des slots, actions
+      bloquées, « Réessayer » relance la connexion, texte fixé par Q5 — ne pas écrire « l'équipe est prévenue » tant
+      que TD-021 n'est pas faite.
+    - `ProductionScreen` ne relit pas l'état serveur après son premier chargement (`_hasLoadedOnce`,
+      `ProductionScreen.cs:74,131`) : préparer les données de test avant le Play (mode d'emploi des émulateurs
+      ci-dessus).
+  - **Ordre de 19.4b** (consigne du founder à la clôture de 19.4a, citée telle quelle : « passage au code `data-loss`
+    en premier (avec le filtre TD-021), puis services et modèles » ; à inscrire au journal à la clôture de 19.4b) :
+    (1) d'abord, backend : code `data-loss` pour tout état de slot corrompu (connexion, collecte, arrêt) avec ses
+    tests, et TD-021 alignée dans la doc (son filtre d'alerte vise `data-loss`, D-ETAPE19-010 Q1 ; l'alerte elle-même
+    reste soumise à son déclencheur, « Rien à implémenter avant le déclencheur ») ; aligner les grilles des relecteurs
+    et la convention n° 8 ; (2) puis services et modèles (point b), adaptation minimale de l'écran (logs avec clé).
+    19.4c : interface (options A, store mis à jour après un lancement, entrées à 0 filtrées, message 6 s). 19.4d :
+    panneau de maintenance (Q5).
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
