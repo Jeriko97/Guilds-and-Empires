@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -92,8 +93,8 @@ export async function collectProductionHandler(
 
         // ── Calcul de production différée ─────────────────────────────────
         // `now` injecté ici (call site) — jamais dans le helper (testabilité).
-        const now = admin.firestore.Timestamp.now();
-        const createTimestamp = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
+        const now = Timestamp.now();
+        const createTimestamp = (ms: number) => Timestamp.fromMillis(ms);
 
         let processResult: ProcessBuildingResult;
         try {

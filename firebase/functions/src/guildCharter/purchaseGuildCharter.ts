@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -16,7 +17,7 @@ export type PurchaseGuildCharterRequest = CallableRequest<{
 export type PurchaseGuildCharterResponse = {
   goldSpent: number;
   newGold: number;
-  guildCharterPurchasedAt: admin.firestore.Timestamp;
+  guildCharterPurchasedAt: Timestamp;
   alreadyPurchased: boolean;
 };
 
@@ -27,7 +28,7 @@ interface GuildPurchaseDocument {
   goldSpent: number;
   favorAtPurchase: number;
   favorRankAtPurchase: FavorRank;
-  createdAt: admin.firestore.Timestamp;
+  createdAt: Timestamp;
 }
 
 // ── Handler — logique métier, testé directement sans wrapper Firebase ─────────
@@ -40,7 +41,7 @@ export async function purchaseGuildCharterHandler(
   const uid = requireAuth(request);
 
   // ── 2. Timestamp serveur — une seule fois, hors tx (V1) ──────────────────
-  const now = admin.firestore.Timestamp.now();
+  const now = Timestamp.now();
 
   // ── 3. Validation entrée (hors tx) ────────────────────────────────────────
   const { idempotencyKey } = request.data;

@@ -1,10 +1,11 @@
 import * as admin from "firebase-admin";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 
 interface RateLimitDocument {
   uid: string;
   action: string;
-  lastCalledAt: admin.firestore.Timestamp;
+  lastCalledAt: Timestamp;
 }
 
 /**
@@ -36,7 +37,7 @@ export async function checkRateLimit(
   if (snap.exists) {
     const data = snap.data() as RateLimitDocument;
     const lastCalledAt = data.lastCalledAt;
-    const now = admin.firestore.Timestamp.now();
+    const now = Timestamp.now();
 
     const elapsedMs = now.toMillis() - lastCalledAt.toMillis();
     const intervalMs = intervalSeconds * 1000;
@@ -54,6 +55,6 @@ export async function checkRateLimit(
   await ref.set({
     uid,
     action,
-    lastCalledAt: admin.firestore.FieldValue.serverTimestamp(),
+    lastCalledAt: FieldValue.serverTimestamp(),
   });
 }

@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -93,7 +94,7 @@ export async function acceptContractHandler(
       const template = templateSnap.data() as ContractPoolDocument;
 
       // ── 6. Template actif + dans la fenêtre de validité ───────────────────
-      const now = admin.firestore.Timestamp.now();
+      const now = Timestamp.now();
       const isValidWindow =
         template.isActive === true &&
         template.validFrom.toMillis() <= now.toMillis() &&
@@ -166,7 +167,7 @@ export async function acceptContractHandler(
       // ── 12. Priority : incrémenter claimed ───────────────────────────────
       if (template.tier === "priority" && eventRef !== null) {
         tx.update(eventRef, {
-          "priorityContractSlots.claimed": admin.firestore.FieldValue.increment(1),
+          "priorityContractSlots.claimed": FieldValue.increment(1),
         });
       }
 

@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -165,8 +166,8 @@ export async function stopProductionSlotHandler(
       }
 
       // 4e. Calcul partagé — `now` injecté ici (call site), jamais dans le helper (TD-007).
-      const now = admin.firestore.Timestamp.now();
-      const createTimestamp = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
+      const now = Timestamp.now();
+      const createTimestamp = (ms: number) => Timestamp.fromMillis(ms);
 
       let stop: SlotStopResult;
       try {

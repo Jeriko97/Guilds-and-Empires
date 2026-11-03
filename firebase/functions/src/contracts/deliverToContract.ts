@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -49,7 +50,7 @@ export async function deliverToContractHandler(
     return await db.runTransaction(async (tx): Promise<DeliverToContractResponse> => {
 
       // Capture timestamp avant les reads — invariant déterminisme (philosophie TD-007)
-      const now = admin.firestore.Timestamp.now();
+      const now = Timestamp.now();
 
       // ── Reads — tous avant les écritures (contrainte Firestore) ───────────
       const [playerSnap, contractSnap] = await Promise.all([

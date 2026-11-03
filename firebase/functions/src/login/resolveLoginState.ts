@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -79,13 +80,13 @@ export async function resolveLoginStateHandler(
       // ── Premier login : création du document joueur + seed Sawmill ─────
       if (!playerSnap.exists) {
         const displayName = request.auth?.token.name ?? "Marchand";
-        const now = admin.firestore.Timestamp.now();
+        const now = Timestamp.now();
 
         tx.set(playerRef, {
           schemaVersion:          CURRENT_SCHEMA_VERSION,
           displayName,
-          createdAt:              admin.firestore.FieldValue.serverTimestamp(),
-          lastLoginAt:            admin.firestore.FieldValue.serverTimestamp(),
+          createdAt:              FieldValue.serverTimestamp(),
+          lastLoginAt:            FieldValue.serverTimestamp(),
           gold:                   0,
           imperialFavor:          0,
           inventory:              INITIAL_INVENTORY,
@@ -136,8 +137,8 @@ export async function resolveLoginStateHandler(
       // Le client ne fournit aucun paramètre temporel (Doctrine Anti-Cheat).
       // startedAt n'est JAMAIS la référence de calcul après le premier traitement —
       // sinon les cycles déjà comptés seraient recomptés à chaque login.
-      const now = admin.firestore.Timestamp.now();
-      const createTimestamp = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
+      const now = Timestamp.now();
+      const createTimestamp = (ms: number) => Timestamp.fromMillis(ms);
 
       // Inventaire initial — sera chaîné à travers les buildings via processBuildingSlots.
       let inventory: InventoryState = {
@@ -182,7 +183,7 @@ export async function resolveLoginStateHandler(
       // ── Écriture atomique — inventaire + lastLoginAt ────────────────────
       tx.update(playerRef, {
         inventory,
-        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastLoginAt: FieldValue.serverTimestamp(),
       });
 
       // Le snapshot retourné approxime lastLoginAt avec now().

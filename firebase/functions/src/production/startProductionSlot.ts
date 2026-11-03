@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import type { CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
@@ -252,7 +253,7 @@ export async function startProductionSlotHandler(
       // FieldValue.serverTimestamp() est interdit dans un array Firestore.
       // Timestamp.now() est fiable côté Cloud Function (horloge serveur
       // Google synchronisée NTP, drift = microseconde). Voir TD-007.
-      const now = admin.firestore.Timestamp.now();
+      const now = Timestamp.now();
 
       const updatedSlot: ProductionSlotState = {
         ...targetSlot,

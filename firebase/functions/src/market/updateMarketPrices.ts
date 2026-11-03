@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
 import { MARKET_PRICE_BOUNDS } from "../shared/marketPrices";
@@ -11,7 +12,7 @@ type RandomFn = () => number;
 
 export async function updateMarketPricesHandler(
   random: RandomFn = Math.random,
-  now: admin.firestore.Timestamp = admin.firestore.Timestamp.now(),
+  now: Timestamp = Timestamp.now(),
 ): Promise<void> {
   const db             = admin.firestore();
   const marketStateRef = db.collection("marketState").doc("state");
