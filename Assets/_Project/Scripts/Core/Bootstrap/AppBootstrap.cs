@@ -30,6 +30,11 @@ namespace GuildsAndEmpires.Core.Bootstrap
     ///   7. AppState set to Ready or OfflineReady
     ///   8. ScreenManager.OnBootReady() called — first screen is pushed here
     ///
+    /// Editor only (ÉTAPE 19.4a, FirebaseEmulatorMode): FirebaseEmulatorMode.Begin runs before the Firebase SDK
+    /// step; with the emulator switch on, every service uses the named emulator instance, the all-or-nothing guard
+    /// runs before any Auth access or network call, sign-in uses the emulator test account, there is no limited
+    /// offline mode and Remote Config is skipped.
+    ///
     /// CancellationToken is cancelled on OnDestroy. Any async step that checks the token will
     /// stop cleanly when the app is force-quit mid-init (e.g. in the editor).
     /// </summary>
@@ -110,14 +115,25 @@ namespace GuildsAndEmpires.Core.Bootstrap
             IsOnline = Application.internetReachability != NetworkReachability.NotReachable;
             GELogger.Info("Bootstrap", $"Network: {(IsOnline ? "online" : "offline")}");
 
+#if UNITY_EDITOR
+            // Mode émulateur de l'Éditeur : interrupteur lu, puits et variables Auth posés (ou retirés) avant Firebase.
+            FirebaseEmulatorMode.Begin();
+#endif
+
             // --- Step 3: Firebase SDK ----------------------------------------------------------
             // Required. Configures Firestore offline persistence before any read/write occurs.
             var firebaseTimeout = TimeSpan.FromSeconds(_appConfig?.FirebaseInitTimeoutSeconds ?? 10f);
             var firebaseBootstrap = new FirebaseBootstrap();
             bool firebaseReady = await firebaseBootstrap.InitializeAsync(ct, firebaseTimeout);
+            var firebaseApp = firebaseBootstrap.App;
 
             if (!firebaseReady)
             {
+#if UNITY_EDITOR
+                if (FirebaseEmulatorMode.IsActive)
+                    throw new InvalidOperationException(
+                        "Mode émulateur Firebase : initialisation de Firebase échouée — pas de mode limité, démarrage interrompu.");
+#endif
                 if (IsOnline)
                 {
                     // Firebase failure while online = something is fundamentally wrong (missing config, etc.)
@@ -129,21 +145,38 @@ namespace GuildsAndEmpires.Core.Bootstrap
                 GELogger.Warning("Bootstrap", "Firebase unavailable offline — starting in limited mode.");
             }
 
+#if UNITY_EDITOR
+            // Garde tout ou rien du mode émulateur, avant tout accès à Auth et tout appel réseau.
+            if (firebaseReady && FirebaseEmulatorMode.IsActive)
+                FirebaseEmulatorMode.EnsureConfigured(firebaseApp);
+#endif
+
             // --- Step 4: Anonymous sign-in -----------------------------------------------------
             // Requis avant tout appel à resolveLoginState. Réutilise la session existante si
             // l'utilisateur s'est déjà connecté lors d'une session précédente.
             if (firebaseReady)
             {
-                var existingUser = FirebaseAuth.DefaultInstance.CurrentUser;
-                if (existingUser != null)
+#if UNITY_EDITOR
+                if (FirebaseEmulatorMode.IsActive)
                 {
-                    GELogger.Info("Bootstrap", $"Session existante — uid: {existingUser.UserId.Substring(0, 8)}…");
+                    var emulatorUser = await FirebaseEmulatorMode.SignInAsync(firebaseApp, ct);
+                    GELogger.Info("Bootstrap", $"Émulateur — compte de test connecté — uid: {emulatorUser.UserId.Substring(0, 8)}…");
                 }
                 else
+#endif
                 {
-                    var authResult = await FirebaseAuth.DefaultInstance.SignInAnonymouslyAsync();
-                    ct.ThrowIfCancellationRequested();
-                    GELogger.Info("Bootstrap", $"Connecté anonymement — uid: {authResult.User.UserId.Substring(0, 8)}…");
+                    var auth         = FirebaseAuth.GetAuth(firebaseApp);
+                    var existingUser = auth.CurrentUser;
+                    if (existingUser != null)
+                    {
+                        GELogger.Info("Bootstrap", $"Session existante — uid: {existingUser.UserId.Substring(0, 8)}…");
+                    }
+                    else
+                    {
+                        var authResult = await auth.SignInAnonymouslyAsync();
+                        ct.ThrowIfCancellationRequested();
+                        GELogger.Info("Bootstrap", $"Connecté anonymement — uid: {authResult.User.UserId.Substring(0, 8)}…");
+                    }
                 }
             }
 
@@ -152,9 +185,9 @@ namespace GuildsAndEmpires.Core.Bootstrap
             // En mode offline dégradé, les services ne sont pas disponibles.
             if (firebaseReady)
             {
-                ServiceLocator.Register<IPlayerService>(new FirebasePlayerService());
-                ServiceLocator.Register<IProductionService>(new FirebaseProductionService());
-                ServiceLocator.Register<IMarketService>(new FirebaseMarketService());
+                ServiceLocator.Register<IPlayerService>(new FirebasePlayerService(firebaseApp));
+                ServiceLocator.Register<IProductionService>(new FirebaseProductionService(firebaseApp));
+                ServiceLocator.Register<IMarketService>(new FirebaseMarketService(firebaseApp));
                 ServiceLocator.Register<PlayerEconomyStateStore>(new PlayerEconomyStateStore());
                 GELogger.Debug("Bootstrap", "App services registered.");
             }
@@ -162,7 +195,12 @@ namespace GuildsAndEmpires.Core.Bootstrap
             // --- Step 6: Remote Config ---------------------------------------------------------
             // Non-fatal. ScriptableObject defaults are pre-loaded so values are always valid.
             // Skipped when EnvironmentConfig.SkipRemoteConfig is set (editor debug override).
-            if (firebaseReady && !(_environmentConfig?.SkipRemoteConfig ?? false))
+            var skipRemoteConfig = _environmentConfig?.SkipRemoteConfig ?? false;
+#if UNITY_EDITOR
+            // Remote Config n'est pas émulé : en mode émulateur, son fetch viserait la production.
+            skipRemoteConfig |= FirebaseEmulatorMode.IsActive;
+#endif
+            if (firebaseReady && !skipRemoteConfig)
             {
                 var rcTimeout = TimeSpan.FromSeconds(_appConfig?.RemoteConfigTimeoutSeconds ?? 5f);
                 var rcBootstrap = new RemoteConfigBootstrap(_remoteConfigDefaults);

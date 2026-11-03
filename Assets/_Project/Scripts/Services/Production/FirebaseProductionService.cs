@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Firebase;
 using Firebase.Functions;
 using GuildsAndEmpires.Core.Logging;
 
@@ -18,9 +19,10 @@ namespace GuildsAndEmpires.Services.Production
     {
         private readonly FirebaseFunctions _functions;
 
-        public FirebaseProductionService()
+        /// <param name="app">Instance choisie par FirebaseBootstrap (par défaut, ou instance de l'émulateur dans l'Éditeur).</param>
+        public FirebaseProductionService(FirebaseApp app)
         {
-            _functions = FirebaseFunctions.DefaultInstance;
+            _functions = FirebaseFunctions.GetInstance(app);
         }
 
         public async Task<ProductionResult> StartProductionSlotAsync(
@@ -49,7 +51,7 @@ namespace GuildsAndEmpires.Services.Production
                 GELogger.Warning("ProductionService", $"startProductionSlot [{ex.ErrorCode}]: {ex.Message}");
                 throw new ProductionServiceException(MapErrorMessage(ex.ErrorCode), ex);
             }
-            catch (Exception ex) when (ct.IsCancellationRequested)
+            catch (Exception) when (ct.IsCancellationRequested)
             {
                 GELogger.Debug("ProductionService", "startProductionSlot — annulé.");
                 throw new OperationCanceledException(ct);
@@ -93,7 +95,7 @@ namespace GuildsAndEmpires.Services.Production
                 GELogger.Warning("ProductionService", $"collectProduction [{ex.ErrorCode}]: {ex.Message}");
                 throw new ProductionServiceException(MapErrorMessage(ex.ErrorCode), ex);
             }
-            catch (Exception ex) when (ct.IsCancellationRequested)
+            catch (Exception) when (ct.IsCancellationRequested)
             {
                 GELogger.Debug("ProductionService", "collectProduction — annulé.");
                 throw new OperationCanceledException(ct);

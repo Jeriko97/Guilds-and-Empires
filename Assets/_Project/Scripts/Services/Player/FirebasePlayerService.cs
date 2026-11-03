@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Firebase;
 using Firebase.Auth;
 using Firebase.Functions;
 using GuildsAndEmpires.Core.Logging;
@@ -16,11 +17,14 @@ namespace GuildsAndEmpires.Services.Player
     /// </summary>
     public sealed class FirebasePlayerService : IPlayerService
     {
+        private readonly FirebaseApp       _app;
         private readonly FirebaseFunctions _functions;
 
-        public FirebasePlayerService()
+        /// <param name="app">Instance choisie par FirebaseBootstrap (par défaut, ou instance de l'émulateur dans l'Éditeur).</param>
+        public FirebasePlayerService(FirebaseApp app)
         {
-            _functions = FirebaseFunctions.DefaultInstance;
+            _app       = app;
+            _functions = FirebaseFunctions.GetInstance(app);
         }
 
         public async Task<PlayerStateSnapshot> ResolveLoginStateAsync(CancellationToken ct = default)
@@ -39,7 +43,7 @@ namespace GuildsAndEmpires.Services.Player
                 GELogger.Warning("PlayerService", $"resolveLoginState [{ex.ErrorCode}]: {ex.Message}");
                 throw new PlayerServiceException(MapErrorMessage(ex.ErrorCode), ex);
             }
-            catch (Exception ex) when (ct.IsCancellationRequested)
+            catch (Exception) when (ct.IsCancellationRequested)
             {
                 GELogger.Debug("PlayerService", "resolveLoginState — annulé.");
                 throw new OperationCanceledException(ct);
@@ -49,7 +53,7 @@ namespace GuildsAndEmpires.Services.Player
 
             try
             {
-                var uid = FirebaseAuth.DefaultInstance.CurrentUser?.UserId ?? string.Empty;
+                var uid = FirebaseAuth.GetAuth(_app).CurrentUser?.UserId ?? string.Empty;
                 var snapshot = PlayerStateSnapshot.Parse(rawResult.Data, uid);
                 GELogger.Info("PlayerService", $"resolveLoginState OK — gold:{snapshot.Player.Gold} rank:{snapshot.Player.FavorRank}");
                 return snapshot;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Firebase;
 using Firebase.Firestore;
 using Firebase.Functions;
 using GuildsAndEmpires.Core.Logging;
@@ -27,10 +28,11 @@ namespace GuildsAndEmpires.Services.Market
         private MarketStateSnapshot _cache;
         private DateTime            _lastFetch = DateTime.MinValue;
 
-        public FirebaseMarketService()
+        /// <param name="app">Instance choisie par FirebaseBootstrap (par défaut, ou instance de l'émulateur dans l'Éditeur).</param>
+        public FirebaseMarketService(FirebaseApp app)
         {
-            _db        = FirebaseFirestore.DefaultInstance;
-            _functions = FirebaseFunctions.DefaultInstance;
+            _db        = FirebaseFirestore.GetInstance(app);
+            _functions = FirebaseFunctions.GetInstance(app);
         }
 
         public async Task<MarketStateSnapshot> GetMarketPricesAsync(CancellationToken ct = default)
@@ -46,7 +48,7 @@ namespace GuildsAndEmpires.Services.Market
                 snapshot = await _db.Collection("marketState").Document("state")
                                .GetSnapshotAsync(Source.Default);
             }
-            catch (Exception ex) when (ct.IsCancellationRequested)
+            catch (Exception) when (ct.IsCancellationRequested)
             {
                 GELogger.Debug("MarketService", "GetMarketPrices — annulé.");
                 throw new OperationCanceledException(ct);
@@ -110,7 +112,7 @@ namespace GuildsAndEmpires.Services.Market
                 GELogger.Warning("MarketService", $"sellToMarket [{ex.ErrorCode}]: {ex.Message}");
                 throw new MarketServiceException(MapErrorMessage(ex.ErrorCode), ex);
             }
-            catch (Exception ex) when (ct.IsCancellationRequested)
+            catch (Exception) when (ct.IsCancellationRequested)
             {
                 GELogger.Debug("MarketService", "sellToMarket — annulé.");
                 throw new OperationCanceledException(ct);
