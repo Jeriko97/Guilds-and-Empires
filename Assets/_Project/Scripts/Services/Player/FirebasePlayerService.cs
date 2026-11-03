@@ -53,8 +53,9 @@ namespace GuildsAndEmpires.Services.Player
                 throw new OperationCanceledException(ct);
             }
 
-            ct.ThrowIfCancellationRequested();
-
+            // Réponse reçue : parsée et rendue même si le jeton a été annulé pendant l'attente (19.4c-1), sans
+            // contrôle d'annulation avant le parsing. L'appelant écrit la réponse dans le store, puis abandonne ses
+            // seules écritures d'UI (doctrine C9).
             try
             {
                 var uid = FirebaseAuth.GetAuth(_app).CurrentUser?.UserId ?? string.Empty;

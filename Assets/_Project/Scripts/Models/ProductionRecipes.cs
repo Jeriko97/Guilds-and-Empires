@@ -49,8 +49,10 @@ namespace GuildsAndEmpires.Models
     /// Copie client des recettes Phase 1, pour l'AFFICHAGE seulement (D-ETAPE19-010 Q2, TD-027).
     ///
     /// À modifier avec recipes.ts (firebase/functions/src/shared/recipes.ts) : toute valeur changée côté
-    /// serveur doit l'être ici dans le même ticket. Aucun appel ni aucune validation ne s'appuie sur ces
-    /// valeurs : le serveur reste l'autorité (doctrine C1).
+    /// serveur doit l'être ici dans le même ticket. Depuis 19.4c-1 (arbitrage 1a-1f, D-ETAPE19-014), le grisage
+    /// des boutons N et la valeur envoyée par « Max » en dépendent (ProductionLaunchPlanner) : affichage et
+    /// intention du joueur seulement, doctrine C1 règle 3 (confort UX) ; le serveur revalide tout lancement et
+    /// reste l'autorité (doctrine C1).
     /// </summary>
     public static class ProductionRecipes
     {

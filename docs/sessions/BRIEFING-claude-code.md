@@ -57,8 +57,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **366/366** verts le 11-03 après l'ÉTAPE 19.4b (365 après 19.4a, dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
-- Tests client : **73/73** EditMode verts le 11-03 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9 de la garde
-  du mode émulateur, ÉTAPE 19.4a ; 18 des parsings et utilitaires de production, ÉTAPE 19.4b ;
+- Tests client : **116/116** EditMode verts le 11-03 après 19.4c-1 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9
+  de la garde du mode émulateur, ÉTAPE 19.4a ; 18 des parsings et utilitaires de production, ÉTAPE 19.4b ; 43 du
+  panneau de lancement, du registre et du store, ÉTAPE 19.4c-1 ;
   `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch),
   ou `unity command test.run --mode EditMode` dans l'Éditeur ouvert.
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
@@ -518,7 +519,15 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
   - 19.4c — interface, découpée en deux sous-étapes (D-ETAPE19-014) ; clause STOP des tickets sur les textes
     (précision de Claude Code) : la réponse F2 du founder citée dans D-ETAPE19-014, et D-REPRISE-012 :
-    - 19.4c-1 — lancement : choix de recette, N par 1 / 10 / Max, aperçu, avertissement de saturation, store mis à
+    - 19.4c-1 — **fait le 11-03** (D-ETAPE19-014 ; TD-033 ouverte). Report : la vente a le même défaut d'annulation que
+      la production avant 19.4c-1 (`FirebaseMarketService.cs:121`, `ThrowIfCancellationRequested` après `CallAsync` ;
+      écriture dans le store, `MarketScreen.cs:311`, jamais atteinte après annulation), à traiter au prochain ticket
+      qui touche le marché ; au même ticket, numéroter les ventes comme les réponses de production (depuis 19.4c-1, le
+      store sérialise le chargement, le lancement et la collecte — un seul appel à la fois, quel que soit l'écran — et
+      n'applique une réponse que si son numéro d'envoi dépasse le dernier appliqué ; une réponse de production arrivée après une vente peut encore rétablir un inventaire antérieur
+      à cette vente, jusqu'à la réponse suivante ; les ventes ne sont pas non plus sérialisées avec les appels de
+      production ; même défaut de fraîcheur que TD-034, à résoudre avec elle).
+      Contenu — lancement : choix de recette, N par 1 / 10 / Max, aperçu, avertissement de saturation, store mis à
       jour après un lancement (bâtiment et inventaire), recette réelle affichée sur un slot actif, reports de 19.4b
       sur le registre `PendingIntentKeys` (clé ancrée sur le store, purge, en-tête) et les recettes (test
       d'immuabilité) ; règle de « Lancer » et précisions 1a-1f de l'arbitrage du 11-03 (D-ETAPE19-014) ; textes 1 à
@@ -619,8 +628,15 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     `ParseOptionalInt` : un compteur présent mais non numérique donne 0, à traiter avant l'affichage « lot k/N »
     (changer le comportement numérique du parsing relève de TD-025 et D-ETAPE19-009 → décision du founder).
     19.4d : panneau de maintenance (Q5), dont le blocage de toutes les actions après un `data-loss` (en 19.4b, les
-    boutons restent actifs) ; `DebugScreenController` affiche « Erreur : » + texte Q5 (aligner ou retirer).
-  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) — garde demandée par le founder le
+    boutons restent actifs) ; `DebugScreenController` affiche « Erreur : » + texte Q5 (aligner ou retirer). Report de
+    19.4c-1 (auditeur) : depuis que `FirebasePlayerService` rend une réponse reçue malgré l'annulation, un échec de
+    parsing après annulation atteint le `catch` de `DebugScreenController` (l. ~80-83), qui écrit dans l'UI d'un écran
+    désactivé : appliquer C9 (aucune écriture d'UI après annulation) dans ce `catch`.
+  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) — signal skill proposé par l'arbitre
+    (19.4c-1, trois bloquants successifs de Codex sur l'ordre puis la fraîcheur des réponses) : la doctrine C7 ne dit
+    rien de l'ordre ni de la version des réponses ; proposition d'y ajouter « le serveur sert une version monotone de
+    l'état dans chaque réponse ; le store n'applique qu'une version strictement supérieure » (F4, doctrine ; TD-034).
+    Garde demandée par le founder le
     2026-11-03 (D-REPRISE-011) : modification de
     `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
     doctrine C6 (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`) une ligne `DataLoss` → maintenance et de
@@ -644,7 +660,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     erreur est survenue, réessaie. »), contraires à la règle de vouvoiement de D-REPRISE-012 ; skill non modifié.
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
-    `FailedPrecondition`) ; ajout de Claude Code : le même message s'affiche aussi pour un refus faute de place
+    `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
+    TD-034 (slot affiché libre, refusé occupé) ; ajout de Claude Code : le même message s'affiche aussi pour un refus faute de place
     (« Place insuffisante », même code, constat a.6 du diagnostic ci-dessus) ; (2) le message de limite d'appels
     « Trop d'actions récentes, réessaie dans 2s. » (`FirebaseProductionService.cs`, `ResourceExhausted`), avec ses
     deux changements ensemble : délai réel par action (6 s pour la collecte, constat a.7) et vouvoiement ; (3) le

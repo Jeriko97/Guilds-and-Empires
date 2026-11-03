@@ -95,3 +95,79 @@
     color: rgb(120, 160, 120);
     border-color: rgb(50, 80, 50);
 }
+
+.slot-card--selected {
+    border-color: rgb(220, 200, 140);
+    border-width: 1px;
+}
+
+/* ── Panneau de lancement (19.4c-1) ──────────────────────────────────── */
+
+.launch-panel {
+    flex-shrink: 0;
+    display: none;
+    background-color: rgb(28, 28, 38);
+    border-color: rgb(220, 200, 140);
+    border-width: 1px;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    flex-direction: column;
+}
+
+.launch-row {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.launch-choice-btn,
+.launch-action-btn {
+    flex-grow: 1;
+    background-color: rgb(40, 40, 54);
+    color: rgb(220, 220, 230);
+    border-color: rgb(70, 70, 90);
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.launch-choice-btn:disabled,
+.launch-action-btn:disabled {
+    background-color: rgb(30, 30, 38);
+    color: rgb(100, 100, 110);
+    border-color: rgb(45, 45, 55);
+}
+
+.launch-choice-btn--selected {
+    background-color: rgb(60, 100, 60);
+    color: rgb(220, 255, 220);
+    border-color: rgb(80, 140, 80);
+    -unity-font-style: bold;
+}
+
+.launch-action-btn--primary {
+    background-color: rgb(60, 100, 60);
+    color: rgb(220, 255, 220);
+    border-color: rgb(80, 140, 80);
+    -unity-font-style: bold;
+}
+
+.launch-action-btn--primary:disabled {
+    background-color: rgb(40, 60, 40);
+    color: rgb(120, 160, 120);
+    border-color: rgb(50, 80, 50);
+}
+
+.launch-preview {
+    font-size: 14px;
+    color: rgb(220, 220, 230);
+    margin-bottom: 8px;
+}
+
+.launch-warning {
+    font-size: 13px;
+    color: rgb(255, 190, 90);
+    white-space: normal;
+    margin-bottom: 8px;
+}

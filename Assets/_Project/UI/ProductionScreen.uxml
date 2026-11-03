@@ -5,6 +5,25 @@
         <ui:Label name="status-label" text="Chargement…" class="status status--loading" />
         <ui:Label name="economy-label" text="Or : —" class="economy" />
         <ui:ScrollView name="slots-container" class="slots-container" />
+        <!-- Panneau de lancement (19.4c-1) : textes posés par ProductionScreen depuis PlayerMessages. -->
+        <ui:VisualElement name="launch-panel" class="launch-panel">
+            <ui:VisualElement name="recipe-row" class="launch-row">
+                <ui:Button name="recipe-logs-button" class="launch-choice-btn" />
+                <ui:Button name="recipe-planks-button" class="launch-choice-btn" />
+                <ui:Button name="recipe-kits-button" class="launch-choice-btn" />
+            </ui:VisualElement>
+            <ui:VisualElement name="cycles-row" class="launch-row">
+                <ui:Button name="cycles-one-button" class="launch-choice-btn" />
+                <ui:Button name="cycles-ten-button" class="launch-choice-btn" />
+                <ui:Button name="cycles-max-button" class="launch-choice-btn" />
+            </ui:VisualElement>
+            <ui:Label name="preview-label" class="launch-preview" />
+            <ui:Label name="saturation-label" class="launch-warning" />
+            <ui:VisualElement name="action-row" class="launch-row">
+                <ui:Button name="launch-button" class="launch-action-btn launch-action-btn--primary" />
+                <ui:Button name="cancel-button" class="launch-action-btn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:Button name="collect-button" text="Collecter" class="collect-button" />
         <ui:Button name="market-button" text="Marché" class="market-button" />
     </ui:VisualElement>

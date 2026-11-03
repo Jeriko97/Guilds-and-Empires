@@ -15,6 +15,8 @@ namespace GuildsAndEmpires.Services.Production
     /// Seule classe à importer Firebase.Functions dans cette couche — doctrine C3.
     /// Tous les callers passent par IProductionService ; aucun écran ne connaît FirebaseFunctions.
     /// Structure calquée sur FirebasePlayerService (GetHttpsCallable → CallAsync → parse → exceptions).
+    /// Annulation : CallAsync ne reçoit pas le jeton. Une erreur d'attente survenue après annulation devient une
+    /// OperationCanceledException (aucune réponse reçue) ; une réponse reçue est toujours parsée et rendue (19.4c-1).
     /// </summary>
     public sealed class FirebaseProductionService : IProductionService
     {
@@ -63,8 +65,9 @@ namespace GuildsAndEmpires.Services.Production
                 throw new OperationCanceledException(ct);
             }
 
-            ct.ThrowIfCancellationRequested();
-
+            // Réponse reçue : parsée et rendue même si le jeton a été annulé pendant l'attente (19.4c-1), sans
+            // contrôle d'annulation avant le parsing. L'appelant écrit la réponse dans le store, puis abandonne ses
+            // seules écritures d'UI (doctrine C9).
             try
             {
                 // buildingId injecté car BuildingDocument ne contient pas l'id Firestore (D-ETAPE16-004).
@@ -107,8 +110,9 @@ namespace GuildsAndEmpires.Services.Production
                 throw new OperationCanceledException(ct);
             }
 
-            ct.ThrowIfCancellationRequested();
-
+            // Réponse reçue : parsée et rendue même si le jeton a été annulé pendant l'attente (19.4c-1), sans
+            // contrôle d'annulation avant le parsing. L'appelant écrit la réponse dans le store, puis abandonne ses
+            // seules écritures d'UI (doctrine C9).
             try
             {
                 var result = CollectProductionResult.Parse(rawResult.Data, buildingId);
@@ -154,8 +158,9 @@ namespace GuildsAndEmpires.Services.Production
                 throw new OperationCanceledException(ct);
             }
 
-            ct.ThrowIfCancellationRequested();
-
+            // Réponse reçue : parsée et rendue même si le jeton a été annulé pendant l'attente (19.4c-1), sans
+            // contrôle d'annulation avant le parsing. L'appelant écrit la réponse dans le store, puis abandonne ses
+            // seules écritures d'UI (doctrine C9).
             try
             {
                 var result = StopProductionResult.Parse(rawResult.Data, buildingId);

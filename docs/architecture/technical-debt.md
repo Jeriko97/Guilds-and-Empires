@@ -861,6 +861,8 @@ tout testeur externe. »
 **Impact :**
 Une valeur de recette modifiée côté serveur seulement fausserait l'affichage (durée, intrants, Max) sans changer ce
 que le serveur applique.
+Annotation 19.4c-1 (D-ETAPE19-014) : le grisage des boutons N et la valeur envoyée par « Max » dépendent désormais de
+la copie client (affichage et intention du joueur seulement ; le serveur revalide N et refuse en `failed-precondition`).
 
 **Résolution :**
 Le serveur envoie les recettes à la connexion (`resolveLoginState`) ; la copie client disparaît.
@@ -1004,6 +1006,67 @@ Lot unique de retouches : étendre le filtre de lecture à l'auditeur (modificat
 règle (d) de D-REPRISE-010 une fois appliquée, sinon F4) ; ou toute lecture d'une sortie Codex constatée. Pour Codex
 (processus lancé hors Claude Code, que le hook ne couvre pas), pas de résolution prévue : le contrôle de son journal
 reste la seule mesure.
+
+---
+
+### TD-033 — Textes affichés au tutoiement, contraires à D-REPRISE-012
+
+**Identifié :** 2026-11-03 (proposition de l'arbitre, audit de clôture de `8e8fa57`)
+**Criticité actuelle :** MOYENNE (aucun joueur ne voit ces textes avant le déploiement de 19.5)
+**Composant :** client Unity — phrases encore tutoyées, relevées par l'arbitre (lignes relevées avant 19.4c-1) :
+`Services/Production/FirebaseProductionService.cs` (`MapErrorMessage`), `Services/Market/FirebaseMarketService.cs`
+(l. 145-146), `Services/Player/FirebasePlayerService.cs` (mapping des erreurs de `resolveLoginState`),
+`UI/DebugScreenController.cs` (l. 88), `UI/Screens/ProductionScreen.cs`, `UI/Screens/MarketScreen.cs` ; table de la
+doctrine C6 (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`, l. 175-177, F4).
+
+**Description :**
+Règle du founder (D-REPRISE-012), citée telle quelle : « Le vouvoiement est la règle pour tous les textes affichés au
+joueur. » Plusieurs phrases existantes sont au tutoiement ; les reformuler relève de F2 (phrases).
+
+**Impact :**
+Texte contraire à la règle du founder s'il atteint un joueur.
+
+**Résolution :**
+Lot de textes F2 formulé par l'arbitre, conversion après la réponse du founder (briefing Claude Code, prochain lot
+de textes).
+
+**Trigger de résolution :**
+Avant le déploiement de 19.5 et avant tout testeur externe.
+
+---
+
+### TD-034 — Fraîcheur de l'état client après un résultat indéterminé
+
+**Identifié :** 2026-11-03 (arbitrage de l'arbitre, bloquant de Codex en revue du diff de 19.4c-1, D-ETAPE19-014)
+**Criticité actuelle :** MOYENNE (affichage seulement : le serveur reste autoritaire)
+**Composant :** client (`State/PlayerEconomyStateStore.cs`, `UI/Screens/ProductionScreen.cs`, `UI/Screens/MarketScreen.cs`)
+et backend (réponses de `resolveLoginState`, `startProductionSlot`, `collectProduction`, `stopProductionSlot`,
+`sellToMarket`)
+
+**Description :**
+Depuis 19.4c-1, le store sérialise le chargement, le lancement et la collecte (un seul appel à la fois, quel que soit
+l'écran) et n'applique une réponse que si son numéro d'envoi dépasse le dernier appliqué. La sérialisation est levée à
+toute erreur, y compris réseau ou délai dépassé (`internal`, `unknown`) : un appel A sans réponse exploitable peut muter
+le serveur après l'envoi et la réponse d'un appel B ; le store reste périmé jusqu'à la réponse suivante (réessai avec la
+même clé → `alreadyApplied`, collecte idempotente, chargement). Changer d'action sur le slot concerné donne alors un
+refus `failed-precondition` sans rafraîchissement (message « Action impossible : vérifiez l'état du slot. », au lot de
+textes F2). Les ventes du marché ne sont ni sérialisées ni numérotées avec la production : une réponse de production
+arrivée après une vente peut rétablir un inventaire antérieur à cette vente (report du briefing, 19.4c-1). Avec la
+sérialisation inter-écrans, un appel qui ne revient jamais bloque toutes les actions de production jusqu'au
+redémarrage : aucun délai n'est fixé dans le code (`GetHttpsCallable` sans options), le délai par défaut effectif de
+`CallAsync` (SDK Unity 13.1) n'est pas vérifié.
+
+**Impact :**
+Affichage (bâtiment, inventaire) en retard ; aucune valeur économique faussée (serveur autoritaire, idempotence).
+
+**Résolution :**
+Version monotone de l'état du joueur servie par le backend dans chaque réponse ; le store n'applique qu'une version
+strictement supérieure, ventes comprises. À défaut, mesure transitoire : relecture `resolveLoginState` sérialisée après
+un résultat indéterminé. Vérifier et consigner le délai par défaut de `CallAsync` et l'effet d'un appel sans retour.
+
+**Trigger de résolution :**
+Premier ticket backend qui modifie la réponse d'une CF de production ou du marché (TD-024 en est un candidat
+naturel), et au plus tard avant tout testeur externe (réseaux mobiles : délais fréquents).
 
 ---
 
