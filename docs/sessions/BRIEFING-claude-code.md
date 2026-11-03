@@ -26,9 +26,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   sur les erreurs des CF planifiées, prérequis du déploiement de `processWorldEventLifecycle`.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
-- Tests : **347/347** verts le 11-02 après l'ÉTAPE 19.2b (318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
-- Tests client : **46/46** EditMode verts le 11-02 (ÉTAPE 19.3, caractérisation du parsing,
-  `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch).
+- Tests : **365/365** verts le 11-03 après l'ÉTAPE 19.4a (dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
+- Tests client : **55/55** EditMode verts le 11-03 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9 de la garde
+  du mode émulateur, ÉTAPE 19.4a ; `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch).
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
 
 ### Pilotage de l'Éditeur Unity (D-REPRISE-001) — l'agent câble et valide lui-même
@@ -56,6 +56,43 @@ La direction artistique reste au founder.
   le paquet le réécrit à chaque session. Vérifier à la main que `m_AllowBrowserClients` reste `false`.
 - Tester une CF contre la production avec des appels « à échec voulu » est refusé par le garde-fou
   de l'agent (vu en 18.2b-2) : prévoir ces tests sur l'émulateur.
+
+### Jouer le client sur les émulateurs (ÉTAPE 19.4a, D-ETAPE19-011) — mode d'emploi
+
+Éditeur Windows seulement ; aucun code émulateur dans un build. Zéro appel en production : instance nommée
+`gae-emulator` (projet `demo-guilds-empires`, clés factices), sorties HTTPS/gRPC de Firebase envoyées dans un puits
+local (`127.0.0.1:18999`), garde tout ou rien avant tout appel.
+1. **Émulateurs** (depuis `firebase/`) : `npm --prefix functions run build`, puis
+   `firebase emulators:start --only functions,firestore,auth --project demo-guilds-empires`. Ils tournent sous
+   `demo-guilds-empires` : le préfixe `demo-` interdit tout accès à la production.
+2. **Marché** : `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm --prefix functions run seed:market -- --project
+   demo-guilds-empires` (essai à blanc : vérifier « (emulator) »), puis la même commande avec `--apply`.
+   `npm run test:emulator` utilise les mêmes émulateurs et modifie leurs données : avant un Play de preuve, purger
+   Firestore de l'émulateur (`DELETE http://127.0.0.1:8080/emulator/v1/projects/demo-guilds-empires/databases/(default)/documents`)
+   et re-seeder.
+3. **Activer l'interrupteur** : menu « GuildsAndEmpires/Firebase/Utiliser les émulateurs » (coché, hors Play ;
+   `EditorPrefs` `GAE.Firebase.UseEmulators`, propre au poste). Une session de l'Éditeur = un seul environnement :
+   après un Play en production (ou une lecture de la session de production), fermer et rouvrir l'Éditeur avant un
+   Play émulateur, et inversement ; sinon le démarrage est refusé (« Redémarrer l'Éditeur »).
+4. **Play** sur `Boot.unity` : la console affiche « Mode émulateur actif — instance « gae-emulator » … » ; le compte
+   de test de l'émulateur est créé au besoin et connecté à chaque Play. Play émulateur ≤ 1 h (TD-029 : le jeton ne
+   se renouvelle pas).
+5. **Données de test** : `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm --prefix functions run emulator:testdata --
+   --project demo-guilds-empires <commande>` : `set-inventory [--logs N] [--planks N] [--kits N]`,
+   `start-logs-slot --slot S`, `rewind-slot --slot S --minutes M`, `corrupt-slot --slot S` (`--uid U` s'il y a
+   plusieurs joueurs, `--building B` par défaut `sawmill_0`). `ProductionScreen` ne relit pas l'état serveur après
+   son chargement : préparer le slot avant la Play (`start-logs-slot`), reculer le temps pendant (`rewind-slot`).
+6. **Revenir à la production** : décocher « GuildsAndEmpires/Firebase/Utiliser les émulateurs » (hors Play), fermer
+   et rouvrir l'Éditeur, puis Play. Interrupteur absent ou décoché = production, comportement inchangé.
+7. **Test de la garde** : `EditorPrefs` `GAE.Firebase.GuardTestSkip` = `auth` | `proxy` | `firestore` | `functions`
+   saute ce réglage ; le démarrage doit s'arrêter avant tout appel. `firestore` en première Play d'une session neuve
+   de l'Éditeur. Retirer par le menu « GuildsAndEmpires/Firebase/Retirer le test de la garde ».
+8. **Puits et preuves** : en usage normal rien n'écoute sur 18999 (connexion refusée = sortie bloquée). Pour une
+   preuve, y faire écouter un journaliseur qui répond 403 sans rien relayer. **Règle écrite (founder, 2026-11-03)** :
+   « lire la session de production réveille le SDK et provoque un renouvellement de jeton vers
+   securetoken.googleapis.com ; toute lecture de preuve se fait puits actif ». « **Puits réseau actif** pendant tout
+   Play qui sert de preuve, et pour toute lecture de la session de production. » Pendant une session émulateur, le
+   puits bloque aussi la télémétrie de l'Éditeur (`*.unity3d.com`) jusqu'au redémarrage de l'Éditeur.
 
 ### Déploiement des CF
 
@@ -183,7 +220,8 @@ journal attribuée au founder, jamais à un texte de spec rédigé par un agent.
 
 - `ServiceLocator` (static) — Register/Resolve/TryResolve
 - `MainThreadDispatcher` — ConcurrentQueue<Action> drainé dans Update
-- `FirebaseBootstrap` — CheckAndFixDependencies + PersistenceEnabled = true
+- `FirebaseBootstrap` — CheckAndFixDependencies + PersistenceEnabled = true ; expose l'instance choisie (`App` :
+  instance par défaut, ou `gae-emulator` dans l'Éditeur en mode émulateur, D-ETAPE19-011), passée aux services
 - `AppBootstrap` — pipeline 7 steps (Firebase + anon auth + services + ScreenManager.SetRoot)
   Step 5 : enregistre `IPlayerService` + `IProductionService`. Step 7 : `ScreenManager.SetRoot(_productionScreen)`.
 - `IPlayerService` + `FirebasePlayerService` — appel resolveLoginState, parsing, C6
@@ -266,6 +304,8 @@ Lire en priorité au démarrage :
 
 8. HttpsError typé : unauthenticated, resource-exhausted,
    invalid-argument, failed-precondition, not-found, internal.
+   Complétée à partir de 19.4b par D-ETAPE19-010 (Q1, décision du founder) : `data-loss` pour un état de slot
+   corrompu.
 
 9. Helper computeFavorRank disponible dans shared/favorRank.ts
    (seuils 50/200/350). À utiliser pour tout recalcul de favorRank
@@ -375,11 +415,20 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   → `failed-precondition` ; les messages « introuvable » recopient encore l'identifiant reçu (≤ 128 octets),
   correction reportée (D-ETAPE19-007, annotation 19.3) ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
-  parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService`. État de slot corrompu
-  (`failed-precondition`, `details.reason = "corrupt-slot"`, à la connexion, à la collecte ou à l'arrêt) :
-  l'écran affiche « compte en maintenance », pas le texte technique (ticket 19.2b du founder). Résultat de
-  l'arrêt : `collected` et `discarded` couvrent tout le bâtiment, affichés comme une collecte, et
-  `refundDiscarded` (intrants perdus au plafond) est affiché (D-ETAPE19-007) ;
+  parallèle affiché). Diagnostic validé le 11-03 (D-ETAPE19-010) : options A (N par 1 / 10 / Max, arrêt confirmé
+  sans chiffres puis résumé tiré de la réponse du serveur, panneau de maintenance qui bloque toutes les actions).
+  État de slot corrompu (à la connexion, à la collecte ou à l'arrêt) : code `data-loss` à partir de 19.4b, au lieu
+  de `failed-precondition` (décision du founder, Q1) ; l'écran affiche « compte en maintenance », pas le texte
+  technique (ticket 19.2b du founder). Résultat de l'arrêt : `collected` et `discarded` couvrent tout le bâtiment,
+  affichés comme une collecte, et `refundDiscarded` (intrants perdus au plafond) est affiché (D-ETAPE19-007).
+  Découpage :
+  - 19.4a — outillage émulateur du client — fait le 11-03 (D-ETAPE19-011) : Play sur les émulateurs, aucun appel
+    en production pendant les Plays (toute tentative bloquée par le puits ; une lecture de l'uid de production faite
+    sans puits avant les Plays a très probablement renouvelé le jeton du compte de production : correction inscrite
+    dans D-ETAPE19-011) ; mode d'emploi : briefing Claude Code, « Jouer le client sur les émulateurs » ; correctif
+    backend préalable `fa4a88a` (imports modulaires pour l'émulateur Functions, D-ETAPE19-012, non déployé) ;
+    nettoyage CS0168 fait ; TD-026 à TD-030 ouvertes ; TD-024 reportée, déclencheur reformulé ;
+  - 19.4b — services et modèles, `data-loss` en tête ; 19.4c — interface ; 19.4d — panneau de maintenance ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

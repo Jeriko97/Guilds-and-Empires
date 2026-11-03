@@ -255,11 +255,20 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   → `failed-precondition` ; les messages « introuvable » recopient encore l'identifiant reçu (≤ 128 octets),
   correction reportée (D-ETAPE19-007, annotation 19.3) ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
-  parallèle affiché), plus le nettoyage CS0168 de `FirebaseProductionService`. État de slot corrompu
-  (`failed-precondition`, `details.reason = "corrupt-slot"`, à la connexion, à la collecte ou à l'arrêt) :
-  l'écran affiche « compte en maintenance », pas le texte technique (ticket 19.2b du founder). Résultat de
-  l'arrêt : `collected` et `discarded` couvrent tout le bâtiment, affichés comme une collecte, et
-  `refundDiscarded` (intrants perdus au plafond) est affiché (D-ETAPE19-007) ;
+  parallèle affiché). Diagnostic validé le 11-03 (D-ETAPE19-010) : options A (N par 1 / 10 / Max, arrêt confirmé
+  sans chiffres puis résumé tiré de la réponse du serveur, panneau de maintenance qui bloque toutes les actions).
+  État de slot corrompu (à la connexion, à la collecte ou à l'arrêt) : code `data-loss` à partir de 19.4b, au lieu
+  de `failed-precondition` (décision du founder, Q1) ; l'écran affiche « compte en maintenance », pas le texte
+  technique (ticket 19.2b du founder). Résultat de l'arrêt : `collected` et `discarded` couvrent tout le bâtiment,
+  affichés comme une collecte, et `refundDiscarded` (intrants perdus au plafond) est affiché (D-ETAPE19-007).
+  Découpage :
+  - 19.4a — outillage émulateur du client — fait le 11-03 (D-ETAPE19-011) : Play sur les émulateurs, aucun appel
+    en production pendant les Plays (toute tentative bloquée par le puits ; une lecture de l'uid de production faite
+    sans puits avant les Plays a très probablement renouvelé le jeton du compte de production : correction inscrite
+    dans D-ETAPE19-011) ; mode d'emploi : briefing Claude Code, « Jouer le client sur les émulateurs » ; correctif
+    backend préalable `fa4a88a` (imports modulaires pour l'émulateur Functions, D-ETAPE19-012, non déployé) ;
+    nettoyage CS0168 fait ; TD-026 à TD-030 ouvertes ; TD-024 reportée, déclencheur reformulé ;
+  - 19.4b — services et modèles, `data-loss` en tête ; 19.4c — interface ; 19.4d — panneau de maintenance ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

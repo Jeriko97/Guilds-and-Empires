@@ -674,7 +674,8 @@ déployée)
 **Composant :** Cloud Functions planifiées : `updateMarketPrices` (toutes les 5 min), puis
 `processWorldEventLifecycle` (à créer, toutes les 10 min) ; depuis le 2026-11-02 (D-ETAPE19-008), erreurs « slot
 corrompu » (`failed-precondition`, `details.reason = "corrupt-slot"`) journalisées par `resolveLoginState`,
-`collectProduction` et `stopProductionSlot`
+`collectProduction` et `stopProductionSlot` ; à partir de 19.4b, ces erreurs portent le code `data-loss`
+(D-ETAPE19-010, Q1)
 
 **Description :**
 Ces fonctions échouent de façon explicite (erreur levée : D-ETAPE14c, D-TD018-001, TD-020), mais personne n'est
@@ -685,6 +686,12 @@ Extension, décision du founder (ticket 19.2b, 2026-11-02), citée telle quelle 
 "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à l'arrêt), prérequis du
 déploiement 19.5. » Un état de slot corrompu (D-ETAPE19-006) bloque la connexion, la collecte et l'arrêt du compte
 touché ; il n'est visible que dans les journaux.
+
+Code de ces erreurs, décision du founder (diagnostic 19.4, 2026-11-03, Q1), citée telle quelle : « l'état corrompu
+est signalé par le code **`data-loss`** (et non plus `failed-precondition`). C'est une révision explicite de la règle
+19.2b (cas 5), proposée par l'auditeur et validée par le founder : le SDK Unity 13.1 n'expose pas `details`, et la
+convention du projet est « HttpsError typé selon le cas ». Le filtre d'alerte de TD-021 vise ce code. Implémentation
+en tête de 19.4b, pas maintenant. » L'alerte « slot corrompu » filtre donc sur `data-loss`.
 
 **Impact :**
 Une erreur répétée à chaque passage peut durer sans que personne le sache : prix figés ou events bloqués pour tous
@@ -769,7 +776,13 @@ Aucun pour le client actuel, qui envoie des UUID. Un appel direct avec une clé 
 Appliquer `requireValidIdempotencyKey` à ces quatre fonctions, avec les tests émulateur correspondants.
 
 **Trigger de résolution :**
-Prochain ticket qui touche l'une de ces fonctions, au plus tard avant tout testeur externe (ticket 19.3 du founder).
+~~Prochain ticket qui touche l'une de ces fonctions, au plus tard avant tout testeur externe (ticket 19.3 du founder).~~
+Reformulé par décision du founder (escalade 19.4a-fix, 2026-11-03, D-ETAPE19-012), cité tel quel : « prochain
+ticket qui modifie la **logique** de l'une de ces fonctions (validation, effets, réponse) ; un changement d'imports
+ou de forme ne le déclenche pas ». L'échéance « au plus tard avant tout testeur externe » est inchangée.
+Attribution : l'auditeur Claude.ai reconnaît que la formulation d'origine était ambiguë ; la reformulation est
+validée par le founder. Report acté : le correctif d'imports `fa4a88a` touche ces quatre fichiers sans en modifier
+la logique.
 
 ---
 
@@ -799,6 +812,140 @@ correction les modifie explicitement.
 
 **Trigger de résolution :**
 Avant tout testeur externe.
+
+---
+
+### TD-026 — Boucle de dépendances Models ↔ Services.Production ; ligne d'accès des tests liée au nom d'assembly
+
+**Identifié :** 2026-11-03 (diagnostic 19.4, Tâche 0 ; inscrite par décision du founder)
+**Criticité actuelle :** FAIBLE (une seule assembly client aujourd'hui : la boucle compile)
+**Composant :** `Assets/_Project/Scripts/Models/PlayerStateSnapshot.cs:120` (appelle
+`ProductionParsingHelpers.ParseBuilding`), `Services/Production/ProductionParsingHelpers.cs:31-32` (appelle
+`PlayerStateSnapshot.ParseTimestampMs`, `PlayerStateSnapshot.cs:153`) ;
+`Core/FirebaseParsingHelpers.cs:4` (`[assembly: InternalsVisibleTo("Assembly-CSharp-Editor")]`)
+
+**Description :**
+Le modèle `PlayerStateSnapshot` dépend de `Services.Production`, qui dépend en retour du modèle : boucle de
+dépendances entre couches. La ligne `InternalsVisibleTo("Assembly-CSharp-Editor")` (D-ETAPE19-009) dépend du nom de
+l'assembly par défaut d'Unity ; depuis 19.4a, elle sert aussi au menu et aux tests de la garde de l'émulateur
+(`FirebaseEmulatorMode.FindUnconfigured`, interne).
+
+**Impact :**
+Aucun tant que tout le client est dans `Assembly-CSharp`. Un découpage en assemblies (`.asmdef`) casserait la
+compilation (boucle interdite entre assemblies) et l'accès des tests aux fonctions internes.
+
+**Résolution :**
+Sortir `ParseTimestampMs` vers `Core/FirebaseParsingHelpers` (ou inverser la dépendance), et nommer l'assembly des
+tests dans `InternalsVisibleTo`.
+
+**Trigger de résolution :**
+Tout découpage du client en assemblies (texte du founder).
+
+---
+
+### TD-027 — Recettes dupliquées entre client et serveur
+
+**Identifié :** 2026-11-03 (diagnostic 19.4, décision Q2 du founder, D-ETAPE19-010)
+**Criticité actuelle :** FAIBLE (affichage seulement : le serveur reste autoritaire)
+**Composant :** `firebase/functions/src/shared/recipes.ts` ; copie client prévue en 19.4b (affichage du choix de
+recette et de Max)
+
+**Description :**
+Décision du founder, citée telle quelle : « **Q2** : recettes recopiées côté client pour l'affichage seulement, avec
+un commentaire « à modifier avec recipes.ts ». **TD-027** : recettes dupliquées entre client et serveur. Résolution :
+le serveur les envoie à la connexion. Déclencheur : première modification d'une valeur de recette, au plus tard avant
+tout testeur externe. »
+
+**Impact :**
+Une valeur de recette modifiée côté serveur seulement fausserait l'affichage (durée, intrants, Max) sans changer ce
+que le serveur applique.
+
+**Résolution :**
+Le serveur envoie les recettes à la connexion (`resolveLoginState`) ; la copie client disparaît.
+
+**Trigger de résolution :**
+Première modification d'une valeur de recette, au plus tard avant tout testeur externe.
+
+---
+
+### TD-028 — Remote Config branché sur aucun asset
+
+**Identifié :** 2026-11-03 (diagnostic 19.4, Tâche 0 ; inscrite par décision du founder)
+**Criticité actuelle :** FAIBLE (aucun code ne lit Remote Config)
+**Composant :** `Assets/_Project/Scenes/Boot.unity:171` (`_remoteConfigDefaults: {fileID: 0}`),
+`Services/Firebase/RemoteConfigBootstrap.cs:66`, étape 6 de `Core/Bootstrap/AppBootstrap.cs`
+
+**Description :**
+Texte du founder, cité tel quel : « RemoteConfig branché sur aucun asset (`_remoteConfigDefaults` à {fileID: 0}), qui
+lève une NullReferenceException au démarrage avec un message « Fetch failed » trompeur, alors qu'aucun code ne lit
+Remote Config. » Depuis 19.4a, l'étape 6 est sautée en mode émulateur (Remote Config n'est pas émulé : son fetch
+viserait la production).
+
+**Impact :**
+Un avertissement trompeur à chaque démarrage en production ; un appel réseau inutile.
+
+**Résolution :**
+Retirer le service ou le brancher (texte du founder).
+
+**Trigger de résolution :**
+Avant tout testeur externe.
+
+---
+
+### TD-029 — SDK Firebase de bureau 13.1 : renouvellement du jeton codé en dur vers la production
+
+**Identifié :** 2026-11-03 (ÉTAPE 19.4a, vérifié dans l'Éditeur, D-ETAPE19-011)
+**Criticité actuelle :** FAIBLE (contourné par le puits ; Éditeur seulement)
+**Composant :** SDK Firebase Unity 13.1 (bureau, Windows) ; `Services/Firebase/FirebaseEmulatorMode.cs`
+
+**Description :**
+Avec `USE_AUTH_EMULATOR`, la création de compte et la connexion vont bien à l'émulateur Auth, mais le
+renouvellement du jeton vise toujours `securetoken.googleapis.com` (production), quelle que soit la configuration :
+défaut corrigé par la PR #1937 du SDK C++ Firebase (fusionnée le 2026-10-19), absente de la 13.1. Constaté : au
+démarrage de chaque Play qui retrouve une session émulateur enregistrée, et à chaque renouvellement forcé, le SDK
+tente `CONNECT securetoken.googleapis.com:443` ; le puits (`https_proxy` = 127.0.0.1:18999) le bloque à chaque fois.
+Même comportement pour la session de production : la lire réveille le SDK et provoque un renouvellement de jeton.
+Règle écrite du founder, citée telle quelle : « lire la session de production réveille le SDK et provoque un
+renouvellement de jeton vers securetoken.googleapis.com ; toute lecture de preuve se fait puits actif ».
+
+**Impact :**
+Une Play émulateur de plus d'une heure perd son jeton (renouvellement bloqué) : appels refusés, relancer la Play
+(la connexion par e-mail de chaque Play redonne un jeton neuf). Sans le puits, ces renouvellements partiraient vers
+la production.
+
+**Résolution :**
+Mettre à jour le SDK vers une version qui contient la correction, puis revérifier le mode émulateur.
+
+**Trigger de résolution :**
+Prochaine mise à jour du SDK Firebase, ou besoin d'une Play émulateur de plus d'une heure.
+
+---
+
+### TD-030 — Forme `admin.firestore.Timestamp` / `FieldValue` incompatible avec l'émulateur Functions, sans garde-fou
+
+**Identifié :** 2026-11-03 (ÉTAPE 19.4a-fix, remarques des deux relecteurs, D-ETAPE19-012)
+**Criticité actuelle :** FAIBLE (les CF actuelles sont corrigées : `fa4a88a`)
+**Composant :** `firebase/functions/src/**` (hors `__test__`, `seed`, `dev`) ; texte de la convention TD-007
+(`docs/architecture/technical-debt.md`, qui prescrit encore `admin.firestore.Timestamp.now()` /
+`admin.firestore.FieldValue.serverTimestamp()`)
+
+**Description :**
+Dans l'émulateur Functions (firebase-tools 15.17.0), `admin.firestore.Timestamp` et `admin.firestore.FieldValue`
+valent `undefined` (D-ETAPE19-012) : la forme modulaire (`import { Timestamp, FieldValue } from
+"firebase-admin/firestore"`) est la seule qui fonctionne partout. Rien n'empêche une nouvelle CF de réintroduire
+l'ancienne forme, que le texte de TD-007 cite encore ; les tests jest ne la détectent pas (elle fonctionne hors
+émulateur). Modifier le texte d'une convention verrouillée relève de l'escalade (cas 5).
+
+**Impact :**
+Une CF écrite selon le texte de TD-007 passerait les tests et le déploiement, mais échouerait en `internal` dans
+l'émulateur Functions.
+
+**Résolution :**
+Règle ESLint (`no-restricted-syntax` sur `admin.firestore.Timestamp|FieldValue` dans le code des CF) ; actualiser le
+texte de TD-007 sur décision du founder.
+
+**Trigger de résolution :**
+Prochain ticket qui crée une Cloud Function.
 
 ---
 
