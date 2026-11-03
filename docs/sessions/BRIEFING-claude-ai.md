@@ -42,6 +42,8 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Decisions log pour les choix stratégiques tranchés
 - Pattern handler/wrapper + types Request/Response (TD-005)
 - Tests d'intégration contre Firebase Emulator
+- Sessions (D-REPRISE-011) : la session principale de Claude Code orchestre, un sous-agent exécutant neuf implémente
+  chaque sous-étape ; une session principale par étape (`CLAUDE.md` §h)
 
 ## Reprise du 2026-11-01 — à lire en premier
 
@@ -254,6 +256,19 @@ modification d'un garde-fou → F4. Contenu du lot :
   (`CLAUDE.md` §b) ; d'ici là, `CLAUDE.md` §b reste la règle (modification d'un garde-fou → F4). Touche aussi
   `CLAUDE.md` §b (garde-fous) et §f (résumé d'arbitrages d'étape, rubrique « garde-fous resserrés »), en plus du corps
   de l'arbitre. Portée du test de réception pour (d) : à fixer au ticket du lot.
+- (e) points à reprendre au ticket du lot (remarques de l'arbitre, audit de clôture de D-REPRISE-010) : titre de
+  D-REPRISE-009 à préciser « (4 précisions, voir D-REPRISE-010) » ; le test de réception du lot ne peut qu'ajouter un
+  cas pour (d), jamais retirer ni affaiblir les 4 cas ; en-tête du lot « modification d'un garde-fou → F4 » à nuancer
+  « sauf règle déjà décidée par le founder au journal » ;
+- (f) proposition de l'arbitre (D-REPRISE-011) : mode unique « toujours par fichier » pour l'auditeur, quelle que
+  soit la taille, et extension du filtre de lecture à l'auditeur (TD-032) — resserrements au-delà de la décision du
+  founder : règle (d) une fois appliquée, sinon F4.
+- (g) points à reprendre au ticket du lot (remarques des relecteurs et de l'arbitre sur D-REPRISE-011) : ajouter §h
+  et D-REPRISE-011 à la liste des garde-fous de `CLAUDE.md` §b ; skill `revue-croisee` §3 : écrire la règle
+  d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
+  pour l'arbitre) et nommer « ce dossier » (`.claude/instantanes/executant/`) dans la puce du contrôle de Codex ;
+  `CLAUDE.md` §h, exécutant : préciser que « le même » exécutant n'est repris que dans la même sous-étape ; si (f)
+  est retenu, aligner aussi `.claude/agents/auditeur.md` l. 13 (« joint à ta consigne »).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -307,10 +322,17 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     copie des recettes pour l'affichage, registre `PendingIntentKeys`, logs lancés avec clé ; 73 tests EditMode) ;
     Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
   - 19.4c — interface ; 19.4d — panneau de maintenance (dont le blocage de toutes les actions après un `data-loss`) ;
-  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) : modification de
+  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) — garde demandée par le founder le
+    2026-11-03 (D-REPRISE-011) : modification de
     `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
     doctrine C6 une ligne `DataLoss` → maintenance et de mettre à jour C5 (clés d'idempotence du lancement et de
-    l'arrêt, D-ETAPE19-003) : non modifiées ;
+    l'arrêt, D-ETAPE19-003) : non modifiées. Pour information (fondement distinct : arbitrage du 2026-11-03 appliquant
+    la phrase du founder « Les diffs et sorties volumineuses sont transmis par fichier, jamais recopiés dans le
+    contexte principal ») : modification du skill `revue-croisee` §3 — un contenu volumineux est désigné à l'auditeur
+    par chemin et sha1 (copie dans `.claude/instantanes/revue/`, lecture complète contrôlée) au lieu d'être collé ;
+    contestable par le founder ; écarts de procédure de la sous-étape D-REPRISE-011, à signaler : deux contenus qui
+    tenaient en un seul `Read` ont été désignés par fichier, et la consigne commune a une fois dit « désigné » au lieu
+    de « joint » ; le skill §3 aligné ajoute aussi un contrôle du journal de Codex (garde-fou resserré) ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

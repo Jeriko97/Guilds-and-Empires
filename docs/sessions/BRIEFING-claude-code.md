@@ -40,6 +40,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   `docs/sessions/<date>-etape-N-arbitrages.md` (pièce de l'audit indépendant dans Claude.ai). Une modification de
   l'agent n'est pas toujours rechargée dans la session en cours : vérifier l'empreinte de son prompt (`CLAUDE.md`
   §d) avant de s'appuyer sur son verdict.
+- **Sessions (D-REPRISE-011, 2026-11-03)** : la session principale orchestre ; chaque sous-étape est implémentée par
+  un sous-agent exécutant neuf ; contenus volumineux par fichier ; une session principale par étape, terminée par la
+  phrase de relance (`CLAUDE.md` §h) ; rien de durable ne vit seulement dans la conversation ou la mémoire de session.
 - **Push (D-REPRISE-009, 2026-11-03)** : push normal sur la branche de travail (branche courante de la sous-étape,
   jamais `main`) autorisé après les trois GO et la vérification de l'arbre ; restent en F3 : merge vers `main`,
   force-push ou réécriture d'historique, suppression de branche distante (`CLAUDE.md` §g).
@@ -72,6 +75,11 @@ La direction artistique reste au founder.
 - Déplacer/renommer un asset : `asset.move` (conserve le GUID). Ne jamais éditer le YAML
   `.unity`/`.prefab` à la main quand l'Éditeur est joignable.
 - Erreur de compilation → le pont tombe (`Library/ScriptAssemblies` vide). Corriger le C# dans les fichiers, puis relancer.
+- Pont en `PIPELINE_LOAD_PENDING` : donner le focus par PowerShell (`(New-Object -ComObject WScript.Shell).AppActivate(<pid>)`).
+  Tests EditMode dans l'Éditeur ouvert : `unity command test.run --mode EditMode`. Constat 19.4b : l'Éditeur peut se
+  fermer pendant le rechargement de domaine d'un Play ; relance `G:/Unity/6000.2.2f1/Editor/Unity.exe -projectPath
+  G:/Unity/GuildsAndEmpires` ; si la boîte « Recovering Scene Backups » bloque, copier `Temp/__Backupscenes` hors du
+  dépôt, le retirer, relancer. Fermeture propre : `editor.invoke_menu --path "File/Exit"` (scène non modifiée).
 - Après tout ajout d'asset : vérifier que son `.meta` est commité (incident du 31/05 → 11/01).
 - `ProjectSettings/Packages/com.unity.pipeline/EditorPipelineConfig.json` est ignoré par git (D-ETAPE18-005) :
   le paquet le réécrit à chaque session. Vérifier à la main que `m_AllowBrowserClients` reste `false`.
@@ -248,6 +256,19 @@ modification d'un garde-fou → F4. Contenu du lot :
   (`CLAUDE.md` §b) ; d'ici là, `CLAUDE.md` §b reste la règle (modification d'un garde-fou → F4). Touche aussi
   `CLAUDE.md` §b (garde-fous) et §f (résumé d'arbitrages d'étape, rubrique « garde-fous resserrés »), en plus du corps
   de l'arbitre. Portée du test de réception pour (d) : à fixer au ticket du lot.
+- (e) points à reprendre au ticket du lot (remarques de l'arbitre, audit de clôture de D-REPRISE-010) : titre de
+  D-REPRISE-009 à préciser « (4 précisions, voir D-REPRISE-010) » ; le test de réception du lot ne peut qu'ajouter un
+  cas pour (d), jamais retirer ni affaiblir les 4 cas ; en-tête du lot « modification d'un garde-fou → F4 » à nuancer
+  « sauf règle déjà décidée par le founder au journal » ;
+- (f) proposition de l'arbitre (D-REPRISE-011) : mode unique « toujours par fichier » pour l'auditeur, quelle que
+  soit la taille, et extension du filtre de lecture à l'auditeur (TD-032) — resserrements au-delà de la décision du
+  founder : règle (d) une fois appliquée, sinon F4.
+- (g) points à reprendre au ticket du lot (remarques des relecteurs et de l'arbitre sur D-REPRISE-011) : ajouter §h
+  et D-REPRISE-011 à la liste des garde-fous de `CLAUDE.md` §b ; skill `revue-croisee` §3 : écrire la règle
+  d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
+  pour l'arbitre) et nommer « ce dossier » (`.claude/instantanes/executant/`) dans la puce du contrôle de Codex ;
+  `CLAUDE.md` §h, exécutant : préciser que « le même » exécutant n'est repris que dans la même sous-étape ; si (f)
+  est retenu, aligner aussi `.claude/agents/auditeur.md` l. 13 (« joint à ta consigne »).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -455,7 +476,10 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   TD-024 (format de clé d'idempotence hors production) et TD-025 (parsing numérique permissif) ouvertes ;
 - test d'arrêt avec un slot voisin occupé sans date de début (`startedAt`) : fait en 19.4b (code `data-loss`,
   D-ETAPE19-010 Q1) ; prochain ticket backend, à ajouter : les messages « introuvable » recopient encore
-  l'identifiant reçu (≤ 128 octets), correction reportée (D-ETAPE19-007, annotation 19.3) ;
+  l'identifiant reçu (≤ 128 octets), correction reportée (D-ETAPE19-007, annotation 19.3) ; défaut reporté de 19.4a,
+  côté script de données de test (backend) : cast manquant avant `hasOwnProperty` dans `runEmulatorTestData` ;
+  prochain ticket qui touche l'outillage émulateur du client (C#, `FirebaseEmulatorMode.cs`), défaut reporté de 19.4a :
+  `ClearEmulatorEnvironment` retire un `no_proxy` du poste s'il vaut exactement la boucle locale ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
   parallèle affiché). Diagnostic validé le 11-03 (D-ETAPE19-010) : options A (N par 1 / 10 / Max, arrêt confirmé
   sans chiffres puis résumé tiré de la réponse du serveur, panneau de maintenance qui bloque toutes les actions).
@@ -547,13 +571,27 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     `SlotSnapshot` du store, jamais un compteur local ; aucune valeur estimée dans une requête ni dans le store ;
     tick arrêté en `OnDisable` ; pas d'allocation de chaîne par tick ; après toute réponse serveur, l'affichage
     repart de la réponse ; écoulé ancré sur l'instant de réception (`Time.realtimeSinceStartup`) ; risque « Lot
-    terminé » affiché trop tôt (horloge en avance) aux risques résiduels. 19.4d : panneau de maintenance (Q5),
-    dont le blocage de toutes les actions après un `data-loss` (en 19.4b, les boutons restent actifs).
-  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) : modification de
+    terminé » affiché trop tôt (horloge en avance) aux risques résiduels. Reports de 19.4b (D-REPRISE-011) : clé
+    anti-doublon ancrée sur une référence qui survit à l'écran (store), pas `_currentBuilding`, pour qu'un écran
+    rouvert réutilise la clé d'un réessai ; purge des intentions périmées du registre `PendingIntentKeys` ; test
+    EditMode de l'immuabilité de `RecipeInfo.InputsPerCycle` et `ProductionRecipes.All` ; en-tête de
+    `PendingIntentKeys` à préciser (la réutilisation dépend de la référence passée par l'appelant) ;
+    `ParseOptionalInt` : un compteur présent mais non numérique donne 0, à traiter avant l'affichage « lot k/N »
+    (changer le comportement numérique du parsing relève de TD-025 et D-ETAPE19-009 → décision du founder).
+    19.4d : panneau de maintenance (Q5), dont le blocage de toutes les actions après un `data-loss` (en 19.4b, les
+    boutons restent actifs) ; `DebugScreenController` affiche « Erreur : » + texte Q5 (aligner ou retirer).
+  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) — garde demandée par le founder le
+    2026-11-03 (D-REPRISE-011) : modification de
     `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
     doctrine C6 (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`) une ligne `DataLoss` → maintenance et de
     mettre à jour C5 (`startProductionSlot` et `stopProductionSlot` ont une clé d'idempotence, D-ETAPE19-003) :
-    non modifiées.
+    non modifiées. Pour information (fondement distinct : arbitrage du 2026-11-03 appliquant la phrase du founder
+    « Les diffs et sorties volumineuses sont transmis par fichier, jamais recopiés dans le contexte principal ») :
+    modification du skill `revue-croisee` §3 — un contenu volumineux est désigné à l'auditeur par chemin et sha1
+    (copie dans `.claude/instantanes/revue/`, lecture complète contrôlée) au lieu d'être collé ; contestable par le
+    founder. Écarts de procédure de la sous-étape D-REPRISE-011, à signaler : deux contenus qui tenaient en un seul
+    `Read` ont été désignés par fichier, et la consigne commune a une fois dit « désigné » au lieu de « joint » ;
+    le skill §3 aligné ajoute aussi un contrôle du journal de Codex (garde-fou resserré).
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

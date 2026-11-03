@@ -3,9 +3,10 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011)
 
-Claude Code orchestre et exécute. Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
+La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
+neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
 sous-agent `auditeur` (`.claude/agents/auditeur.md`) et Codex (`AGENTS.md`), via le skill `revue-croisee`.
 L'**arbitre stratégique** (`.claude/agents/arbitre-strategique.md`, read-only) tranche tout ce qui ne relève pas du
 founder et rend l'audit de clôture de chaque sous-étape. Le founder (non technique) n'est sollicité que pour
@@ -167,6 +168,41 @@ Précisions d'application (Claude Code ; toutes vers plus de prudence par rappor
 - Jusqu'au lot de retouches du corps de l'arbitre (briefings, « Prochaine retouche »), chaque saisine d'audit de
   clôture rappelle « push normal autorisé (D-REPRISE-009) » : le corps de l'agent range encore le push en F3. Ce
   rappel est retiré quand le lot est appliqué.
+
+### h. Sessions : orchestrateur et exécutant (D-REPRISE-011)
+Décision du founder (2026-11-03, garde-fou resserré), règle d'origine citée telle quelle : « Une session = une
+sous-étape. À la fin de chaque sous-étape : relais écrit dans le briefing, push, puis arrêt avec la phrase de relance
+standard. Rien de durable ne vit seulement dans la conversation ou la mémoire de session : tout va dans le dépôt. Une
+sous-étape qui paraît trop grosse pour une session est découpée avant de commencer. » Complément du founder, cité tel
+quel : « **La session principale ne fait qu'orchestrer** : lecture du briefing, puis chaque sous-étape est confiée à
+un **sous-agent « exécutant » neuf** (contexte vierge) qui implémente, teste et s'arrête avant le commit. La session
+principale lance les revues (Codex, auditeur, arbitre), commite, pousse, et passe à la sous-étape suivante. » ; « Les
+diffs et sorties volumineuses sont transmis par fichier, jamais recopiés dans le contexte principal. » ; « Relance
+d'une nouvelle session principale **une fois par étape**, avec la phrase standard. » Faisabilité vérifiée le
+2026-11-03 (journal, D-REPRISE-011) : ce schéma remplace « une session = une sous-étape » ; deux règles sont gardées
+telles quelles : « Rien de durable ne vit seulement dans la conversation ou la mémoire de session : tout va dans le
+dépôt. » et « Une sous-étape qui paraît trop grosse […] est découpée avant de commencer. »
+Phrase de relance standard (founder), donnée à la fin de chaque étape : « Nouvelle session — reprends depuis le briefing : sous-étape suivante. »
+Précisions d'application (Claude Code ; relues en revue croisée) :
+- **Orchestrateur** (session principale) : lit le briefing ; §a.1–§a.2 (ticket, revue du ticket), §a.6–§a.8 (revue
+  du diff, audit de clôture, commit, contrôle de l'arbre), push (§g), relais écrit dans le briefing ; sous-étape
+  suivante. Il ne lit pas le code en détail et ne recopie aucun diff volumineux.
+- **Exécutant** (sous-agent `general-purpose` neuf par sous-étape) : reçoit le ticket par chemin de fichier ; §a.3–§a.5
+  (implémentation, tests backend sur émulateur, compilation Unity, EditMode, Play) ; écrit son rapport et ses sorties
+  dans `.claude/instantanes/executant/` (non versionné, jamais sous `Assets/` ni `.revue-croisee/`), et aucune capture
+  ne reste sous `Assets/` ; ne touche ni à l'index ni à git (ni `git add`, ni commit, ni push) ; ne lance ni les
+  relecteurs ni l'arbitre. Une commande refusée (il est non interactif), une clause STOP ou un point F1–F4 l'arrête :
+  il le consigne et rend la main, sans contournement. Le Play de preuve reste soumis au puits actif (briefing,
+  « Jouer le client sur les émulateurs »). Une correction demandée par un relecteur ou l'arbitre lui est renvoyée (le
+  même, repris par message, ou un neuf).
+- **Fichiers** : diffs et sorties volumineuses transmis par chemin et sha1 (relecteurs : skill `revue-croisee` §3 ;
+  arbitre : §c).
+- **Relance** : nouvelle session principale une fois par étape ; en relance d'étape, « sous-étape suivante » désigne
+  la première sous-étape de l'étape suivante dans le briefing.
+- **Mémoire** : la règle « rien de durable… » couvre aussi la mémoire automatique du projet
+  (`~/.claude/projects/…/memory/`), simple aide-mémoire : tout fait durable qui y figure est aussi dans le dépôt.
+- **Découpage** : une sous-étape trop grosse pour le contexte d'un exécutant (repère : 19.4b ≈ 140 000 jetons côté
+  exécution) est découpée avant de commencer.
 
 ## Pilotage de l'Éditeur Unity — installation obligatoire (D-REPRISE-006)
 

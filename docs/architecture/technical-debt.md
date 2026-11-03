@@ -977,6 +977,36 @@ Une permission par agent appliquée par la plateforme, ou toute lecture hors pé
 
 ---
 
+### TD-032 — L'auditeur n'a pas de filtre de lecture sur `.revue-croisee/`
+
+**Identifié :** 2026-11-03 (arbitrage de la transmission par fichier, D-REPRISE-011 ; risque relevé par l'arbitre)
+**Criticité actuelle :** MOYENNE (indépendance des deux relecteurs)
+**Composant :** `.claude/hooks/arbitre-lecture.js` (filtre appliqué à l'arbitre seul), skill `revue-croisee` §3
+
+**Description :**
+Avec la transmission des contenus volumineux par fichier (D-REPRISE-011), l'auditeur lit lui-même le dépôt ; rien ne
+l'empêche de lire `.revue-croisee/codex-<mode>.md`, où le verdict de Codex peut apparaître pendant sa relecture, ni
+`.claude/instantanes/executant/` (rapport et raisonnement de l'exécutant, D-REPRISE-011), lisible aussi par Codex. Il
+pourrait aussi rendre un verdict sans avoir lu tout le fichier.
+
+**Compensation :**
+Fichier à relire copié dans `.claude/instantanes/revue/` (dossier ne contenant que ce contenu) ; consigne de lecture
+complète ; contrôle par l'orchestrateur, dans la transcription de l'auditeur, de la couverture de ses lectures et de
+l'absence de lecture d'une sortie Codex ou du dossier de l'exécutant, consigné au rapport (skill `revue-croisee` §3) ;
+pour Codex, mêmes vérifications dans `codex-<mode>.log` (commandes exécutées).
+
+Limite du contrôle : une commande récursive qui ne respecte pas `.gitignore` (`grep -r`, `Get-ChildItem -Recurse`,
+`rg -uu`, Grep ou Glob larges) peut lire ces dossiers sans les nommer : elle est signalée au rapport comme une lecture
+possible.
+
+**Trigger de résolution :**
+Lot unique de retouches : étendre le filtre de lecture à l'auditeur (modification de `.claude/hooks/`, garde-fou :
+règle (d) de D-REPRISE-010 une fois appliquée, sinon F4) ; ou toute lecture d'une sortie Codex constatée. Pour Codex
+(processus lancé hors Claude Code, que le hook ne couvre pas), pas de résolution prévue : le contrôle de son journal
+reste la seule mesure.
+
+---
+
 ## TD Résolues
 
 ### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)

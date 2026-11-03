@@ -55,7 +55,19 @@ C'est l'orchestrateur qui capture le contenu (étape 1) et le **joint** : l'audi
 ## 3. Lancer les deux relecteurs dans le MÊME message (en parallèle)
 - **Auditeur** : outil Agent, `subagent_type: "auditeur"` (outils : Read, Grep, Glob). Prompt = la consigne
   commune, puis le contenu de `$OUT/<ticket.md|diff.patch>` collé **intégralement et sans retouche** entre
-  `<contenu>` et `</contenu>` (le lire avec Read juste avant ; découper la lecture si le fichier est long).
+  `<contenu>` et `</contenu>` (le lire avec Read juste avant).
+  **Contenu volumineux** (fichier qu'on ne peut pas lire en un seul `Read` sans découpage) — règle du founder
+  (D-REPRISE-011) : « Les diffs et sorties volumineuses sont transmis par fichier, jamais recopiés dans le contexte
+  principal » ; conditions de l'arbitrage du 2026-11-03 :
+  - le fichier est copié dans `.claude/instantanes/revue/` (non versionné, vidé avant chaque dépôt, ne contenant que
+    le contenu à relire), jamais désigné dans `.revue-croisee/` ; sha1 identique au fichier passé à Codex sur stdin ;
+  - la consigne commune (§2) reste mot pour mot, « joint à la fin de cette consigne » compris ; entre `<contenu>` et
+    `</contenu>`, seule la désignation change : chemin, sha1, et l'obligation de lire le fichier ENTIÈREMENT
+    (découpage `offset`/`limit`) avant tout verdict ;
+  - après le verdict, l'orchestrateur relève dans la transcription de l'auditeur que ses lectures couvrent tout le
+    fichier et qu'aucune sortie Codex ni aucun fichier de `.claude/instantanes/executant/` n'a été lu, et, dans
+    `codex-<mode>.log`, que Codex n'a lu ni `.revue-croisee/` ni ce dossier ; il le consigne au rapport (TD-032).
+  En deçà, le collage intégral reste la règle.
 - **Codex** : outil Bash, `run_in_background: true` — le même fichier passé sur stdin :
   ```bash
   "$CODEX" exec --sandbox read-only --ephemeral \
