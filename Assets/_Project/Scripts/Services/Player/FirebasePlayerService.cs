@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Firebase;
 using Firebase.Auth;
 using Firebase.Functions;
+using GuildsAndEmpires.Core;
 using GuildsAndEmpires.Core.Logging;
 using GuildsAndEmpires.Models;
 
@@ -41,6 +42,9 @@ namespace GuildsAndEmpires.Services.Player
             catch (FunctionsException ex)
             {
                 GELogger.Warning("PlayerService", $"resolveLoginState [{ex.ErrorCode}]: {ex.Message}");
+                // État de slot corrompu (data-loss, D-ETAPE19-010 Q1) : compte en maintenance, texte du founder (Q5).
+                if (ex.ErrorCode == FunctionsErrorCode.DataLoss)
+                    throw new PlayerServiceException(PlayerMessages.Maintenance, ex, isMaintenance: true);
                 throw new PlayerServiceException(MapErrorMessage(ex.ErrorCode), ex);
             }
             catch (Exception) when (ct.IsCancellationRequested)

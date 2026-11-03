@@ -45,9 +45,11 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   force-push ou réécriture d'historique, suppression de branche distante (`CLAUDE.md` §g).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
-- Tests : **365/365** verts le 11-03 après l'ÉTAPE 19.4a (dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
-- Tests client : **55/55** EditMode verts le 11-03 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9 de la garde
-  du mode émulateur, ÉTAPE 19.4a ; `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch).
+- Tests : **366/366** verts le 11-03 après l'ÉTAPE 19.4b (365 après 19.4a, dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
+- Tests client : **73/73** EditMode verts le 11-03 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9 de la garde
+  du mode émulateur, ÉTAPE 19.4a ; 18 des parsings et utilitaires de production, ÉTAPE 19.4b ;
+  `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch),
+  ou `unity command test.run --mode EditMode` dans l'Éditeur ouvert.
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
 
 ### Pilotage de l'Éditeur Unity (D-REPRISE-001) — l'agent câble et valide lui-même
@@ -82,7 +84,9 @@ La direction artistique reste au founder.
 `gae-emulator` (projet `demo-guilds-empires`, clés factices), sorties HTTPS/gRPC de Firebase envoyées dans un puits
 local (`127.0.0.1:18999`), garde tout ou rien avant tout appel.
 1. **Émulateurs** (depuis `firebase/`) : `npm --prefix functions run build`, puis
-   `firebase emulators:start --only functions,firestore,auth --project demo-guilds-empires`. Ils tournent sous
+   `firebase emulators:start --only functions,firestore,auth --project demo-guilds-empires`. Un `build` fait pendant
+   que l'émulateur tourne peut le laisser en échec (« Failed to load function », écran bloqué sur « Chargement… ») :
+   le redémarrer (constat 19.4b). Ils tournent sous
    `demo-guilds-empires` : le préfixe `demo-` interdit tout accès à la production.
 2. **Marché** : `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm --prefix functions run seed:market -- --project
    demo-guilds-empires` (essai à blanc : vérifier « (emulator) »), puis la même commande avec `--apply`.
@@ -466,7 +470,12 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     dans D-ETAPE19-011) ; mode d'emploi : briefing Claude Code, « Jouer le client sur les émulateurs » ; correctif
     backend préalable `fa4a88a` (imports modulaires pour l'émulateur Functions, D-ETAPE19-012, non déployé) ;
     nettoyage CS0168 fait ; TD-026 à TD-030 ouvertes ; TD-024 reportée, déclencheur reformulé ;
-  - 19.4b — services et modèles, `data-loss` en tête ; 19.4c — interface ; 19.4d — panneau de maintenance ;
+  - 19.4b — fait le 11-03 (D-ETAPE19-013) : commit A `85cb1e8` (backend `data-loss` pour tout état de slot
+    corrompu, grille de l'auditeur alignée, TD-021 et spécification annotées) ; commit B (client : lancement avec N
+    et clé d'idempotence, `StopProductionSlotAsync`, `AlreadyApplied`, compteurs de lot, `DataLoss` → texte Q5,
+    copie des recettes pour l'affichage, registre `PendingIntentKeys`, logs lancés avec clé ; 73 tests EditMode) ;
+    Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
+  - 19.4c — interface ; 19.4d — panneau de maintenance ;
   - **Diagnostic 19.4 (Tâche 0, 2026-11-03) — constats pour rédiger 19.4b à 19.4d** (lignes relevées au commit
     `eb3b4d4` ; décisions du founder : D-ETAPE19-010) :
     - a.1 Lancement : le serveur attend `buildingId`, `slotIndex`, `recipeId`, `cycles?`, `idempotencyKey` (UUID
@@ -518,8 +527,10 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
       perdu à saturation, rendu, intrants perdus), lignes à zéro masquées, rejeu → « Arrêt déjà enregistré » ; slot
       actif : recette réelle, « lot 3/10 » estimé (`cyclesProcessed` + cycles écoulés, plafonné à `cyclesPlanned`),
       temps restant rafraîchi ~1 s, « Lot terminé — collecter » (horloge locale, falsifiable : affichage seulement,
-      aucune action bloquée ou débloquée selon cette estimation, le serveur tranche ; mettre à jour l'en-tête de
-      `ProductionScreen.cs:20`, « aucun calcul temporel local ») ; maintenance : panneau à la place des slots, actions
+      aucune action bloquée ou débloquée selon cette estimation, le serveur tranche ; en-tête de
+      `ProductionScreen.cs:20`, cité mot pour mot : « Aucun calcul économique/temporel local — état brut depuis la CF.
+      Doctrine server-auth. », annoté en 19.4b après arbitrage (D-ETAPE19-013) : l'interdit « économique » reste
+      entier, « temporel » admet l'estimation d'affichage) ; maintenance : panneau à la place des slots, actions
       bloquées, « Réessayer » relance la connexion, texte fixé par Q5 — ne pas écrire « l'équipe est prévenue » tant
       que TD-021 n'est pas faite.
     - `ProductionScreen` ne relit pas l'état serveur après son premier chargement (`_hasLoadedOnce`,
@@ -531,8 +542,18 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     tests, et TD-021 alignée dans la doc (son filtre d'alerte vise `data-loss`, D-ETAPE19-010 Q1 ; l'alerte elle-même
     reste soumise à son déclencheur, « Rien à implémenter avant le déclencheur ») ; aligner les grilles des relecteurs
     et la convention n° 8 ; (2) puis services et modèles (point b), adaptation minimale de l'écran (logs avec clé).
-    19.4c : interface (options A, store mis à jour après un lancement, entrées à 0 filtrées, message 6 s). 19.4d :
-    panneau de maintenance (Q5).
+    19.4c : interface (options A, store mis à jour après un lancement, entrées à 0 filtrées, message 6 s) ;
+    contraintes de l'arbitrage du 11-03 (D-ETAPE19-013) : estimation recalculée à chaque tick depuis le
+    `SlotSnapshot` du store, jamais un compteur local ; aucune valeur estimée dans une requête ni dans le store ;
+    tick arrêté en `OnDisable` ; pas d'allocation de chaîne par tick ; après toute réponse serveur, l'affichage
+    repart de la réponse ; écoulé ancré sur l'instant de réception (`Time.realtimeSinceStartup`) ; risque « Lot
+    terminé » affiché trop tôt (horloge en avance) aux risques résiduels. 19.4d : panneau de maintenance (Q5),
+    dont le blocage de toutes les actions après un `data-loss` (en 19.4b, les boutons restent actifs).
+  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) : modification de
+    `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
+    doctrine C6 (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`) une ligne `DataLoss` → maintenance et de
+    mettre à jour C5 (`startProductionSlot` et `stopProductionSlot` ont une clé d'idempotence, D-ETAPE19-003) :
+    non modifiées.
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

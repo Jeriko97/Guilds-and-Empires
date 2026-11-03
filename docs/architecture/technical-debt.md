@@ -848,8 +848,9 @@ Tout découpage du client en assemblies (texte du founder).
 
 **Identifié :** 2026-11-03 (diagnostic 19.4, décision Q2 du founder, D-ETAPE19-010)
 **Criticité actuelle :** FAIBLE (affichage seulement : le serveur reste autoritaire)
-**Composant :** `firebase/functions/src/shared/recipes.ts` ; copie client prévue en 19.4b (affichage du choix de
-recette et de Max)
+**Composant :** `firebase/functions/src/shared/recipes.ts` ; copie client créée en 19.4b,
+`Assets/_Project/Scripts/Models/ProductionRecipes.cs` (affichage du choix de recette, de Max et du temps restant ;
+commentaire « à modifier avec recipes.ts » ; D-ETAPE19-013)
 
 **Description :**
 Décision du founder, citée telle quelle : « **Q2** : recettes recopiées côté client pour l'affichage seulement, avec

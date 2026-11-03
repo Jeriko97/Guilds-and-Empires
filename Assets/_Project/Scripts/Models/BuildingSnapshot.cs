@@ -31,12 +31,31 @@ namespace GuildsAndEmpires.Models
         /// </summary>
         public long LastProcessedAtMs { get; }
 
-        public SlotSnapshot(int slotIndex, string recipeId, long startedAtMs, long lastProcessedAtMs)
+        /// <summary>
+        /// Nombre de cycles du lot (planks, kits — D-ETAPE19-001). null pour les logs (production continue)
+        /// et pour un slot libre.
+        /// </summary>
+        public int? CyclesPlanned { get; }
+
+        /// <summary>
+        /// Cycles du lot déjà crédités par le serveur. null pour les logs et pour un slot libre ; 0 au lancement.
+        /// </summary>
+        public int? CyclesProcessed { get; }
+
+        public SlotSnapshot(
+            int slotIndex,
+            string recipeId,
+            long startedAtMs,
+            long lastProcessedAtMs,
+            int? cyclesPlanned = null,
+            int? cyclesProcessed = null)
         {
             SlotIndex        = slotIndex;
             RecipeId         = recipeId;
             StartedAtMs      = startedAtMs;
             LastProcessedAtMs = lastProcessedAtMs;
+            CyclesPlanned    = cyclesPlanned;
+            CyclesProcessed  = cyclesProcessed;
         }
     }
 

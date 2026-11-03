@@ -127,7 +127,7 @@ hors event, suivi à part du prix publié (D-TD020-002).
   avant le déploiement 19.5. Toute reprise d'un tel slot (écriture en production) est une escalade cas 1, décrite
   ici avant déploiement. Un slot de transformation sans `cyclesPlanned`
   n'est jamais traité comme une production continue : c'est une donnée à reprendre (erreur `failed-precondition`
-  journalisée depuis 19.2, D-ETAPE19-006 ; reprise décidée en escalade), sinon TD-023 persisterait pour ce slot.
+  [depuis 19.4b : `data-loss`, D-ETAPE19-010 Q1] journalisée depuis 19.2, D-ETAPE19-006 ; reprise décidée en escalade), sinon TD-023 persisterait pour ce slot.
 
 **Note legacy :**
 La collection `/profiles/{uid}` existe historiquement pour la fonction

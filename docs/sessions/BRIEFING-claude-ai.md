@@ -301,7 +301,16 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     dans D-ETAPE19-011) ; mode d'emploi : briefing Claude Code, « Jouer le client sur les émulateurs » ; correctif
     backend préalable `fa4a88a` (imports modulaires pour l'émulateur Functions, D-ETAPE19-012, non déployé) ;
     nettoyage CS0168 fait ; TD-026 à TD-030 ouvertes ; TD-024 reportée, déclencheur reformulé ;
-  - 19.4b — services et modèles, `data-loss` en tête ; 19.4c — interface ; 19.4d — panneau de maintenance ;
+  - 19.4b — fait le 11-03 (D-ETAPE19-013) : commit A `85cb1e8` (backend `data-loss` pour tout état de slot
+    corrompu, grille de l'auditeur alignée, TD-021 et spécification annotées) ; commit B (client : lancement avec N
+    et clé d'idempotence, `StopProductionSlotAsync`, `AlreadyApplied`, compteurs de lot, `DataLoss` → texte Q5,
+    copie des recettes pour l'affichage, registre `PendingIntentKeys`, logs lancés avec clé ; 73 tests EditMode) ;
+    Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
+  - 19.4c — interface ; 19.4d — panneau de maintenance (dont le blocage de toutes les actions après un `data-loss`) ;
+  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) : modification de
+    `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
+    doctrine C6 une ligne `DataLoss` → maintenance et de mettre à jour C5 (clés d'idempotence du lancement et de
+    l'arrêt, D-ETAPE19-003) : non modifiées ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

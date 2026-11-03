@@ -18,6 +18,11 @@ namespace GuildsAndEmpires.UI.Screens
     ///
     /// Règles absolues :
     /// - Aucun calcul économique/temporel local — état brut depuis la CF. Doctrine server-auth.
+    ///   Annotation (19.4b, arbitrage du 2026-11-03) : l'interdit « économique » reste entier. « Temporel » :
+    ///   seule une estimation d'AFFICHAGE est admise (avancement du lot, temps restant — D-ETAPE19-010,
+    ///   options A) ; horloge locale falsifiable ; aucune action n'est bloquée ni débloquée par cette
+    ///   estimation, aucune valeur estimée n'est envoyée au serveur ni écrite dans un état métier ; le
+    ///   serveur tranche. Doctrine C1, règle 3 (confort UX, doublé côté serveur).
     /// - Cycle de vie symétrique : CTS créé en OnEnable, annulé+disposé en OnDisable. Doctrine C9.
     /// - IPlayerService et IProductionService résolus via ServiceLocator. Doctrine C3.
     /// - INTERDIT de rappeler resolveLoginState après startProductionSlot (réponse contient building).
@@ -29,6 +34,15 @@ namespace GuildsAndEmpires.UI.Screens
         private CancellationTokenSource _cts;
 
         [SerializeField] private MarketScreen _marketScreenPrefab;
+
+        // Clés d'idempotence des intentions en attente (D-ETAPE19-003, patron PendingSales de MarketScreen).
+        // Statique, mais la référence comparée est _currentBuilding (champ d'instance) : la clé n'est réutilisée que
+        // par un réessai sur le même état affiché dans cette instance ; un écran recréé recharge l'état et prend une
+        // nouvelle clé. Ancrage sur une référence qui survit à l'écran (store) : 19.4c.
+        private static readonly PendingIntentKeys PendingIntents = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => PendingIntents.Clear();
 
         // ── UI element refs ───────────────────────────────────────────────────
         private Label         _titleLabel;
@@ -134,7 +148,7 @@ namespace GuildsAndEmpires.UI.Screens
             catch (PlayerServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur PlayerService: {ex.UserMessage}");
-                SetStatus($"Erreur : {ex.UserMessage}", "status--error");
+                SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
             }
             catch (Exception ex)
             {
@@ -211,11 +225,17 @@ namespace GuildsAndEmpires.UI.Screens
                 return;
             }
 
+            // Intention = bâtiment, slot, recette, état du bâtiment affiché au clic (19.4b : logs seulement).
+            var intent = $"start:{_currentBuilding.Id}:{slotIndex}:{ProductionRecipes.LogsId}";
+            var key    = PendingIntents.GetOrCreate(intent, _currentBuilding);
+
             try
             {
                 var result = await productionService.StartProductionSlotAsync(
-                    _currentBuilding.Id, slotIndex, "logs", ct);
+                    _currentBuilding.Id, slotIndex, ProductionRecipes.LogsId, cycles: null, key, ct);
 
+                // Réponse parsée avec succès (rejeu compris) : l'intention est close.
+                PendingIntents.Resolve(intent, key);
                 ct.ThrowIfCancellationRequested();
 
                 _currentBuilding = result.Building;
@@ -226,7 +246,7 @@ namespace GuildsAndEmpires.UI.Screens
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur production: {ex.UserMessage}");
-                SetStatus($"Erreur : {ex.UserMessage}", "status--error");
+                SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
                 SetAllButtonsEnabled(true);
             }
             catch (Exception ex)
@@ -293,7 +313,7 @@ namespace GuildsAndEmpires.UI.Screens
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur collecte: {ex.UserMessage}");
-                SetStatus($"Erreur : {ex.UserMessage}", "status--error");
+                SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
                 SetAllButtonsEnabled(true);
             }
             catch (Exception ex)
@@ -334,6 +354,10 @@ namespace GuildsAndEmpires.UI.Screens
             _statusLabel.RemoveFromClassList("status--success");
             _statusLabel.AddToClassList(modifier);
         }
+
+        // Maintenance (data-loss, D-ETAPE19-010) : texte du founder (Q5) affiché tel quel, sans préfixe.
+        private static string FormatError(string userMessage, bool isMaintenance) =>
+            isMaintenance ? userMessage : $"Erreur : {userMessage}";
 
         private void SetAllButtonsEnabled(bool enabled)
         {

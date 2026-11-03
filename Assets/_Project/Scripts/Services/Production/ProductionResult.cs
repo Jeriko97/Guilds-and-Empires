@@ -15,14 +15,18 @@ namespace GuildsAndEmpires.Services.Production
         public BuildingSnapshot Building  { get; }
         public InventoryState   Inventory { get; }
 
-        public ProductionResult(BuildingSnapshot building, InventoryState inventory)
+        /// <summary>true si la clé d'idempotence avait déjà été appliquée (aucun nouvel effet, D-ETAPE19-003).</summary>
+        public bool AlreadyApplied { get; }
+
+        public ProductionResult(BuildingSnapshot building, InventoryState inventory, bool alreadyApplied = false)
         {
-            Building  = building;
-            Inventory = inventory;
+            Building       = building;
+            Inventory      = inventory;
+            AlreadyApplied = alreadyApplied;
         }
 
         // ── Parse from HttpsCallableResult.Data ───────────────────────────────
-        // Réponse CF : { building: BuildingDocument, inventory: InventoryState }
+        // Réponse CF : { building: BuildingDocument, inventory: InventoryState, alreadyApplied: boolean }
         // BuildingDocument ne contient PAS l'id Firestore — buildingId injecté via le paramètre.
 
         public static ProductionResult Parse(object data, string buildingId)
@@ -35,7 +39,9 @@ namespace GuildsAndEmpires.Services.Production
             var inventoryDict = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "inventory"), "inventory", ProductionParsingHelpers.ParseContext);
             var inventory     = InventoryParsingHelpers.ParseInventory(inventoryDict, ProductionParsingHelpers.ParseContext);
 
-            return new ProductionResult(building, inventory);
+            var alreadyApplied = FirebaseParsingHelpers.GetBool(root, "alreadyApplied", false);
+
+            return new ProductionResult(building, inventory, alreadyApplied);
         }
     }
 }

@@ -48,21 +48,10 @@ namespace GuildsAndEmpires.Services.Production
             var inventoryDict = FirebaseParsingHelpers.RequireDict(FirebaseParsingHelpers.GetValue(root, "inventory"), "inventory", ProductionParsingHelpers.ParseContext);
             var inventory     = InventoryParsingHelpers.ParseInventory(inventoryDict, ProductionParsingHelpers.ParseContext);
 
-            var collected = ParseResourceMap(FirebaseParsingHelpers.GetValue(root, "collected"));
-            var discarded = ParseResourceMap(FirebaseParsingHelpers.GetValue(root, "discarded"));
+            var collected = ProductionParsingHelpers.ParseResourceMap(FirebaseParsingHelpers.GetValue(root, "collected"));
+            var discarded = ProductionParsingHelpers.ParseResourceMap(FirebaseParsingHelpers.GetValue(root, "discarded"));
 
             return new CollectProductionResult(building, inventory, collected, discarded);
-        }
-
-        // collected/discarded wire : Dictionary<object,object> clé ResourceKey → long boxé (D-ETAPE17.A-2).
-        private static IReadOnlyDictionary<string, int> ParseResourceMap(object raw)
-        {
-            var result = new Dictionary<string, int>();
-            if (raw is Dictionary<object, object> d)
-                foreach (var kv in d)
-                    if (kv.Key is string key)
-                        result[key] = (int)FirebaseParsingHelpers.GetLong(d, key, 0L);
-            return result;
         }
     }
 }
