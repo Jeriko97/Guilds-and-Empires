@@ -9,6 +9,7 @@
     "logs": "firebase functions:log",
     "test:emulator": "jest --forceExit --runInBand",
     "seed:market": "npm run build && node lib/seed/runSeedMarketState.js",
+    "emulator:testdata": "npm run build && node lib/dev/runEmulatorTestData.js",
     "lint": "eslint . --ext .ts"
   },
   "engines": {
