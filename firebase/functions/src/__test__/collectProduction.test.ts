@@ -334,7 +334,7 @@ describe("collectProduction", () => {
     );
   });
 
-  it("12b. ÉTAPE 19.2 — slot hérité de transformation (planks sans cyclesPlanned) → failed-precondition, journalisé, rien n'est écrit", async () => {
+  it("12b. ÉTAPE 19.2 — slot hérité de transformation (planks sans cyclesPlanned) → data-loss, journalisé, rien n'est écrit", async () => {
     const uid = "collect-prod-legacy";
     const legacySlot = makeActiveSlot(0, "planks", 10 * PLANKS_DURATION_MS); // pas de cyclesPlanned : lancé avant l'ÉTAPE 19
     await createTestPlayer(uid);
@@ -345,7 +345,7 @@ describe("collectProduction", () => {
       await expect(
         collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
       ).rejects.toMatchObject(
-        { code: "failed-precondition" } satisfies Partial<HttpsError>
+        { code: "data-loss" } satisfies Partial<HttpsError>
       );
       expect(errorSpy).toHaveBeenCalledWith(
         "collectProduction: état de slot corrompu",
@@ -361,7 +361,7 @@ describe("collectProduction", () => {
     expect(slot).toEqual(legacySlot);
   });
 
-  it("12d. ÉTAPE 19.2 — lot corrompu (cyclesProcessed ≥ cyclesPlanned, slot non libéré) → failed-precondition, journalisé, rien n'est écrit", async () => {
+  it("12d. ÉTAPE 19.2 — lot corrompu (cyclesProcessed ≥ cyclesPlanned, slot non libéré) → data-loss, journalisé, rien n'est écrit", async () => {
     const uid = "collect-prod-corrupt-batch";
     const corruptSlot = { ...makeActiveSlot(1, "planks", 10 * PLANKS_DURATION_MS), cyclesPlanned: 4, cyclesProcessed: 4 };
     await createTestPlayer(uid);
@@ -372,7 +372,7 @@ describe("collectProduction", () => {
       await expect(
         collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
       ).rejects.toMatchObject(
-        { code: "failed-precondition" } satisfies Partial<HttpsError>
+        { code: "data-loss" } satisfies Partial<HttpsError>
       );
       expect(errorSpy).toHaveBeenCalledWith(
         "collectProduction: état de slot corrompu",

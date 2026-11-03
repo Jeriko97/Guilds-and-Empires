@@ -674,7 +674,7 @@ déployée)
 **Composant :** Cloud Functions planifiées : `updateMarketPrices` (toutes les 5 min), puis
 `processWorldEventLifecycle` (à créer, toutes les 10 min) ; depuis le 2026-11-02 (D-ETAPE19-008), erreurs « slot
 corrompu » (`failed-precondition`, `details.reason = "corrupt-slot"`) journalisées par `resolveLoginState`,
-`collectProduction` et `stopProductionSlot` ; à partir de 19.4b, ces erreurs portent le code `data-loss`
+`collectProduction` et `stopProductionSlot` ; depuis 19.4b, ces erreurs portent le code `data-loss`
 (D-ETAPE19-010, Q1)
 
 **Description :**
@@ -684,7 +684,8 @@ sur une ressource) bloque les expirations, et un event `active` garde son prix d
 
 Extension, décision du founder (ticket 19.2b, 2026-11-02), citée telle quelle : « TD-021 couvre aussi les erreurs
 "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à l'arrêt), prérequis du
-déploiement 19.5. » Un état de slot corrompu (D-ETAPE19-006) bloque la connexion, la collecte et l'arrêt du compte
+déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code `data-loss`, D-ETAPE19-010 Q1 ; la
+citation est conservée telle quelle.] Un état de slot corrompu (D-ETAPE19-006) bloque la connexion, la collecte et l'arrêt du compte
 touché ; il n'est visible que dans les journaux.
 
 Code de ces erreurs, décision du founder (diagnostic 19.4, 2026-11-03, Q1), citée telle quelle : « l'état corrompu

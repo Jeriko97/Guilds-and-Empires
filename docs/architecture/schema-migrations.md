@@ -121,7 +121,7 @@ hors event, suivi à part du prix publié (D-TD020-002).
   3 slots, tous `logs` ; **aucun slot `planks` ou `reconstruction_kits`** → aucune reprise, aucune migration. À
   refaire juste avant le déploiement 19.5, étendu à tous les états corrompus de D-ETAPE19-006 (slot occupé sans
   `startedAt`, logs compris ; compteurs de lot invalides ou épuisés) : un tel slot bloquerait la connexion du compte
-  (`failed-precondition`) après déploiement.
+  (`failed-precondition` [depuis 19.4b : `data-loss`, D-ETAPE19-010 Q1]) après déploiement.
 - **Slot hérité** : un slot `planks` ou `reconstruction_kits` lancé avant l'ÉTAPE 19 n'a pas ces champs et
   produit sans fin (TD-023). Aucun n'existait en production le 2026-11-02 (ci-dessus) ; le contrôle est refait
   avant le déploiement 19.5. Toute reprise d'un tel slot (écriture en production) est une escalade cas 1, décrite

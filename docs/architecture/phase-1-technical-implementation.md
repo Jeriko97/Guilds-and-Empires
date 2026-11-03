@@ -79,7 +79,7 @@ Au login, 1 read unique récupère gold + favor + rang + inventaire complet. Ave
 de traces `/players/{uid}/productionOps/{idempotencyKey}`. Champ absent = `null` (slot de logs ou slot libre) :
 pas de migration pour ces slots. Un slot de transformation sans ces champs (lancé avant l'ÉTAPE 19) imposerait une
 décision de reprise : voir `schema-migrations.md`, note ÉTAPE 19. Depuis 19.2 (D-ETAPE19-006) : `processBuildingSlots`
-lève `HttpsError` `failed-precondition` (journalisé) sur un tel slot comme sur tout état de slot corrompu ; la connexion,
+lève `HttpsError` `failed-precondition` [depuis 19.4b : `data-loss`, D-ETAPE19-010 Q1] (journalisé) sur un tel slot comme sur tout état de slot corrompu ; la connexion,
 la collecte et l'arrêt de ce slot sont refusés tant que la donnée n'est pas reprise (escalade cas 1).
 
 ---
@@ -257,7 +257,8 @@ export const startProductionSlot = functions.https.onCall(
  * ÉTAPE 19 (implémenté en 19.1) : un lot dont tous les cycles sont traités libère son slot dans la même
  * écriture. États de slot corrompus (règle unique, ÉTAPE 19.2, D-ETAPE19-006 : slot hérité sans
  * cyclesPlanned, compteurs de lot invalides, lot épuisé non libéré, slot occupé sans startedAt)
- * → failed-precondition, journalisé (logger.error), rien n'est écrit. Recette inconnue → internal, journalisé.
+ * → failed-precondition [depuis 19.4b : `data-loss`, D-ETAPE19-010 Q1], journalisé (logger.error), rien n'est écrit. Recette inconnue →
+ * internal, journalisé.
  * Renvoie l'état mis à jour (building sans id Firestore — injecté par le service client,
  * D-ETAPE16-004) ainsi que collected/discarded. Aligné sur startProductionSlot (17.B-0).
  */
@@ -290,7 +291,8 @@ export const collectProduction = functions.https.onCall(
  *    il doit recevoir alreadyApplied = true ; testé en 19.2) ;
  *    building ou slot absent → not-found ; slot libre (recipeId == null) → failed-precondition ;
  *    recette inconnue (donnée corrompue) → internal, journalisé ; état de slot corrompu (règle unique,
- *    D-ETAPE19-006) → failed-precondition, journalisé, rien n'est écrit. ÉTAPE 19.2b (D-ETAPE19-007) :
+ *    D-ETAPE19-006) → failed-precondition [depuis 19.4b : `data-loss`, D-ETAPE19-010 Q1], journalisé, rien n'est écrit.
+ *    ÉTAPE 19.2b (D-ETAPE19-007) :
  *    ces deux cas valent pour n'importe quel slot du bâtiment, voisin compris ; journal de l'état
  *    corrompu : slotIndex = slot fautif, stoppedSlotIndex = slot demandé.
  * Effets, dans la même transaction et dans cet ordre (le recalcul et le crédit précèdent
@@ -455,7 +457,8 @@ resolveLoginState():
 
       // ÉTAPE 19 (implémenté en 19.1, D-ETAPE19-001) — lot : jamais plus que les cycles restants du lot
       // État de slot corrompu (hérité sans cyclesPlanned, compteurs invalides, lot épuisé non libéré,
-      // slot occupé sans startedAt) → HttpsError failed-precondition, journalisé, rien n'est écrit
+      // slot occupé sans startedAt) → HttpsError failed-precondition [depuis 19.4b : `data-loss`, D-ETAPE19-010 Q1], journalisé,
+      // rien n'est écrit
       // (ÉTAPE 19.2, D-ETAPE19-006)
       if slot.cyclesPlanned != null:
         completedCycles = min(completedCycles, slot.cyclesPlanned - slot.cyclesProcessed)

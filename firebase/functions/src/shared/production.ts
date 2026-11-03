@@ -14,7 +14,7 @@ export type ProcessBuildingResult = {
   hasProcessedCycles: boolean;
 };
 
-// ── États corrompus (ÉTAPE 19.2, règle unique) ──────────────────────────────
+// ── États corrompus (ÉTAPE 19.2, règle unique ; code `data-loss` depuis 19.4b, D-ETAPE19-010 Q1) ──
 
 /** Motif porté par `HttpsError.details.reason` pour un état de slot corrompu. */
 export const CORRUPT_SLOT_REASON = "corrupt-slot";
@@ -34,7 +34,7 @@ function corruptSlotError(slot: ProductionSlotState, motif: string): HttpsError 
     motif,
   };
   return new HttpsError(
-    "failed-precondition",
+    "data-loss",
     `État de slot corrompu (slot ${slot.slotIndex}, ${slot.recipeId}) : ${motif}. ` +
     "Reprise manuelle des données requise.",
     details,
@@ -71,7 +71,7 @@ function isNonNegativeInteger(value: unknown): value is number {
  * Throws Error (pas HttpsError) — le handler convertit en `internal` :
  * - recette inconnue (donnée corrompue).
  *
- * Throws HttpsError `failed-precondition` (details.reason = "corrupt-slot") — état de slot corrompu,
+ * Throws HttpsError `data-loss` (details.reason = "corrupt-slot", D-ETAPE19-010 Q1) — état de slot corrompu,
  * levé avant tout calcul, donc sans aucune écriture ; donnée à reprendre (escalade cas 1) :
  * - slot occupé sans startedAt ;
  * - slot de transformation sans cyclesPlanned (lancé avant l'ÉTAPE 19), jamais traité comme une

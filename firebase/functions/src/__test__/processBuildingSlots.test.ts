@@ -393,12 +393,12 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
 
   });
 
-  // ── ÉTAPE 19.2 — états corrompus : une seule règle (failed-precondition, details « corrupt-slot ») ──
+  // ── ÉTAPE 19.2 — états corrompus : une seule règle (data-loss, details « corrupt-slot ») ──
   describe("états corrompus", () => {
     const T0 = 1_700_000_000_000;
     const at = (ms: number) => admin.firestore.Timestamp.fromMillis(ms);
 
-    /** Vérifie l'erreur levée : HttpsError failed-precondition, motif « corrupt-slot » attendu. */
+    /** Vérifie l'erreur levée : HttpsError data-loss, motif « corrupt-slot » attendu. */
     function expectCorrupt(slot: ProductionSlotState, motif: RegExp): void {
       let caught: unknown;
       try {
@@ -407,7 +407,7 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
         caught = err;
       }
       expect(caught).toBeInstanceOf(HttpsError);
-      expect((caught as HttpsError).code).toBe("failed-precondition");
+      expect((caught as HttpsError).code).toBe("data-loss");
       expect((caught as HttpsError).message).toMatch(/État de slot corrompu/);
       const details = corruptSlotDetails(caught);
       expect(details).toMatchObject({ reason: "corrupt-slot", slotIndex: slot.slotIndex, recipeId: slot.recipeId });
@@ -415,17 +415,17 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
     }
 
     it.each(["planks", "reconstruction_kits"] as const)(
-      "19. Slot hérité de transformation (%s, sans cyclesPlanned) → failed-precondition, jamais production continue",
+      "19. Slot hérité de transformation (%s, sans cyclesPlanned) → data-loss, jamais production continue",
       (recipeId) => {
         expectCorrupt(makeSlot(0, recipeId, T0), /hérité, sans cyclesPlanned/);
       },
     );
 
-    it("20. Lot épuisé non libéré (cyclesProcessed = cyclesPlanned) → failed-precondition", () => {
+    it("20. Lot épuisé non libéré (cyclesProcessed = cyclesPlanned) → data-loss", () => {
       expectCorrupt(makeBatchSlot(1, "planks", T0, 5, 5), /lot épuisé non libéré/);
     });
 
-    it("21. Lot épuisé non libéré (cyclesProcessed > cyclesPlanned) → failed-precondition", () => {
+    it("21. Lot épuisé non libéré (cyclesProcessed > cyclesPlanned) → data-loss", () => {
       expectCorrupt(makeBatchSlot(1, "reconstruction_kits", T0, 3, 7), /lot épuisé non libéré/);
     });
 
@@ -433,7 +433,7 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
       ["non entier", 2.5],
       ["< 1", 0],
       ["négatif", -3],
-    ])("22. cyclesPlanned %s → failed-precondition", (_label, cyclesPlanned) => {
+    ])("22. cyclesPlanned %s → data-loss", (_label, cyclesPlanned) => {
       expectCorrupt({ ...makeSlot(0, "planks", T0), cyclesPlanned, cyclesProcessed: 0 }, /cyclesPlanned invalide/);
     });
 
@@ -442,11 +442,11 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
       ["absent (null)", null],
       ["non entier", 1.5],
       ["négatif", -1],
-    ])("23. cyclesProcessed %s → failed-precondition", (_label, cyclesProcessed) => {
+    ])("23. cyclesProcessed %s → data-loss", (_label, cyclesProcessed) => {
       expectCorrupt({ ...makeSlot(0, "planks", T0), cyclesPlanned: 4, cyclesProcessed }, /cyclesProcessed invalide/);
     });
 
-    it.each(["logs", "planks"] as const)("24. Slot occupé sans startedAt (%s) → failed-precondition", (recipeId) => {
+    it.each(["logs", "planks"] as const)("24. Slot occupé sans startedAt (%s) → data-loss", (recipeId) => {
       const slot: ProductionSlotState = {
         slotIndex: 2, recipeId, startedAt: null, lastProcessedAt: null,
         ...(recipeId === "planks" ? { cyclesPlanned: 4, cyclesProcessed: 0 } : {}),
@@ -454,7 +454,7 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
       expectCorrupt(slot, /slot occupé sans startedAt/);
     });
 
-    it("24b. Slot occupé, champ startedAt absent (undefined) → failed-precondition", () => {
+    it("24b. Slot occupé, champ startedAt absent (undefined) → data-loss", () => {
       const slot = { slotIndex: 1, recipeId: "logs", lastProcessedAt: null } as unknown as ProductionSlotState;
       expectCorrupt(slot, /slot occupé sans startedAt/);
     });
@@ -510,7 +510,7 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
       expect(result.updatedSlots[2]).toEqual(building.slots[2]);
     });
 
-    it("27b. Voisin corrompu → failed-precondition (règle unique), details.slotIndex = slot fautif", () => {
+    it("27b. Voisin corrompu → data-loss (règle unique), details.slotIndex = slot fautif", () => {
       const building = makeBuilding([
         makeBatchSlot(0, "planks", T0, 5, 5), // voisin corrompu (lot épuisé non libéré)
         makeBatchSlot(2, "planks", T0, 4),    // arrêté
@@ -522,7 +522,7 @@ describe("processBuildingSlots (unit — sans Emulator)", () => {
         caught = err;
       }
       expect(caught).toBeInstanceOf(HttpsError);
-      expect((caught as HttpsError).code).toBe("failed-precondition");
+      expect((caught as HttpsError).code).toBe("data-loss");
       expect(corruptSlotDetails(caught)).toMatchObject({ reason: "corrupt-slot", slotIndex: 0, recipeId: "planks" });
     });
 

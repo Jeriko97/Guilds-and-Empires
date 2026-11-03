@@ -31,7 +31,8 @@ Puis lis le contenu joint à ta consigne et, si utile, les fichiers du repo qu'i
 3. **TD-007** : jamais de `FieldValue` (dont `serverTimestamp`) dans un élément d'array Firestore.
 4. **Check-then-mutate** : tout est validé avant la première écriture ; transaction pour tout multi-document.
 5. **HttpsError typé** : `unauthenticated`, `invalid-argument`, `failed-precondition`, `not-found`,
-   `resource-exhausted`, `internal` — jamais d'`Error` brut renvoyé au client.
+   `resource-exhausted`, `internal` ; `data-loss` pour un état de slot corrompu (D-ETAPE19-010 Q1) — jamais
+   d'`Error` brut renvoyé au client.
 6. **Doctrines C1–C9** (C9 = souscriptions et CancellationToken symétriques `OnEnable` / `OnDisable`).
 7. **`.meta` versionnés** : tout asset ajouté/déplacé sous `Assets/` a son `.meta` dans le diff.
 8. **Valeurs économiques** : aucune valeur de game design (prix, coûts, rendements, plafonds, durées)

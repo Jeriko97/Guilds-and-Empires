@@ -375,7 +375,7 @@ describe("stopProductionSlot", () => {
       expect(result.building.slots).toEqual(slots);
     });
 
-    it("Slot voisin corrompu (lot épuisé non libéré) → failed-precondition, journalisé avec les deux slots, rien n'est écrit", async () => {
+    it("Slot voisin corrompu (lot épuisé non libéré) → data-loss, journalisé avec les deux slots, rien n'est écrit", async () => {
       const uid = "stop-settle-corrupt";
       const key = randomUUID();
       const slots = [
@@ -388,12 +388,41 @@ describe("stopProductionSlot", () => {
 
       try {
         await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key })))
-          .rejects.toMatchObject({ code: "failed-precondition" } satisfies Partial<HttpsError>);
+          .rejects.toMatchObject({ code: "data-loss" } satisfies Partial<HttpsError>);
         expect(errorSpy).toHaveBeenCalledWith(
           "stopProductionSlot: état de slot corrompu",
           expect.objectContaining({
             uid, buildingId: "sawmill_0", reason: "corrupt-slot", slotIndex: 0, stoppedSlotIndex: 1,
             motif: expect.stringMatching(/lot épuisé/),
+          }),
+        );
+      } finally {
+        errorSpy.mockRestore();
+      }
+      expect(await readSlots(uid)).toEqual(slots);
+      expect((await readPlayer(uid))?.inventory).toEqual(inventory(10, 0));
+      expect((await opRef(uid, key).get()).exists).toBe(false);
+    });
+
+    it("Slot voisin occupé sans startedAt → data-loss, journalisé avec les deux slots, rien n'est écrit", async () => {
+      const uid = "stop-settle-no-startedat";
+      const key = randomUUID();
+      const slots = [
+        { ...logsSlot(0, 3 * LOG_DURATION_MS), startedAt: null }, // voisin corrompu (D-ETAPE19-006)
+        batchSlot(1, "planks", 2.5 * PLANKS_DURATION_MS, 6),      // arrêté
+      ];
+      await createTestPlayer(uid, { inventory: inventory(10, 0) });
+      await createTestBuilding(uid, slots);
+      const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
+
+      try {
+        await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key })))
+          .rejects.toMatchObject({ code: "data-loss" } satisfies Partial<HttpsError>);
+        expect(errorSpy).toHaveBeenCalledWith(
+          "stopProductionSlot: état de slot corrompu",
+          expect.objectContaining({
+            uid, buildingId: "sawmill_0", reason: "corrupt-slot", slotIndex: 0, stoppedSlotIndex: 1,
+            motif: expect.stringMatching(/sans startedAt/),
           }),
         );
       } finally {
@@ -526,7 +555,7 @@ describe("stopProductionSlot", () => {
         (): ProductionSlotState => ({ ...logsSlot(0, 3 * PLANKS_DURATION_MS), recipeId: "planks" }), /hérité/],
       ["lot corrompu (cyclesProcessed ≥ cyclesPlanned)",
         (): ProductionSlotState => batchSlot(0, "planks", 3 * PLANKS_DURATION_MS, 2, 2), /lot épuisé/],
-    ])("%s → failed-precondition, journalisé, rien n'est écrit", async (label, makeSlot, motif) => {
+    ])("%s → data-loss, journalisé, rien n'est écrit", async (label, makeSlot, motif) => {
       const uid = `stop-corrupt-${label.slice(0, 10).replace(/[^a-z0-9]/gi, "")}`;
       const key = randomUUID();
       const slot = makeSlot();
@@ -536,7 +565,7 @@ describe("stopProductionSlot", () => {
 
       try {
         await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 0, idempotencyKey: key })))
-          .rejects.toMatchObject({ code: "failed-precondition" } satisfies Partial<HttpsError>);
+          .rejects.toMatchObject({ code: "data-loss" } satisfies Partial<HttpsError>);
         expect(errorSpy).toHaveBeenCalledWith(
           "stopProductionSlot: état de slot corrompu",
           expect.objectContaining({ uid, buildingId: "sawmill_0", reason: "corrupt-slot", slotIndex: 0, motif: expect.stringMatching(motif) }),

@@ -251,7 +251,7 @@ describe("resolveLoginState", () => {
       () => makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS), /hérité/],
     ["lot corrompu (cyclesProcessed ≥ cyclesPlanned)", "test-user-corrupt-batch-login",
       () => ({ ...makeActiveSlot(0, "reconstruction_kits", 3 * KITS_DURATION_MS), cyclesPlanned: 2, cyclesProcessed: 2 }), /lot épuisé/],
-  ])("ÉTAPE 19.2 — %s au login → failed-precondition, journalisé, rien n'est écrit", async (_label, uid, makeSlot, motif) => {
+  ])("ÉTAPE 19.2 — %s au login → data-loss, journalisé, rien n'est écrit", async (_label, uid, makeSlot, motif) => {
     const slot = makeSlot();
     await createTestPlayer(uid);
     await createTestBuilding(uid, [slot]);
@@ -260,7 +260,7 @@ describe("resolveLoginState", () => {
 
     try {
       await expect(resolveLoginStateHandler(makeRequest(uid))).rejects.toMatchObject(
-        { code: "failed-precondition" } satisfies Partial<HttpsError>
+        { code: "data-loss" } satisfies Partial<HttpsError>
       );
       expect(errorSpy).toHaveBeenCalledWith(
         "resolveLoginState: état de slot corrompu",

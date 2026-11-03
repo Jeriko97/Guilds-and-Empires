@@ -245,9 +245,9 @@ modification d'un garde-fou → F4. Contenu du lot :
   `CLAUDE.md` §b (garde-fous) et §f (résumé d'arbitrages d'étape, rubrique « garde-fous resserrés »), en plus du corps
   de l'arbitre. Portée du test de réception pour (d) : à fixer au ticket du lot.
 
-À reporter au prochain résumé d'arbitrages d'étape (D-REPRISE-010) : l'identification par Claude Code des
-« 4 précisions ajoutées au cas 3 » validées par le founder, avec le texte exact des cinq puces de `CLAUDE.md` §g,
-pour que le founder la confirme ou la contredise sur pièce.
+Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
+`CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
+d'arbitrages d'étape sur ce point.
 
 Constat, rien à faire : D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2,
 ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` :
@@ -449,9 +449,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   `InternalsVisibleTo`, `5b13b09` consolidation ; D-ETAPE19-009) : une seule implémentation par primitive de
   parsing, messages d'erreur identiques au caractère près ; 46 tests EditMode verts avant et après fusion ;
   TD-024 (format de clé d'idempotence hors production) et TD-025 (parsing numérique permissif) ouvertes ;
-- prochain ticket backend, à ajouter : test d'arrêt avec un slot voisin occupé sans date de début (`startedAt`)
-  → `failed-precondition` ; les messages « introuvable » recopient encore l'identifiant reçu (≤ 128 octets),
-  correction reportée (D-ETAPE19-007, annotation 19.3) ;
+- test d'arrêt avec un slot voisin occupé sans date de début (`startedAt`) : fait en 19.4b (code `data-loss`,
+  D-ETAPE19-010 Q1) ; prochain ticket backend, à ajouter : les messages « introuvable » recopient encore
+  l'identifiant reçu (≤ 128 octets), correction reportée (D-ETAPE19-007, annotation 19.3) ;
 - 19.4 — client : `ProductionScreen` (choix de recette, N, arrêt, recette réelle affichée, risque de saturation
   parallèle affiché). Diagnostic validé le 11-03 (D-ETAPE19-010) : options A (N par 1 / 10 / Max, arrêt confirmé
   sans chiffres puis résumé tiré de la réponse du serveur, panneau de maintenance qui bloque toutes les actions).
@@ -542,7 +542,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   (c) TD-021 (alertes) en prérequis, comme pour `processWorldEventLifecycle`, puisqu'un état corrompu bloque la
   connexion du compte. TD-021 étendue par décision du founder (ticket 19.2b, D-ETAPE19-008) : « TD-021 couvre
   aussi les erreurs "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à
-  l'arrêt), prérequis du déploiement 19.5. »
+  l'arrêt), prérequis du déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code
+  `data-loss`, D-ETAPE19-010 Q1 ; citation conservée telle quelle.]
 
 **ÉTAPE 20 — Contrats** :
 

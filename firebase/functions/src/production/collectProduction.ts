@@ -100,7 +100,7 @@ export async function collectProductionHandler(
         try {
           processResult = processBuildingSlots(buildingData, playerData.inventory, now, createTimestamp);
         } catch (helperErr) {
-          // État de slot corrompu (HttpsError failed-precondition) : journalisé, renvoyé tel quel.
+          // État de slot corrompu (HttpsError data-loss, D-ETAPE19-010 Q1) : journalisé, renvoyé tel quel.
           const corrupt = corruptSlotDetails(helperErr);
           if (corrupt) {
             logger.error("collectProduction: état de slot corrompu", { uid, buildingId, ...corrupt });
