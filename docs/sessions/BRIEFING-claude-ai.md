@@ -235,8 +235,9 @@ prochaine retouche de `CLAUDE.md` ou du briefing ; modification d'un garde-fou �
 
 **Lot unique « retouches du corps de l'arbitre »** — décision du founder (2026-11-03, D-REPRISE-009), citée telle
 quelle : « Les remarques mineures reportées sur le texte de l'agent seront traitées en un seul lot, avec un seul
-nouveau test de réception. » Une seule retouche de `.claude/agents/arbitre-strategique.md`, revue croisée, puis un
-seul test de réception (4 cas, instantanés, empreinte vérifiée), modification d'un garde-fou → F4. Contenu du lot :
+nouveau test de réception. » Une seule retouche de `.claude/agents/arbitre-strategique.md` (et, pour (d), de
+`CLAUDE.md` §b et §f), revue croisée, puis un seul test de réception (4 cas, instantanés, empreinte vérifiée),
+modification d'un garde-fou → F4. Contenu du lot :
 - (a) contrôle du diff contre le dépôt limité aux lignes ajoutées : vérifier aussi que les lignes retirées sont
   absentes, et exiger avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide, ou joindre ce diff
   non indexé (auditeur, revue du diff de D-REPRISE-007) ;
@@ -245,7 +246,18 @@ seul test de réception (4 cas, instantanés, empreinte vérifiée), modificatio
   du commit `8cd670c`, rapportée au founder). D'ici là, chaque saisine d'audit de clôture rappelle « push normal
   autorisé (D-REPRISE-009) » ;
 - (c) une fois (a) et (b) appliqués et le test de réception réussi : retirer ce rappel de la consigne d'audit de
-  clôture (`CLAUDE.md` §g, D-REPRISE-009).
+  clôture (`CLAUDE.md` §g, D-REPRISE-009) ;
+- (d) règle des garde-fous resserrés — décision du founder (2026-11-03, D-REPRISE-010), citée telle quelle :
+  « Règle : un garde-fou peut être **resserré** par les agents, à condition d'être listé dans le résumé d'étape,
+  rubrique « garde-fous resserrés », pour validation a posteriori par le founder. Un garde-fou **assoupli** reste F4,
+  avant toute application. » Décidée par le founder au journal : s'applique avec le lot sans nouvelle escalade
+  (`CLAUDE.md` §b) ; d'ici là, `CLAUDE.md` §b reste la règle (modification d'un garde-fou → F4). Touche aussi
+  `CLAUDE.md` §b (garde-fous) et §f (résumé d'arbitrages d'étape, rubrique « garde-fous resserrés »), en plus du corps
+  de l'arbitre. Portée du test de réception pour (d) : à fixer au ticket du lot.
+
+À reporter au prochain résumé d'arbitrages d'étape (D-REPRISE-010) : l'identification par Claude Code des
+« 4 précisions ajoutées au cas 3 » validées par le founder, avec le texte exact des cinq puces de `CLAUDE.md` §g,
+pour que le founder la confirme ou la contredise sur pièce.
 
 Constat, rien à faire : D-REPRISE-006 s'appuie sur des sources Unity extérieures au dépôt (UnityCsReference 6000.2,
 ScriptReference), non vérifiables en lecture seule ; les valeurs du dépôt sont cohérentes (`ProjectSettings.asset` :
