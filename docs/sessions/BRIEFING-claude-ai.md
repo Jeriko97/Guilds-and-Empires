@@ -12,9 +12,11 @@ le founder, TD, questions F1/F2 en attente, actions F3, jauge Phase 1, signal sk
 que les décisions prises sans le founder ne relevaient pas de F1–F4 (`CLAUDE.md` §b, dont la règle d'effet indirect
 en F1), que l'arbitre ne valide pas par complaisance, et je propose au founder les révisions de garde-fous (F4).
 Le founder n'est sollicité par Claude Code que pour F1 (game design et gameplay), F2 (direction artistique, textes
-affichés), F3 (actions irréversibles en production), F4 (garde-fous, skills, désaccord persistant). Dernier GO d'un
-commit = GO de Codex, de l'auditeur de diff et de l'arbitre, sur le même arbre d'index ; arbre du commit vérifié
-avant le push. Push normal sur la branche de travail (jamais `main`) autorisé après ces trois GO et cette vérification
+affichés ; depuis D-REPRISE-012, les libellés courts sont délégués à l'arbitre, à condition d'être listés au résumé
+d'étape, les phrases restent F2, et le vouvoiement est la règle pour tous les textes affichés au joueur), F3
+(actions irréversibles en production), F4 (garde-fous, skills, désaccord persistant). Dernier GO d'un commit = GO
+de Codex, de l'auditeur de diff et de l'arbitre, sur le même arbre d'index ; arbre du commit vérifié avant le push.
+Push normal sur la branche de travail (jamais `main`) autorisé après ces trois GO et cette vérification
 (D-REPRISE-009) ; restent en F3 : merge vers `main`, force-push ou réécriture d'historique, suppression de branche
 distante.
 
@@ -326,7 +328,14 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     et clé d'idempotence, `StopProductionSlotAsync`, `AlreadyApplied`, compteurs de lot, `DataLoss` → texte Q5,
     copie des recettes pour l'affichage, registre `PendingIntentKeys`, logs lancés avec clé ; 73 tests EditMode) ;
     Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
-  - 19.4c — interface ; 19.4d — panneau de maintenance (dont le blocage de toutes les actions après un `data-loss`) ;
+  - 19.4c — interface, découpée en deux sous-étapes (D-ETAPE19-014 ; textes de 19.4c validés par le founder, même
+    entrée) : 19.4c-1 — lancement (choix de recette, N par 1 / 10 / Max, aperçu, avertissement de saturation, store
+    mis à jour après un lancement, recette réelle affichée, reports de 19.4b sur `PendingIntentKeys` et les
+    recettes ; le message de limite d'appels passe au prochain lot de textes F2, délai réel et vouvoiement
+    ensemble) ; 19.4c-2 — slot actif (lot « k/N » estimé, temps restant, « Lot terminé —
+    collecter »), arrêt (confirmation, résumé du serveur, rejeu), entrées à 0 filtrées, « stock plein »,
+    `ParseOptionalInt` avant « lot k/N » ;
+  - 19.4d — panneau de maintenance (dont le blocage de toutes les actions après un `data-loss`) ;
   - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) — garde demandée par le founder le
     2026-11-03 (D-REPRISE-011) : modification de
     `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la

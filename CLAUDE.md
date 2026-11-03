@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012)
 
 La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
 neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
@@ -29,7 +29,7 @@ founder et rend l'audit de clôture de chaque sous-étape. Le founder (non techn
 7. **Audit de clôture de l'arbitre** (§c) sur l'index exact du futur commit.
 8. **Commit atomique**, contrôle de l'arbre (§d), puis rapport de clôture (§f).
 
-### b. Escalade — le founder n'est sollicité QUE pour F1–F4 (D-REPRISE-007)
+### b. Escalade — le founder n'est sollicité QUE pour F1–F4 (D-REPRISE-007, D-REPRISE-012)
 Texte du founder (ticket du 2026-11-03), tel quel :
 - **F1 — Game design et gameplay** : règles, valeurs économiques, bornes, durées, rythme. **Règle d'effet indirect** : toute décision technique susceptible de modifier un comportement visible par le joueur, une valeur économique ou une règle de gameplay relève de F1, **même présentée comme une correction ou une optimisation**.
 - **F2 — Direction artistique et textes affichés au joueur.**
@@ -39,6 +39,10 @@ Texte du founder (ticket du 2026-11-03), tel quel :
 **Tout le reste est tranché par l'arbitre.** Claude Code ne pose jamais lui-même une question au founder :
 l'arbitre la formule (§c). Seule exception : arbitre indisponible (§d) ; Claude Code formule alors la question F4
 selon §e, et le dit.
+
+Décision F4 du founder (D-REPRISE-012, 2026-11-03), citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
+Précision de Claude Code (relue en revue croisée) : un libellé court décidé par l'arbitre entre au journal,
+attribué à « arbitre », et au résumé d'arbitrages d'étape (§f) ; au doute entre libellé court et phrase → F2.
 
 Précisions d'application (Claude Code, relues en revue croisée ; au doute, vers le founder — D-REPRISE-007) :
 - **F3** couvre le déploiement des Cloud Functions et des Security Rules, et toute écriture sur les données de
@@ -144,6 +148,8 @@ Les actions F3 sont une question oui / non, regroupée quand c'est possible.
 **Résumé d'arbitrages d'étape** : à la clôture de chaque étape, `docs/sessions/<date>-etape-N-arbitrages.md`, une
 page au plus. C'est la pièce que le founder apporte à Claude.ai pour l'audit indépendant de l'étape. Contenu :
 - décisions prises sans le founder (une ligne chacune, avec l'ID) ;
+- libellés courts décidés par l'arbitre — condition posée par le founder (D-REPRISE-012, §b) : « à condition d'être
+  listés dans le résumé d'étape » ; forme (précision de Claude Code) : texte et endroit de chaque libellé ;
 - TD ouvertes ou fermées ;
 - questions F1/F2 en attente ; actions F3 à autoriser ;
 - **jauge Phase 1** : étapes de la boucle faites et restantes, et TD « avant tout testeur externe » encore ouvertes.

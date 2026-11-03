@@ -30,7 +30,8 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   `.claude/hooks/arbitre-lecture.js` qui lui interdit `.revue-croisee/` ; TD-031). La consigne commence par le type
   d'appel : « arbitrage d'une question » (ni diff ni tests) ou « audit de clôture / proposition de modification »
   (diff de l'index, tests, rapport, décisions). Le founder n'est sollicité que pour **F1** (game
-  design et gameplay, règle d'effet indirect), **F2** (direction artistique, textes affichés), **F3** (actions
+  design et gameplay, règle d'effet indirect), **F2** (direction artistique, textes affichés ; révisé par
+  D-REPRISE-012, ci-dessous), **F3** (actions
   irréversibles en production), **F4** (garde-fous, skills, désaccord persistant) ; tout le reste est tranché par
   l'arbitre (`CLAUDE.md` §b, avec la correspondance des 9 anciens cas, qui sert à lire les renvois « cas N »
   historiques). Dernier GO de D-REPRISE-004 = GO de Codex, de l'auditeur **et** de l'arbitre (audit de clôture sur
@@ -45,6 +46,11 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   phrase de relance (`CLAUDE.md` §h) ; rien de durable ne vit seulement dans la conversation ou la mémoire de session.
   Contrôle de l'orchestrateur, dès 19.4c : noter `HEAD` avant de lancer l'exécutant, puis vérifier à la reprise de
   main que `HEAD` est inchangé et que `git diff --cached --name-only` est vide (item (g) du lot unique).
+- **Libellés courts et vouvoiement (D-REPRISE-012, 2026-11-03, F4, décision du founder)**, citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
+  Inscrite dans `CLAUDE.md` §b et §f. Précisions de Claude Code : un libellé court décidé par l'arbitre entre au
+  journal (attribué à « arbitre ») et au résumé d'arbitrages d'étape ; au doute entre libellé court et phrase → F2 ;
+  corps de l'arbitre non encore aligné : lot unique, item (h) ; d'ici là, toute saisine de l'arbitre sur un libellé
+  court cite D-REPRISE-012.
 - **Push (D-REPRISE-009, 2026-11-03)** : push normal sur la branche de travail (branche courante de la sous-étape,
   jamais `main`) autorisé après les trois GO et la vérification de l'arbre ; restent en F3 : merge vers `main`,
   force-push ou réécriture d'historique, suppression de branche distante (`CLAUDE.md` §g).
@@ -276,6 +282,10 @@ modification d'un garde-fou → F4. Contenu du lot :
   l'orchestrateur : noter `HEAD` (`git rev-parse HEAD`) avant de lancer l'exécutant puis, à la reprise de main,
   vérifier que `HEAD` est inchangé et que `git diff --cached --name-only` est vide avant de préparer l'index ; ce
   contrôle est une pratique de l'orchestrateur, appliquée dès 19.4c sans attendre le lot.
+- (h) aligner le corps de l'arbitre (`.claude/agents/arbitre-strategique.md`, définition de F2) sur D-REPRISE-012
+  (libellés courts délégués à l'arbitre, listés au résumé d'étape ; phrases restant F2 ; vouvoiement). Précision de
+  Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade (`CLAUDE.md` §b), au
+  doute → F4 ; d'ici là, toute saisine de l'arbitre sur un libellé court cite D-REPRISE-012.
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -506,7 +516,28 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     et clé d'idempotence, `StopProductionSlotAsync`, `AlreadyApplied`, compteurs de lot, `DataLoss` → texte Q5,
     copie des recettes pour l'affichage, registre `PendingIntentKeys`, logs lancés avec clé ; 73 tests EditMode) ;
     Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
-  - 19.4c — interface ; 19.4d — panneau de maintenance ;
+  - 19.4c — interface, découpée en deux sous-étapes (D-ETAPE19-014) ; clause STOP des tickets sur les textes
+    (précision de Claude Code) : la réponse F2 du founder citée dans D-ETAPE19-014, et D-REPRISE-012 :
+    - 19.4c-1 — lancement : choix de recette, N par 1 / 10 / Max, aperçu, avertissement de saturation, store mis à
+      jour après un lancement (bâtiment et inventaire), recette réelle affichée sur un slot actif, reports de 19.4b
+      sur le registre `PendingIntentKeys` (clé ancrée sur le store, purge, en-tête) et les recettes (test
+      d'immuabilité) ; règle de « Lancer » et précisions 1a-1f de l'arbitrage du 11-03 (D-ETAPE19-014) ; textes 1 à
+      6 validés par le founder (D-ETAPE19-014, version finale). 19.4c-1 ne touche pas le message de limite d'appels
+      (« Trop d'actions récentes, réessaie dans 2s. ») : son délai réel par action et son vouvoiement passent
+      ensemble au prochain lot de textes F2 (ci-dessous) ;
+    - 19.4c-2 — slot actif (lot « k/N » estimé, temps restant rafraîchi ~1 s, « Lot terminé — collecter »,
+      contraintes D-ETAPE19-013), arrêt (bouton, confirmation sans chiffres, résumé du serveur, rejeu), entrées à 0
+      filtrées partout (collecte et arrêt), « stock plein » (texte 8), traitement de `ParseOptionalInt` avant
+      l'affichage « lot k/N ». Textes validés par le founder (D-ETAPE19-014) : 7. « Arrêter » ; 8. « Récolté : … »,
+      « Perdu (stock plein) : … », « Rendu : … », « Intrants perdus (stock plein) : … », « cap plein » → « stock
+      plein » aussi dans le texte de collecte existant ; 9. « 4 h 10 restantes », « 25 min restantes », « < 1 min » ;
+      noms de ressources invariables. Réponse du founder sur le texte 8, citée telle quelle : « Texte 8 : « cap plein » devient « stock plein » partout, y compris dans le texte de collecte existant. Majuscule harmonisée : « Perdu (stock plein) : … », « Rendu : … », « Intrants perdus (stock plein) : … ». »
+      Précision de Claude Code : la forme de la ligne de collecte existante (aujourd'hui « Récolté : … — perdu (cap
+      plein) : … », sur une ligne avec un tiret, `Assets/_Project/Scripts/UI/Screens/ProductionScreen.cs` vers la
+      l. 384) se tranche au ticket de 19.4c-2, en partant de ce texte ; toute forme qui va au-delà de la consigne
+      du founder (« stock plein », majuscule harmonisée) part en F2 (D-REPRISE-012 range les résumés parmi les
+      phrases) ;
+  - 19.4d — panneau de maintenance (inchangée) ;
   - **Diagnostic 19.4 (Tâche 0, 2026-11-03) — constats pour rédiger 19.4b à 19.4d** (lignes relevées au commit
     `eb3b4d4` ; décisions du founder : D-ETAPE19-010) :
     - a.1 Lancement : le serveur attend `buildingId`, `slotIndex`, `recipeId`, `cycles?`, `idempotencyKey` (UUID
@@ -573,7 +604,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     tests, et TD-021 alignée dans la doc (son filtre d'alerte vise `data-loss`, D-ETAPE19-010 Q1 ; l'alerte elle-même
     reste soumise à son déclencheur, « Rien à implémenter avant le déclencheur ») ; aligner les grilles des relecteurs
     et la convention n° 8 ; (2) puis services et modèles (point b), adaptation minimale de l'écran (logs avec clé).
-    19.4c : interface (options A, store mis à jour après un lancement, entrées à 0 filtrées, message 6 s) ;
+    19.4c (découpée en 19.4c-1 / 19.4c-2, ci-dessus) : interface (options A, store mis à jour après un lancement,
+    entrées à 0 filtrées ; message 6 s retiré de 19.4c, au prochain lot de textes F2 avec le vouvoiement,
+    D-ETAPE19-014) ;
     contraintes de l'arbitrage du 11-03 (D-ETAPE19-013) : estimation recalculée à chaque tick depuis le
     `SlotSnapshot` du store, jamais un compteur local ; aucune valeur estimée dans une requête ni dans le store ;
     tick arrêté en `OnDisable` ; pas d'allocation de chaîne par tick ; après toute réponse serveur, l'affichage
@@ -600,7 +633,26 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     `Read` ont été désignés par fichier, et la consigne commune a une fois dit « désigné » au lieu de « joint » ;
     le skill §3 aligné ajoute aussi un contrôle du journal de Codex (garde-fou resserré). Pour information, garde-fou
     resserré (pratique de l'orchestrateur, remarque de l'arbitre à la clôture de `ac61717`) : contrôle de `HEAD` et de
-    l'index à la reprise de main après l'exécutant.
+    l'index à la reprise de main après l'exécutant. Libellés courts décidés par l'arbitre (D-REPRISE-012, condition
+    posée par le founder : « à condition d'être listés dans le résumé d'étape ») : les lister au résumé ; forme
+    (précision de Claude Code) : texte et endroit ; pour information (précision de Claude Code), y joindre les textes
+    jugés couverts sans question par l'arbitre le 11-03, avant D-REPRISE-012 (D-ETAPE19-014, question 2).
+    Proposition de Claude Code (F4) : une ligne « vouvoiement » dans les grilles des relecteurs et de l'arbitre
+    (`AGENTS.md`, `.claude/agents/*.md`), non modifiées. Discordance à signaler (précision de Claude Code ; F4,
+    doctrine) : la table de la doctrine C6
+    (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`) donne des textes d'exemple au tutoiement (ex. « Une
+    erreur est survenue, réessaie. »), contraires à la règle de vouvoiement de D-REPRISE-012 ; skill non modifié.
+  - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
+    Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
+    `FailedPrecondition`) ; ajout de Claude Code : le même message s'affiche aussi pour un refus faute de place
+    (« Place insuffisante », même code, constat a.6 du diagnostic ci-dessus) ; (2) le message de limite d'appels
+    « Trop d'actions récentes, réessaie dans 2s. » (`FirebaseProductionService.cs`, `ResourceExhausted`), avec ses
+    deux changements ensemble : délai réel par action (6 s pour la collecte, constat a.7) et vouvoiement ; (3) le
+    passage au vouvoiement (D-REPRISE-012) des autres phrases existantes encore tutoyées, par exemple « Une erreur
+    est survenue, réessaie. », « Erreur inattendue, consulte la console. » ; leur liste exacte est relevée dans ce
+    lot, non avant. La question est formulée par l'arbitre (`CLAUDE.md` §c) ; conversion des textes après la réponse
+    du founder seulement. Le lot est soumis au founder avant le déploiement de 19.5, pour qu'aucun texte au
+    tutoiement n'arrive aux joueurs.
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
@@ -612,6 +664,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   aussi les erreurs "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à
   l'arrêt), prérequis du déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code
   `data-loss`, D-ETAPE19-010 Q1 ; citation conservée telle quelle.]
+  Renvoi (précision de Claude Code) : le prochain lot de textes (F2) est soumis au founder avant le déploiement de
+  19.5, pour qu'aucun texte au tutoiement n'arrive aux joueurs (19.4, « Prochain lot de textes à soumettre au
+  founder », D-ETAPE19-014).
 
 **ÉTAPE 20 — Contrats** :
 
