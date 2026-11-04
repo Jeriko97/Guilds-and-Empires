@@ -29,7 +29,9 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   (Read, Grep, Glob seulement ; sorties git jointes par Claude Code ; filtre du projet `.claude/settings.json` →
   `.claude/hooks/arbitre-lecture.js` qui lui interdit `.revue-croisee/` ; TD-031). La consigne commence par le type
   d'appel : « arbitrage d'une question » (ni diff ni tests) ou « audit de clôture / proposition de modification »
-  (diff de l'index, tests, rapport, décisions). Le founder n'est sollicité que pour **F1** (game
+  (diff de l'index, tests, rapport, décisions). Décisions applicables d'une saisine : joindre leur texte, ou leur
+  « chemin + ligne » (règle « ID et texte », `CLAUDE.md` §c ; remarque de l'audit de clôture de 19.4c-1). Le founder
+  n'est sollicité que pour **F1** (game
   design et gameplay, règle d'effet indirect), **F2** (direction artistique, textes affichés ; révisé par
   D-REPRISE-012, ci-dessous), **F3** (actions
   irréversibles en production), **F4** (garde-fous, skills, désaccord persistant) ; tout le reste est tranché par
@@ -43,9 +45,23 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   §d) avant de s'appuyer sur son verdict.
 - **Sessions (D-REPRISE-011, 2026-11-03)** : la session principale orchestre ; chaque sous-étape est implémentée par
   un sous-agent exécutant neuf ; contenus volumineux par fichier ; une session principale par étape, terminée par la
-  phrase de relance (`CLAUDE.md` §h) ; rien de durable ne vit seulement dans la conversation ou la mémoire de session.
+  relance (D-REPRISE-013, ci-dessous ; `CLAUDE.md` §h) ; rien de durable ne vit seulement dans la conversation ou la
+  mémoire de session.
   Contrôle de l'orchestrateur, dès 19.4c : noter `HEAD` avant de lancer l'exécutant, puis vérifier à la reprise de
-  main que `HEAD` est inchangé et que `git diff --cached --name-only` est vide (item (g) du lot unique).
+  main que `HEAD` est inchangé et que `git diff --cached --name-only` est vide (item (g) du lot unique). Relance :
+  depuis D-REPRISE-013 (ci-dessous), Claude Code ouvre lui-même la session suivante ; le reste de D-REPRISE-011 est
+  inchangé.
+- **Relance de session par Claude Code (D-REPRISE-013, 2026-11-03, F4, décision du founder)** — question, réponse de
+  Claude Code approuvée et décision citées au journal ; inscrite dans `CLAUDE.md` §h. À la fin d'une étape, ou sur
+  relance décidée par le founder : trois GO, commit du relais, vérification de l'arbre, push, rapport de clôture
+  remis au founder, puis ouverture d'une session liée, dans le même dossier `G:\Unity\GuildsAndEmpires` (sans
+  worktree : l'Éditeur Unity et les émulateurs sont rattachés à ce dossier), contexte vierge, avec pour seule
+  consigne la phrase standard ; lien donné au founder, qui garde la main ; outil indisponible ou refusé → le founder
+  relance, comme avant. Précision de Claude Code (resserrement) : la session parente cesse toute action sur le dépôt
+  et n'envoie aucun message à la session enfant. Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04),
+  inscrite dans `CLAUDE.md` §b, citée telle quelle : « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
+  Filtre de lecture étendu à l'auditeur (et à Codex si c'est possible) : lot unique, item (i) ; condition (d) du
+  déploiement de 19.5 : ci-dessous (19.5).
 - **Libellés courts et vouvoiement (D-REPRISE-012, 2026-11-03, F4, décision du founder)**, citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
   Inscrite dans `CLAUDE.md` §b et §f. Précisions de Claude Code : un libellé court décidé par l'arbitre entre au
   journal (attribué à « arbitre ») et au résumé d'arbitrages d'étape ; au doute entre libellé court et phrase → F2 ;
@@ -271,7 +287,9 @@ modification d'un garde-fou → F4. Contenu du lot :
   « sauf règle déjà décidée par le founder au journal » ;
 - (f) proposition de l'arbitre (D-REPRISE-011) : mode unique « toujours par fichier » pour l'auditeur, quelle que
   soit la taille, et extension du filtre de lecture à l'auditeur (TD-032) — resserrements au-delà de la décision du
-  founder : règle (d) une fois appliquée, sinon F4.
+  founder : règle (d) une fois appliquée, sinon F4. Annotation (D-REPRISE-013) : l'extension du filtre de lecture à
+  l'auditeur relève désormais de l'item (i) (décision du founder) ; seul le mode « toujours par fichier » reste
+  soumis à la règle (d) de D-REPRISE-010 une fois appliquée, sinon à F4.
 - (g) points à reprendre au ticket du lot (remarques des relecteurs et de l'arbitre sur D-REPRISE-011) : ajouter §h
   et D-REPRISE-011 à la liste des garde-fous de `CLAUDE.md` §b ; skill `revue-croisee` §3 : écrire la règle
   d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
@@ -287,6 +305,16 @@ modification d'un garde-fou → F4. Contenu du lot :
   (libellés courts délégués à l'arbitre, listés au résumé d'étape ; phrases restant F2 ; vouvoiement). Précision de
   Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade (`CLAUDE.md` §b), au
   doute → F4 ; d'ici là, toute saisine de l'arbitre sur un libellé court cite D-REPRISE-012.
+- (i) filtre de lecture étendu — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 1 ;
+  D-REPRISE-013), citée telle quelle : « 1. Lot de retouches : étendre le filtre de lecture de TD-031 à l'auditeur (et à Codex si c'est possible), suite à l'incident de 19.4c-1 où un auditeur a lu les fichiers de l'exécutant. Le filtre ne doit plus reposer seulement sur la consigne. »
+  Décidée par le founder au journal : s'applique avec le lot sans nouvelle escalade (`CLAUDE.md` §b). Touche le
+  filtre du projet (`.claude/settings.json`, `.claude/hooks/`), aujourd'hui appliqué à l'arbitre seul (TD-031) ;
+  aucune modification du filtre avant le lot. Précision de Claude Code : pour Codex (« si c'est possible »), le lot
+  vérifie si un filtre peut s'appliquer à un processus lancé hors Claude Code et le dit ; la conclusion, surtout en
+  cas d'impossibilité, est rapportée au founder au résumé d'arbitrages d'étape. Résolution de TD-032.
+- (j) `CLAUDE.md` §h, puce « Relance (D-REPRISE-013) » : « (19.4c-2) » y est inscrit en dur comme exemple de
+  relance en milieu d'étape ; à remplacer par un exemple daté ou à retirer (modification d'un garde-fou → F4, avec
+  le lot ; remarque des relecteurs, sous-étape doc D-REPRISE-013).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -519,7 +547,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
   - 19.4c — interface, découpée en deux sous-étapes (D-ETAPE19-014) ; clause STOP des tickets sur les textes
     (précision de Claude Code) : la réponse F2 du founder citée dans D-ETAPE19-014, et D-REPRISE-012 :
-    - 19.4c-1 — **fait le 11-03** (D-ETAPE19-014 ; TD-033 ouverte). Report : la vente a le même défaut d'annulation que
+    - 19.4c-1 — **fait le 11-03** (D-ETAPE19-014 ; TD-033 ouverte ; clôture vue par le founder, D-ETAPE19-014).
+      Report : la vente a le même défaut d'annulation que
       la production avant 19.4c-1 (`FirebaseMarketService.cs:121`, `ThrowIfCancellationRequested` après `CallAsync` ;
       écriture dans le store, `MarketScreen.cs:311`, jamais atteinte après annulation), à traiter au prochain ticket
       qui touche le marché ; au même ticket, numéroter les ventes comme les réponses de production (depuis 19.4c-1, le
@@ -545,7 +574,11 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
       plein) : … », sur une ligne avec un tiret, `Assets/_Project/Scripts/UI/Screens/ProductionScreen.cs` vers la
       l. 384) se tranche au ticket de 19.4c-2, en partant de ce texte ; toute forme qui va au-delà de la consigne
       du founder (« stock plein », majuscule harmonisée) part en F2 (D-REPRISE-012 range les résumés parmi les
-      phrases) ;
+      phrases). Reports de 19.4c-1 (relais : audit de clôture de l'arbitre et passes courtes de l'auditeur, remarques
+      non bloquantes) : (1) `ProductionLaunchPlanner.RemainingOutputOfOtherSlots`, en-tête à compléter —
+      `cyclesProcessed` = dernier règlement serveur ; restant surestimé entre deux appels, avertissement
+      conservateur ; (2) lancement et collecte : `catch (OperationCanceledException) { }` — une annulation levée par
+      le SDK (jeton intact) reste muette ; aligner sur `LoadAsync` (19.4c-1 v4) ;
   - 19.4d — panneau de maintenance (inchangée) ;
   - **Diagnostic 19.4 (Tâche 0, 2026-11-03) — constats pour rédiger 19.4b à 19.4d** (lignes relevées au commit
     `eb3b4d4` ; décisions du founder : D-ETAPE19-010) :
@@ -636,9 +669,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     (19.4c-1, trois bloquants successifs de Codex sur l'ordre puis la fraîcheur des réponses) : la doctrine C7 ne dit
     rien de l'ordre ni de la version des réponses ; proposition d'y ajouter « le serveur sert une version monotone de
     l'état dans chaque réponse ; le store n'applique qu'une version strictement supérieure » (F4, doctrine ; TD-034).
-    Garde demandée par le founder le
-    2026-11-03 (D-REPRISE-011) : modification de
-    `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
+    Garde demandée par le founder le 2026-11-03 (D-REPRISE-011) : modification de `.claude/agents/auditeur.md`
+    (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
     doctrine C6 (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`) une ligne `DataLoss` → maintenance et de
     mettre à jour C5 (`startProductionSlot` et `stopProductionSlot` ont une clé d'idempotence, D-ETAPE19-003) :
     non modifiées. Pour information (fondement distinct : arbitrage du 2026-11-03 appliquant la phrase du founder
@@ -658,6 +690,32 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     doctrine) : la table de la doctrine C6
     (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`) donne des textes d'exemple au tutoiement (ex. « Une
     erreur est survenue, réessaie. »), contraires à la règle de vouvoiement de D-REPRISE-012 ; skill non modifié.
+    Écarts de procédure de la sous-étape D-REPRISE-013, à signaler (journal, D-REPRISE-013) : (1) la question au
+    founder qui a précédé son autorisation du 2026-11-04 (texte C) a été formulée par Claude Code directement, sans
+    passer par l'arbitre, alors que l'arbitre était disponible (écart à `CLAUDE.md` §b et §c) ; (2) `CLAUDE.md` écrit
+    par l'orchestrateur au lieu de l'exécutant, et avant le GO du ticket (ordre §a.2 → §a.3 inversé) — écart de
+    procédure, avec pour justification le texte C du founder (2026-11-04) ; (3) ajouts de Claude Code hors texte C,
+    que le founder peut contester : renvois D-REPRISE-013 (simples renvois) à l'en-tête « Mode autonome supervisé
+    (…) » et au titre de §b ; préfixe d'attribution de la phrase F4, « Règle du founder (D-REPRISE-013, 2026-11-04),
+    citée telle quelle : ». Le renvoi D-REPRISE-013 ajouté un temps au titre de §h a été retiré après la revue du diff
+    (bloquant de Codex : contraire à la phrase du texte C « Écris dans §h le texte prêt (rapport-doc013.md), sans rien
+    y ajouter. ») ; le titre de §h est revenu à « ### h. Sessions : orchestrateur et exécutant (D-REPRISE-011) » ;
+    la réponse de Claude Code (décision A) est citée de la transcription de la session, non versionnée : le founder
+    peut contrôler la citation. Pour information : la conclusion du lot unique sur le filtre de lecture de Codex
+    (item (i)), surtout en cas d'impossibilité, est rapportée ici.
+  - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19 — F2 en attente** (classement de Claude Code) :
+    mise en page du panneau de lancement de 19.4c-1 — le panneau comprime la liste des slots (Game view) (remarque de
+    l'audit de clôture de 19.4c-1). Précision de Claude Code : à juger sur le rendu sur appareil, lié à la condition
+    (d) du déploiement de 19.5 (lisibilité des écrans sur petit format).
+  - **Coût de coordination, pour le résumé d'arbitrages de l'ÉTAPE 19** (`CLAUDE.md` §f) — 19.4c-1 (relais) : ticket
+    7 versions (Codex 6 passes, auditeur 6 passes), arbitre 2 arbitrages ; diff 4 versions (Codex 4 passes, auditeur
+    5 passes dont 1 écartée), arbitre 1 arbitrage + 1 clôture ; nombres de NO-GO et d'escalades : donnée absente du
+    relais. Sous-étape doc D-REPRISE-012 (relais) : ticket 2 versions, diff 3 passes par relecteur, 1 clôture ;
+    passes du ticket par relecteur, NO-GO et escalades : donnée absente du relais. Sous-étape doc D-REPRISE-013
+    (données de l'orchestrateur à la préparation de l'index) : mode ticket, 6 passes de Codex et 6 de l'auditeur (v1
+    à v6), aucun NO-GO de l'arbitre, une question au founder (posée sans l'arbitre ; réponse : texte C) ; limite :
+    les passes du mode diff et l'audit de clôture ne sont pas comptés, faute d'être connus à la préparation de
+    l'index.
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -681,6 +739,7 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   aussi les erreurs "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à
   l'arrêt), prérequis du déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code
   `data-loss`, D-ETAPE19-010 Q1 ; citation conservée telle quelle.]
+  (d) — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 2 ; D-REPRISE-013), citée telle quelle : « Build Android installé et joué sur un appareil réel avant le déploiement 19.5 : boucle produire → lancer un lot → arrêter → collecter → vendre, et lisibilité des écrans sur petit format. » Phrase du founder sur F3, même message, citée telle quelle : « Si un appareil ou un outil manque, ce sera une question F3 pour le founder au moment de 19.5. »
   Renvoi (précision de Claude Code) : le prochain lot de textes (F2) est soumis au founder avant le déploiement de
   19.5, pour qu'aucun texte au tutoiement n'arrive aux joueurs (19.4, « Prochain lot de textes à soumettre au
   founder », D-ETAPE19-014).

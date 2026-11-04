@@ -1001,11 +1001,17 @@ Limite du contrôle : une commande récursive qui ne respecte pas `.gitignore` (
 `rg -uu`, Grep ou Glob larges) peut lire ces dossiers sans les nommer : elle est signalée au rapport comme une lecture
 possible.
 
+Exemple (19.4c-1, 2026-11-03) : un auditeur a lu `.claude/instantanes/executant/` ; sa revue a été écartée, un
+auditeur neuf l'a refaite, et le dossier de l'exécutant a été déplacé hors du dépôt pendant les revues suivantes.
+Suite donnée par le founder : point 1 de son message de clôture de 19.4c-1 (D-REPRISE-013), filtre de lecture étendu
+à l'auditeur, et à Codex si c'est possible (lot unique, item (i)).
+
 **Trigger de résolution :**
-Lot unique de retouches : étendre le filtre de lecture à l'auditeur (modification de `.claude/hooks/`, garde-fou :
-règle (d) de D-REPRISE-010 une fois appliquée, sinon F4) ; ou toute lecture d'une sortie Codex constatée. Pour Codex
-(processus lancé hors Claude Code, que le hook ne couvre pas), pas de résolution prévue : le contrôle de son journal
-reste la seule mesure.
+Décision du founder (D-REPRISE-013) : lot unique de retouches, item (i) — étendre le filtre de lecture à l'auditeur
+(modification de `.claude/hooks/` et `.claude/settings.json`, décidée par le founder au journal : s'applique avec le
+lot sans nouvelle escalade). Pour Codex (processus lancé hors Claude Code, que le hook ne couvre pas), le lot
+vérifie si un filtre est possible et le dit ; s'il ne l'est pas, le contrôle de son journal reste la seule mesure,
+et la conclusion est rapportée au founder au résumé d'arbitrages d'étape.
 
 ---
 
@@ -1058,6 +1064,8 @@ redémarrage : aucun délai n'est fixé dans le code (`GetHttpsCallable` sans op
 
 **Impact :**
 Affichage (bâtiment, inventaire) en retard ; aucune valeur économique faussée (serveur autoritaire, idempotence).
+Une réponse `resolveLoginState` appliquée après une vente rétablit aussi le gold antérieur à la vente, jusqu'à la
+réponse suivante (remarque de l'audit de clôture de 19.4c-1).
 
 **Résolution :**
 Version monotone de l'état du joueur servie par le backend dans chaque réponse ; le store n'applique qu'une version

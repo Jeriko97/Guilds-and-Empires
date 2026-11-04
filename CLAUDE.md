@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013)
 
 La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
 neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
@@ -29,12 +29,14 @@ founder et rend l'audit de clôture de chaque sous-étape. Le founder (non techn
 7. **Audit de clôture de l'arbitre** (§c) sur l'index exact du futur commit.
 8. **Commit atomique**, contrôle de l'arbre (§d), puis rapport de clôture (§f).
 
-### b. Escalade — le founder n'est sollicité QUE pour F1–F4 (D-REPRISE-007, D-REPRISE-012)
+### b. Escalade — le founder n'est sollicité QUE pour F1–F4 (D-REPRISE-007, D-REPRISE-012, D-REPRISE-013)
 Texte du founder (ticket du 2026-11-03), tel quel :
 - **F1 — Game design et gameplay** : règles, valeurs économiques, bornes, durées, rythme. **Règle d'effet indirect** : toute décision technique susceptible de modifier un comportement visible par le joueur, une valeur économique ou une règle de gameplay relève de F1, **même présentée comme une correction ou une optimisation**.
 - **F2 — Direction artistique et textes affichés au joueur.**
 - **F3 — Actions irréversibles en production** : déploiement, écriture, seed. Question oui / non, regroupée quand c'est possible.
 - **F4 — Désaccord persistant** entre l'arbitre et un relecteur sur un point bloquant, **modification des garde-fous** (cette liste, D-REPRISE-004/005, conventions non négociables), ou **création ou modification d'un skill**.
+
+Règle du founder (D-REPRISE-013, 2026-11-04), citée telle quelle : « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
 
 **Tout le reste est tranché par l'arbitre.** Claude Code ne pose jamais lui-même une question au founder :
 l'arbitre la formule (§c). Seule exception : arbitre indisponible (§d) ; Claude Code formule alors la question F4
@@ -188,7 +190,15 @@ d'une nouvelle session principale **une fois par étape**, avec la phrase standa
 2026-11-03 (journal, D-REPRISE-011) : ce schéma remplace « une session = une sous-étape » ; deux règles sont gardées
 telles quelles : « Rien de durable ne vit seulement dans la conversation ou la mémoire de session : tout va dans le
 dépôt. » et « Une sous-étape qui paraît trop grosse […] est découpée avant de commencer. »
-Phrase de relance standard (founder), donnée à la fin de chaque étape : « Nouvelle session — reprends depuis le briefing : sous-étape suivante. »
+Relance de session par Claude Code (D-REPRISE-013, 2026-11-03, F4, garde-fou). Question du founder, citée telle
+quelle : « Est-ce que en fin d'étape comme la, tu es capable d'ouvrir une session enfant au Projet dans claude code
+"Guilds-and-Empires"  pour relancer toi même le tickets dans une nouvelle session lié a ce dossier ? » Décision du
+founder, citée telle quelle : « On fait comme ça a partir de maitenant, tu mets a jour le garde fou et lance la
+nouvelle session enfant. » Elle approuve la réponse de Claude Code citée en entier au journal (D-REPRISE-013) et
+révise D-REPRISE-011 sur la relance seulement.
+Phrase de relance standard (founder) : « Nouvelle session — reprends depuis le briefing : sous-étape suivante. »
+Claude Code la donne lui-même comme seule consigne de la session qu'il ouvre ; outil indisponible ou refusé → le
+founder relance, comme avant.
 Précisions d'application (Claude Code ; relues en revue croisée) :
 - **Orchestrateur** (session principale) : lit le briefing ; §a.1–§a.2 (ticket, revue du ticket), §a.6–§a.8 (revue
   du diff, audit de clôture, commit, contrôle de l'arbre), push (§g), relais écrit dans le briefing ; sous-étape
@@ -203,8 +213,13 @@ Précisions d'application (Claude Code ; relues en revue croisée) :
   même, repris par message, ou un neuf).
 - **Fichiers** : diffs et sorties volumineuses transmis par chemin et sha1 (relecteurs : skill `revue-croisee` §3 ;
   arbitre : §c).
-- **Relance** : nouvelle session principale une fois par étape ; en relance d'étape, « sous-étape suivante » désigne
-  la première sous-étape de l'étape suivante dans le briefing.
+- **Relance (D-REPRISE-013)** : nouvelle session principale à la fin d'une étape, ou relance décidée par le founder.
+  Ordre : trois GO, commit du relais, vérification de l'arbre, push, rapport de clôture remis au founder, puis
+  ouverture. Session liée, même dossier, sans worktree, phrase standard pour seule consigne, contexte vierge. Lien
+  donné au founder, qui garde la main. Précision de Claude Code (resserrement) : la session parente cesse toute
+  action sur le dépôt et n'envoie aucun message à la session enfant. En relance d'étape, « sous-étape suivante »
+  désigne la première sous-étape de l'étape suivante dans le briefing ; relance en milieu d'étape → sous-étape
+  suivante de la même étape (19.4c-2).
 - **Mémoire** : la règle « rien de durable… » couvre aussi la mémoire automatique du projet
   (`~/.claude/projects/…/memory/`), simple aide-mémoire : tout fait durable qui y figure est aussi dans le dépôt.
 - **Découpage** : une sous-étape trop grosse pour le contexte d'un exécutant (repère : 19.4b ≈ 140 000 jetons côté

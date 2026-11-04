@@ -46,6 +46,13 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
 - Tests d'intégration contre Firebase Emulator
 - Sessions (D-REPRISE-011) : la session principale de Claude Code orchestre, un sous-agent exécutant neuf implémente
   chaque sous-étape ; une session principale par étape (`CLAUDE.md` §h)
+- Relance de session par Claude Code (D-REPRISE-013, 2026-11-03, F4, décision du founder ; révise D-REPRISE-011 sur
+  la relance seulement) : à la fin d'une étape, ou sur relance décidée par le founder, après les trois GO, le commit
+  du relais, la vérification de l'arbre, le push et le rapport de clôture remis au founder, Claude Code ouvre une
+  session liée, dans le même dossier (sans worktree), contexte vierge, avec la phrase standard pour seule consigne ;
+  lien donné au founder, qui garde la main ; outil indisponible ou refusé → le founder relance (`CLAUDE.md` §h).
+  Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04), inscrite dans `CLAUDE.md` §b, citée telle quelle :
+  « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
 
 ## Reprise du 2026-11-01 — à lire en premier
 
@@ -264,7 +271,9 @@ modification d'un garde-fou → F4. Contenu du lot :
   « sauf règle déjà décidée par le founder au journal » ;
 - (f) proposition de l'arbitre (D-REPRISE-011) : mode unique « toujours par fichier » pour l'auditeur, quelle que
   soit la taille, et extension du filtre de lecture à l'auditeur (TD-032) — resserrements au-delà de la décision du
-  founder : règle (d) une fois appliquée, sinon F4.
+  founder : règle (d) une fois appliquée, sinon F4. Annotation (D-REPRISE-013) : l'extension du filtre de lecture à
+  l'auditeur relève désormais de l'item (i) (décision du founder) ; seul le mode « toujours par fichier » reste
+  soumis à la règle (d) de D-REPRISE-010 une fois appliquée, sinon à F4.
 - (g) points à reprendre au ticket du lot (remarques des relecteurs et de l'arbitre sur D-REPRISE-011) : ajouter §h
   et D-REPRISE-011 à la liste des garde-fous de `CLAUDE.md` §b ; skill `revue-croisee` §3 : écrire la règle
   d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
@@ -276,6 +285,20 @@ modification d'un garde-fou → F4. Contenu du lot :
   l'orchestrateur : noter `HEAD` (`git rev-parse HEAD`) avant de lancer l'exécutant puis, à la reprise de main,
   vérifier que `HEAD` est inchangé et que `git diff --cached --name-only` est vide avant de préparer l'index ; ce
   contrôle est une pratique de l'orchestrateur, appliquée dès 19.4c sans attendre le lot.
+- (h) aligner le corps de l'arbitre (`.claude/agents/arbitre-strategique.md`, définition de F2) sur D-REPRISE-012
+  (libellés courts délégués à l'arbitre, listés au résumé d'étape ; phrases restant F2 ; vouvoiement). Précision de
+  Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade (`CLAUDE.md` §b), au
+  doute → F4 ; d'ici là, toute saisine de l'arbitre sur un libellé court cite D-REPRISE-012.
+- (i) filtre de lecture étendu — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 1 ;
+  D-REPRISE-013), citée telle quelle : « 1. Lot de retouches : étendre le filtre de lecture de TD-031 à l'auditeur (et à Codex si c'est possible), suite à l'incident de 19.4c-1 où un auditeur a lu les fichiers de l'exécutant. Le filtre ne doit plus reposer seulement sur la consigne. »
+  Décidée par le founder au journal : s'applique avec le lot sans nouvelle escalade (`CLAUDE.md` §b). Touche le
+  filtre du projet (`.claude/settings.json`, `.claude/hooks/`), aujourd'hui appliqué à l'arbitre seul (TD-031) ;
+  aucune modification du filtre avant le lot. Précision de Claude Code : pour Codex (« si c'est possible »), le lot
+  vérifie si un filtre peut s'appliquer à un processus lancé hors Claude Code et le dit ; la conclusion, surtout en
+  cas d'impossibilité, est rapportée au founder au résumé d'arbitrages d'étape. Résolution de TD-032.
+- (j) `CLAUDE.md` §h, puce « Relance (D-REPRISE-013) » : « (19.4c-2) » y est inscrit en dur comme exemple de
+  relance en milieu d'étape ; à remplacer par un exemple daté ou à retirer (modification d'un garde-fou → F4, avec
+  le lot ; remarque des relecteurs, sous-étape doc D-REPRISE-013).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -329,7 +352,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     copie des recettes pour l'affichage, registre `PendingIntentKeys`, logs lancés avec clé ; 73 tests EditMode) ;
     Play sur émulateurs : lancement réussi, `data-loss` à la collecte et à la connexion → texte Q5 ;
   - 19.4c — interface, découpée en deux sous-étapes (D-ETAPE19-014 ; textes de 19.4c validés par le founder, même
-    entrée) : 19.4c-1 — lancement (choix de recette, N par 1 / 10 / Max, aperçu, avertissement de saturation, store
+    entrée) : 19.4c-1 — **fait le 11-03** (D-ETAPE19-014 ; clôture vue par le founder) : lancement (choix de recette,
+    N par 1 / 10 / Max, aperçu, avertissement de saturation, store
     mis à jour après un lancement, recette réelle affichée, reports de 19.4b sur `PendingIntentKeys` et les
     recettes ; le message de limite d'appels passe au prochain lot de textes F2, délai réel et vouvoiement
     ensemble) ; 19.4c-2 — slot actif (lot « k/N » estimé, temps restant, « Lot terminé —
@@ -337,8 +361,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     `ParseOptionalInt` avant « lot k/N » ;
   - 19.4d — panneau de maintenance (dont le blocage de toutes les actions après un `data-loss`) ;
   - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19** (garde-fous, F4) — garde demandée par le founder le
-    2026-11-03 (D-REPRISE-011) : modification de
-    `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par D-ETAPE19-010 Q1) ; proposition d'ajouter à la
+    2026-11-03 (D-REPRISE-011) : modification de `.claude/agents/auditeur.md` (grille 5, `data-loss`, décidée par
+    D-ETAPE19-010 Q1) ; proposition d'ajouter à la
     doctrine C6 une ligne `DataLoss` → maintenance et de mettre à jour C5 (clés d'idempotence du lancement et de
     l'arrêt, D-ETAPE19-003) : non modifiées. Pour information (fondement distinct : arbitrage du 2026-11-03 appliquant
     la phrase du founder « Les diffs et sorties volumineuses sont transmis par fichier, jamais recopiés dans le
@@ -348,7 +372,20 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     tenaient en un seul `Read` ont été désignés par fichier, et la consigne commune a une fois dit « désigné » au lieu
     de « joint » ; le skill §3 aligné ajoute aussi un contrôle du journal de Codex (garde-fou resserré) ; pour
     information, garde-fou resserré (pratique de l'orchestrateur, remarque de l'arbitre à la clôture de `ac61717`) :
-    contrôle de `HEAD` et de l'index à la reprise de main après l'exécutant ;
+    contrôle de `HEAD` et de l'index à la reprise de main après l'exécutant ; écarts de procédure de la sous-étape
+    D-REPRISE-013, à signaler (journal, D-REPRISE-013) : (1) la question au founder qui a précédé son autorisation du
+    2026-11-04 (texte C) a été formulée par Claude Code directement, sans passer par l'arbitre, alors que l'arbitre
+    était disponible (écart à `CLAUDE.md` §b et §c) ; (2) `CLAUDE.md` écrit par l'orchestrateur au lieu de
+    l'exécutant, et avant le GO du ticket (ordre §a.2 → §a.3 inversé) — écart de procédure, avec pour justification
+    le texte C du founder (2026-11-04) ; (3) ajouts de Claude Code hors texte C, que le founder peut contester :
+    renvois D-REPRISE-013 (simples renvois) à l'en-tête « Mode autonome supervisé (…) » et au titre de §b ; préfixe
+    d'attribution de la phrase F4, « Règle du founder (D-REPRISE-013, 2026-11-04), citée telle quelle : » ; le renvoi
+    D-REPRISE-013 ajouté un temps au titre de §h a été retiré après la revue du diff (bloquant de Codex : contraire à
+    la phrase du texte C « Écris dans §h le texte prêt (rapport-doc013.md), sans rien y ajouter. ») ; le titre de §h
+    est revenu à « ### h. Sessions : orchestrateur et exécutant (D-REPRISE-011) » ; la réponse de Claude Code
+    (décision A) est citée de la transcription de la session, non versionnée : le founder peut contrôler la citation ;
+    pour information : la conclusion du lot unique sur le filtre de lecture de Codex (item (i)), surtout en cas
+    d'impossibilité, est rapportée ici ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
@@ -360,6 +397,7 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   aussi les erreurs "slot corrompu" (failed-precondition journalisées à la connexion, à la collecte et à
   l'arrêt), prérequis du déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code
   `data-loss`, D-ETAPE19-010 Q1 ; citation conservée telle quelle.]
+  (d) — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 2 ; D-REPRISE-013), citée telle quelle : « Build Android installé et joué sur un appareil réel avant le déploiement 19.5 : boucle produire → lancer un lot → arrêter → collecter → vendre, et lisibilité des écrans sur petit format. » Phrase du founder sur F3, même message, citée telle quelle : « Si un appareil ou un outil manque, ce sera une question F3 pour le founder au moment de 19.5. »
 
 **ÉTAPE 20 — Contrats impériaux** : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
 (`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event absolu 9 / 22,
