@@ -235,3 +235,24 @@
     color: rgb(150, 120, 120);
     border-color: rgb(70, 50, 50);
 }
+
+/* ── Panneau de maintenance (19.4d) : patron de la confirmation d'arrêt ── */
+
+.maintenance-panel {
+    flex-shrink: 0;
+    display: none;
+    background-color: rgb(28, 28, 38);
+    border-color: rgb(70, 70, 90);
+    border-width: 1px;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    flex-direction: column;
+}
+
+.maintenance-text {
+    font-size: 14px;
+    color: rgb(230, 220, 220);
+    white-space: normal;
+    margin-bottom: 8px;
+}

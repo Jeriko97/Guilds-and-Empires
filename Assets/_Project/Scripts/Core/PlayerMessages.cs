@@ -14,6 +14,12 @@ namespace GuildsAndEmpires.Core
         public const string Maintenance =
             "Compte temporairement en maintenance. Votre progression est conservée. Réessayez plus tard.";
 
+        /// <summary>
+        /// Bouton du panneau de maintenance (19.4d) : relance la connexion. Nommé par le founder dans Q5
+        /// (D-ETAPE19-010).
+        /// </summary>
+        public const string RetryButton = "Réessayer";
+
         // ── Panneau de lancement de la production (19.4c-1, réponse F2 du founder, D-ETAPE19-014) ──
 
         /// <summary>Bouton d'un slot libre (texte 1).</summary>

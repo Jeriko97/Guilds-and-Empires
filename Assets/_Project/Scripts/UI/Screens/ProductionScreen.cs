@@ -49,6 +49,15 @@ namespace GuildsAndEmpires.UI.Screens
     ///   persistants, store.Changed) en OnEnable, retirés en OnDisable. Doctrine C9.
     /// - IPlayerService et IProductionService résolus via ServiceLocator. Doctrine C3.
     /// - INTERDIT de rappeler resolveLoginState après startProductionSlot (réponse contient building).
+    /// - Maintenance (19.4d, D-ETAPE19-010 Q1 et Q5) : une réponse data-loss (connexion, lancement, collecte, arrêt)
+    ///   pose l'état de maintenance dans le store, avant le contrôle d'annulation, comme une réponse ; seule une
+    ///   connexion réussie le lève. En maintenance, rendu depuis le store à chaque OnEnable et Changed : panneau (texte
+    ///   Q5 et « Réessayer ») à la place de la liste des slots ; panneau de lancement et confirmation d'arrêt fermés ;
+    ///   toutes les actions de l'écran bloquées, « Marché » compris (en maintenance seulement : pendant un appel hors
+    ///   maintenance, « Marché » reste possible — arbitrage du 2026-11-04, (2a)) ; ligne d'état vidée ; aucun appel
+    ///   sans action du joueur (ProductionLoadDecision) ; « Réessayer » relance la connexion, appel sérialisé, inactif
+    ///   pendant tout appel en cours. Un data-loss reçu pendant que le marché est ouvert est lu au retour, sans nouvel
+    ///   appel (TD-035 : le marché ne lit pas cet état).
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class ProductionScreen : BaseScreen
@@ -94,10 +103,16 @@ namespace GuildsAndEmpires.UI.Screens
         private Button        _stopConfirmButton;
         private Button        _stopCancelButton;
 
+        // Panneau de maintenance (persistant, UXML ; 19.4d).
+        private VisualElement _maintenancePanel;
+        private Label         _maintenanceLabel;
+        private Button        _retryButton;
+        private bool          _maintenanceShown;   // panneau affiché au dernier rendu (UI seulement)
+
         // ── State (UI seulement : aucune valeur métier) ───────────────────────
         private PlayerEconomyStateStore _store;
         private readonly List<Button>   _slotButtons = new();   // « Produire » et « Arrêter » des slots
-        private bool                    _awaitingLoad;     // aucun bâtiment dans le store à l'OnEnable
+        private bool                    _awaitingLoad;     // « Chargement… » affiché : chargement attendu
         private int?                    _panelSlotIndex;   // null = panneau fermé
         private RecipeInfo              _panelRecipe;
         private CyclesChoice            _panelChoice;
@@ -155,6 +170,7 @@ namespace GuildsAndEmpires.UI.Screens
 
             BindLaunchPanel(root);
             BindStopConfirm(root);
+            BindMaintenancePanel(root);
 
             // Panneau et confirmation fermés. L'état « appel en cours » n'est PAS remis à zéro : il vit dans le store et
             // n'est levé que par le retour de l'appel ; une tâche d'une génération précédente ne touche plus l'UI de cet
@@ -174,26 +190,28 @@ namespace GuildsAndEmpires.UI.Screens
             // Relu à chaque OnEnable : reflète les ventes faites sur MarketScreen au retour de Pop.
             RenderEconomy();
 
-            _awaitingLoad = _store?.Building == null;
-            if (_awaitingLoad)
-            {
-                SetStatus("Chargement…", "status--loading");
-                _slotsContainer.Clear();
-                _slotButtons.Clear();
-                _progressViews.Clear();
-                RefreshLaunchPanel();
-                RefreshStopConfirm();
+            // Décision lue du store seul (ProductionLoadDecision) : en maintenance, panneau et aucun appel serveur.
+            var step = ProductionLoadDecision.OnEnable(_store);
+            _awaitingLoad = step == ProductionLoadStep.Load || step == ProductionLoadStep.Wait;
+            RenderSlots();
+            SetAllButtonsEnabled(!ActionsBlocked);   // rafraîchit aussi le panneau de lancement et la confirmation
 
-                // Un appel déjà en cours (lancé par un écran précédent) : on attend sa fin (OnStoreChanged).
-                if (!CallInFlight)
-                    _ = LoadAsync(_cts.Token);
-            }
-            else
+            switch (step)
             {
-                RenderSlots();
-                RefreshLaunchPanel();
-                RefreshStopConfirm();
-                SetStatus("Prêt.", "status--success");
+                case ProductionLoadStep.Load:
+                    SetStatus("Chargement…", "status--loading");
+                    _ = LoadAsync(_cts.Token);
+                    break;
+                case ProductionLoadStep.Wait:
+                    // Un appel déjà en cours (lancé par un écran précédent) : on attend sa fin (OnStoreChanged).
+                    SetStatus("Chargement…", "status--loading");
+                    break;
+                case ProductionLoadStep.Maintenance:
+                    ClearStatus();
+                    break;
+                default:
+                    SetStatus("Prêt.", "status--success");
+                    break;
             }
         }
 
@@ -209,6 +227,7 @@ namespace GuildsAndEmpires.UI.Screens
                 _marketButton.clicked -= OnMarketClicked;
             UnbindLaunchPanel();
             UnbindStopConfirm();
+            UnbindMaintenancePanel();
             if (_store != null)
                 _store.Changed -= OnStoreChanged;
             _store = null;
@@ -261,6 +280,11 @@ namespace GuildsAndEmpires.UI.Screens
             catch (PlayerServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur PlayerService: {ex.UserMessage}");
+                if (ex.IsMaintenance)
+                {
+                    ApplyMaintenance(store, requestNumber, ct);
+                    return;
+                }
                 if (ct.IsCancellationRequested) return;
                 _awaitingLoad = false;
                 SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
@@ -289,23 +313,35 @@ namespace GuildsAndEmpires.UI.Screens
         /// précédent : à la fin de cet appel, « Prêt. » si le bâtiment est arrivé, sinon chargement relancé.
         /// Slot actif (19.4c-2) : nouvelle ancre de l'écoulé, puis rendu depuis le bâtiment du store (l'affichage repart
         /// de la dernière réponse) ; confirmation d'arrêt fermée si son slot n'est plus actif.
+        /// Maintenance (19.4d) : panneau rendu depuis le store ; à la fin de l'appel attendu, ligne d'état vidée et aucun
+        /// nouvel appel (ProductionLoadDecision).
         /// </summary>
         private void OnStoreChanged()
         {
+            // Entrée en maintenance (lue avant le rendu, qui met à jour _maintenanceShown) : ligne d'état vidée, quel que
+            // soit l'écran ou le jeton qui a lancé l'appel revenu data-loss (relecture du diff de 19.4d).
+            var entersMaintenance = ProductionLoadDecision.EntersMaintenance(_maintenanceShown, _store);
+
             AnchorElapsed();
             RenderEconomy();
             RenderSlots();
-            SetAllButtonsEnabled(!CallInFlight);
+            SetAllButtonsEnabled(!ActionsBlocked);
+            if (entersMaintenance) ClearStatus();
 
-            if (!_awaitingLoad || CallInFlight || _store == null || _cts == null) return;
-            if (_store.Building != null)
+            if (_store == null || _cts == null) return;
+            switch (ProductionLoadDecision.AfterStoreChanged(_store, _awaitingLoad))
             {
-                _awaitingLoad = false;
-                SetStatus("Prêt.", "status--success");
-            }
-            else
-            {
-                _ = LoadAsync(_cts.Token);
+                case ProductionLoadStep.Ready:
+                    _awaitingLoad = false;
+                    SetStatus("Prêt.", "status--success");
+                    break;
+                case ProductionLoadStep.Maintenance:
+                    _awaitingLoad = false;
+                    ClearStatus();
+                    break;
+                case ProductionLoadStep.Load:
+                    _ = LoadAsync(_cts.Token);
+                    break;
             }
         }
 
@@ -317,8 +353,12 @@ namespace GuildsAndEmpires.UI.Screens
             _slotButtons.Clear();
             _progressViews.Clear();
 
+            // Maintenance (19.4d) : panneau à la place de la liste des slots ; aucun slot, aucune vue de progression.
+            var maintenance = IsMaintenance;
+            RenderMaintenancePanel(maintenance);
+
             var building = _store?.Building;
-            if (building == null)
+            if (building == null || maintenance)
             {
                 if (_collectButton != null) _collectButton.style.display = DisplayStyle.None;
                 return;
@@ -456,7 +496,7 @@ namespace GuildsAndEmpires.UI.Screens
         /// </summary>
         private void OnProduceClicked(int slotIndex)
         {
-            if (CallInFlight) return;
+            if (ActionsBlocked) return;
             _confirmSlotIndex = null;
             _panelSlotIndex   = slotIndex;
             _panelRecipe      = null;
@@ -472,7 +512,7 @@ namespace GuildsAndEmpires.UI.Screens
 
         private void SelectRecipe(string recipeId)
         {
-            if (CallInFlight || _panelSlotIndex == null) return;
+            if (ActionsBlocked || _panelSlotIndex == null) return;
             _panelRecipe = ProductionRecipes.Find(recipeId);
             _panelChoice = CyclesChoice.None;   // 1a : aucun N présélectionné
             RefreshLaunchPanel();
@@ -484,7 +524,7 @@ namespace GuildsAndEmpires.UI.Screens
 
         private void SelectCycles(CyclesChoice choice)
         {
-            if (CallInFlight || _panelSlotIndex == null || _panelRecipe?.MaxBatchCycles == null) return;
+            if (ActionsBlocked || _panelSlotIndex == null || _panelRecipe?.MaxBatchCycles == null) return;
             _panelChoice = choice;
             RefreshLaunchPanel();
         }
@@ -513,7 +553,8 @@ namespace GuildsAndEmpires.UI.Screens
             if (_launchPanel == null) return;
 
             var building = _store?.Building;
-            if (_panelSlotIndex == null || building == null || !IsSlotFree(building, _panelSlotIndex.Value))
+            if (_panelSlotIndex == null || building == null || IsMaintenance ||
+                !IsSlotFree(building, _panelSlotIndex.Value))
             {
                 var wasOpen = _panelSlotIndex != null;
                 _panelSlotIndex = null;
@@ -577,7 +618,7 @@ namespace GuildsAndEmpires.UI.Screens
 
         private void OnLaunchClicked()
         {
-            if (CallInFlight || _panelSlotIndex == null || _panelRecipe == null) return;
+            if (ActionsBlocked || _panelSlotIndex == null || _panelRecipe == null) return;
 
             var building = _store?.Building;
             if (building == null) return;
@@ -645,6 +686,11 @@ namespace GuildsAndEmpires.UI.Screens
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur production: {ex.UserMessage}");
+                if (ex.IsMaintenance)
+                {
+                    ApplyMaintenance(store, requestNumber, ct);
+                    return;
+                }
                 if (ct.IsCancellationRequested) return;
                 SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
             }
@@ -664,8 +710,14 @@ namespace GuildsAndEmpires.UI.Screens
 
         // ── Market navigation ─────────────────────────────────────────────────
 
+        /// <summary>
+        /// Navigation vers le marché : refusée en maintenance seulement (arbitrage du 2026-11-04, (2a)) ; pendant un
+        /// appel hors maintenance, inchangée (D-ETAPE19-014).
+        /// </summary>
         private void OnMarketClicked()
         {
+            if (IsMaintenance) return;
+
             if (_marketScreenPrefab == null)
             {
                 GELogger.Warning("ProductionScreen", "Prefab MarketScreen non assigné.");
@@ -686,7 +738,7 @@ namespace GuildsAndEmpires.UI.Screens
 
         private void OnCollectClicked()
         {
-            if (CallInFlight) return;
+            if (ActionsBlocked) return;
 
             var building = _store?.Building;
             if (!ServiceLocator.TryResolve<IProductionService>(out var productionService) || building == null)
@@ -728,6 +780,11 @@ namespace GuildsAndEmpires.UI.Screens
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur collecte: {ex.UserMessage}");
+                if (ex.IsMaintenance)
+                {
+                    ApplyMaintenance(store, requestNumber, ct);
+                    return;
+                }
                 if (ct.IsCancellationRequested) return;
                 SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
             }
@@ -774,7 +831,7 @@ namespace GuildsAndEmpires.UI.Screens
         /// </summary>
         private void OnStopClicked(int slotIndex)
         {
-            if (CallInFlight) return;
+            if (ActionsBlocked) return;
             var building = _store?.Building;
             if (building == null || !IsSlotActive(building, slotIndex)) return;
 
@@ -805,7 +862,8 @@ namespace GuildsAndEmpires.UI.Screens
             if (_stopConfirmPanel == null) return;
 
             var building = _store?.Building;
-            if (_confirmSlotIndex == null || building == null || !IsSlotActive(building, _confirmSlotIndex.Value))
+            if (_confirmSlotIndex == null || building == null || IsMaintenance ||
+                !IsSlotActive(building, _confirmSlotIndex.Value))
             {
                 var wasOpen = _confirmSlotIndex != null;
                 _confirmSlotIndex = null;
@@ -825,7 +883,7 @@ namespace GuildsAndEmpires.UI.Screens
         /// </summary>
         private void OnStopConfirmClicked()
         {
-            if (CallInFlight || _confirmSlotIndex == null) return;
+            if (ActionsBlocked || _confirmSlotIndex == null) return;
 
             var slotIndex = _confirmSlotIndex.Value;
             var building  = _store?.Building;
@@ -891,6 +949,11 @@ namespace GuildsAndEmpires.UI.Screens
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur arrêt: {ex.UserMessage}");
+                if (ex.IsMaintenance)
+                {
+                    ApplyMaintenance(store, requestNumber, ct);
+                    return;
+                }
                 if (ct.IsCancellationRequested) return;
                 SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
             }
@@ -991,6 +1054,68 @@ namespace GuildsAndEmpires.UI.Screens
             OnTick();
         }
 
+        // ── Maintenance (19.4d, D-ETAPE19-010 Q5) ─────────────────────────────
+
+        private void BindMaintenancePanel(VisualElement root)
+        {
+            _maintenancePanel = root.Q<VisualElement>("maintenance-panel");
+            _maintenanceLabel = root.Q<Label>("maintenance-label");
+            _retryButton      = root.Q<Button>("retry-button");
+
+            if (_maintenanceLabel != null) _maintenanceLabel.text = PlayerMessages.Maintenance;
+            SetText(_retryButton, PlayerMessages.RetryButton);
+
+            if (_retryButton != null) _retryButton.clicked += OnRetryClicked;
+        }
+
+        private void UnbindMaintenancePanel()
+        {
+            if (_retryButton != null) _retryButton.clicked -= OnRetryClicked;
+        }
+
+        /// <summary>
+        /// Panneau de maintenance à la place de la liste des slots (rendu depuis le store) ; « Réessayer » inactif
+        /// pendant tout appel en cours.
+        /// </summary>
+        private void RenderMaintenancePanel(bool maintenance)
+        {
+            _maintenanceShown = maintenance;
+            if (_maintenancePanel != null)
+                _maintenancePanel.style.display = maintenance ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_slotsContainer != null)
+                _slotsContainer.style.display = maintenance ? DisplayStyle.None : DisplayStyle.Flex;
+            _retryButton?.SetEnabled(!CallInFlight);
+        }
+
+        /// <summary>
+        /// Réponse data-loss d'un appel sérialisé : état de maintenance proposé au store AVANT le contrôle d'annulation
+        /// (le panneau suit via Changed, sur cet écran ou le suivant, et l'entrée en maintenance vide la ligne d'état) ;
+        /// puis, si l'écran est encore actif et le store effectivement en maintenance, ligne d'état vidée — cas du
+        /// « Réessayer » revenu data-loss, compte déjà en maintenance : « Chargement… » n'y reste pas. Data-loss écarté
+        /// par le store (hors séquence) et store hors maintenance : rien ici, la fin de l'appel rend l'écran depuis le
+        /// store.
+        /// </summary>
+        private void ApplyMaintenance(PlayerEconomyStateStore store, long requestNumber, CancellationToken ct)
+        {
+            if (!ProductionStoreWriter.ApplyMaintenance(store, requestNumber, ct)) return;
+            if (!ProductionLoadDecision.ShowMaintenancePanel(store)) return;
+            _awaitingLoad = false;
+            ClearStatus();
+        }
+
+        /// <summary>
+        /// « Réessayer » (Q5) : relance la connexion (resolveLoginState), appel sérialisé ; refusé pendant tout appel en
+        /// cours (plusieurs appuis rapides → un seul appel). Succès → maintenance levée par le store, slots rendus,
+        /// « Prêt. » ; data-loss → panneau maintenu, ligne d'état vidée ; autre erreur → panneau maintenu, message
+        /// existant.
+        /// </summary>
+        private void OnRetryClicked()
+        {
+            if (CallInFlight || !IsMaintenance || _cts == null) return;
+            SetStatus("Chargement…", "status--loading");
+            _ = LoadAsync(_cts.Token);
+        }
+
         // ── Helpers UI ────────────────────────────────────────────────────────
 
         /// <summary>Affiche gold + inventaire depuis le store (valeurs serveur, aucun calcul local).</summary>
@@ -1021,7 +1146,12 @@ namespace GuildsAndEmpires.UI.Screens
             _statusLabel.AddToClassList(modifier);
         }
 
-        // Maintenance (data-loss, D-ETAPE19-010) : texte du founder (Q5) affiché tel quel, sans préfixe.
+        /// <summary>Ligne d'état vidée (maintenance : le texte Q5 est dans le panneau, 19.4d).</summary>
+        private void ClearStatus() => SetStatus(string.Empty, "status--error");
+
+        // Maintenance (data-loss, D-ETAPE19-010) : texte du founder (Q5) affiché tel quel, sans préfixe. Depuis 19.4d,
+        // un data-loss va au store (ApplyMaintenance) et le texte Q5 s'affiche dans le panneau, jamais dans la ligne
+        // d'état : cette branche n'est plus atteinte par l'écran de production, gardée par sécurité.
         private static string FormatError(string userMessage, bool isMaintenance) =>
             isMaintenance ? userMessage : $"Erreur : {userMessage}";
 
@@ -1030,17 +1160,27 @@ namespace GuildsAndEmpires.UI.Screens
         /// </summary>
         private bool CallInFlight => _store != null && _store.CallInFlight;
 
+        /// <summary>Compte en maintenance (store, 19.4d).</summary>
+        private bool IsMaintenance => ProductionLoadDecision.ShowMaintenancePanel(_store);
+
+        /// <summary>Actions de production refusées : appel en cours (tous écrans) ou compte en maintenance (19.4d).</summary>
+        private bool ActionsBlocked => CallInFlight || IsMaintenance;
+
         /// <summary>
         /// Règle existante, étendue au panneau et à l'appel en cours de tout écran : slots (« Produire », « Arrêter ») et
-        /// « Collecter » suivent <paramref name="enabled"/> (appelée avec !CallInFlight à chaque Changed) ; les boutons du
-        /// panneau sont inactifs pendant un appel, puis reprennent leur état calculé (1a-1c), jamais une réactivation en
-        /// bloc ; ceux de la confirmation d'arrêt aussi (19.4c-2). « Marché » n'est pas touché.
+        /// « Collecter » suivent <paramref name="enabled"/> (appelée avec !ActionsBlocked à chaque Changed et à
+        /// l'OnEnable) ; les boutons du panneau sont inactifs pendant un appel, puis reprennent leur état calculé
+        /// (1a-1c), jamais une réactivation en bloc ; ceux de la confirmation d'arrêt aussi (19.4c-2). « Marché » n'est
+        /// touché qu'en maintenance (19.4d, arbitrage du 2026-11-04, (2a)) : inactif en maintenance, actif sinon, même
+        /// pendant un appel. « Réessayer » : inactif pendant tout appel en cours.
         /// </summary>
         private void SetAllButtonsEnabled(bool enabled)
         {
             foreach (var btn in _slotButtons)
                 btn.SetEnabled(enabled);
             _collectButton?.SetEnabled(enabled);
+            _marketButton?.SetEnabled(!IsMaintenance);
+            _retryButton?.SetEnabled(!CallInFlight);
             RefreshLaunchPanel();
             RefreshStopConfirm();
         }

@@ -1028,6 +1028,10 @@ doctrine C6 (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`, l. 175-177, 
 **Description :**
 Règle du founder (D-REPRISE-012), citée telle quelle : « Le vouvoiement est la règle pour tous les textes affichés au
 joueur. » Plusieurs phrases existantes sont au tutoiement ; les reformuler relève de F2 (phrases).
+Complément (2026-11-04, relais de l'audit de clôture de 19.4c-2, point 2) : « Erreur : service manquant. » existe en
+sept copies littérales : quatre dans `UI/Screens/ProductionScreen.cs` (l. 247, 639, 747, 899 après 19.4d ; l. 228, 598,
+695, 841 avant), deux dans `UI/Screens/MarketScreen.cs` (l. 142, 293) et une dans `UI/DebugScreenController.cs` (l. 64)
+(recensement complété en revue du diff de 19.4d) : à centraliser avec le lot TD-033 (aucune centralisation en 19.4d).
 
 **Impact :**
 Texte contraire à la règle du founder s'il atteint un joueur.
@@ -1075,6 +1079,36 @@ un résultat indéterminé. Vérifier et consigner le délai par défaut de `Cal
 **Trigger de résolution :**
 Premier ticket backend qui modifie la réponse d'une CF de production ou du marché (TD-024 en est un candidat
 naturel), et au plus tard avant tout testeur externe (réseaux mobiles : délais fréquents).
+
+---
+
+### TD-035 — Maintenance (Q5) non lue par `MarketScreen`
+
+**Identifié :** 2026-11-04 (arbitrage de l'arbitre sur le ticket de 19.4d, D-ETAPE19-015)
+**Criticité actuelle :** FAIBLE
+**Composant :** client Unity (`UI/Screens/MarketScreen.cs`, `State/PlayerEconomyStateStore.cs`)
+
+**Description :**
+Texte de l'arbitrage, cité tel quel : « **TD-035** — Maintenance (Q5) non lue par `MarketScreen` : un `data-loss` reçu
+pendant que le marché est ouvert laisse les ventes possibles jusqu'au retour à l'écran de production. Gravité faible
+(serveur autoritaire, vente légitime, aucun effet sur l'état corrompu). Résolution : `MarketScreen` lit l'état de
+maintenance du store et désactive ses ventes, avec un texte — ce qui suppose une décision du founder (F1 : maintenance
+étendue au marché ; F2 : la phrase affichée). Déclencheur : premier ticket qui touche `MarketScreen`, ou décision du
+founder au résumé d'arbitrages de l'étape 19 ; pas « avant tout testeur externe ». »
+
+**Impact :**
+Risque résiduel de 19.4d, cité mot pour mot (arbitrage, (2d)) : « Un `data-loss` reçu pendant que le marché est ouvert
+laisse les ventes possibles jusqu'au retour à l'écran de production. Le serveur reste l'autorité : `sellToMarket` ne lit
+pas les slots, la vente est légitime et n'a aucun effet sur l'état corrompu. Fenêtre : un appui sur « Marché » pendant un
+appel de production, et ce même appel revenu `data-loss`. »
+
+**Résolution :**
+`MarketScreen` lit l'état de maintenance du store (`PlayerEconomyStateStore.IsMaintenance`, 19.4d) et désactive ses
+ventes, avec un texte, après décision du founder (F1, F2).
+
+**Trigger de résolution :**
+Premier ticket qui touche `MarketScreen`, ou décision du founder au résumé d'arbitrages de l'étape 19 ; pas « avant tout
+testeur externe ».
 
 ---
 

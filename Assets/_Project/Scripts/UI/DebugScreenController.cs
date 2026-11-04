@@ -15,6 +15,8 @@ namespace GuildsAndEmpires.UI
     /// - Aucun calcul local — affichage brut du PlayerState reçu. Vigilance V1.
     /// - Cycle de vie symétrique : async lancé en OnEnable, annulé en OnDisable. Doctrine C9.
     /// - IPlayerService résolu via ServiceLocator — jamais de Firebase.Functions ici. Doctrine C3.
+    /// - 19.4d : texte de maintenance (Q5) sans préfixe « Erreur : » ; aucune écriture d'UI après annulation dans
+    ///   chaque catch (C9). Pas de panneau de maintenance sur cet écran de débogage.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DebugScreenController : MonoBehaviour
@@ -80,12 +82,16 @@ namespace GuildsAndEmpires.UI
             catch (PlayerServiceException ex)
             {
                 GELogger.Warning("DebugScreen", $"Erreur PlayerService: {ex.UserMessage}");
-                SetStatus($"Erreur : {ex.UserMessage}", "status--error");
+                // C9 : aucune écriture d'UI après annulation (réponse rendue malgré l'annulation, 19.4c-1).
+                if (ct.IsCancellationRequested) return;
+                // Maintenance (data-loss, D-ETAPE19-010 Q5) : texte du founder tel quel, sans préfixe (19.4d).
+                SetStatus(ex.IsMaintenance ? ex.UserMessage : $"Erreur : {ex.UserMessage}", "status--error");
             }
             catch (System.Exception ex)
             {
                 GELogger.Error("DebugScreen", $"Erreur inattendue: {ex.Message}");
-                SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                if (ct.IsCancellationRequested) return;   // C9 (19.4d)
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
             }
         }
 

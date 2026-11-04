@@ -31,6 +31,14 @@ namespace GuildsAndEmpires.State
     /// Garantie complète : TD-034.
     /// Une réponse de lancement ou de collecte reçue avant tout chargement (store non amorcé) est refusée entière.
     ///
+    /// Compte en maintenance (19.4d, D-ETAPE19-010 Q1 et Q5) : <see cref="IsMaintenance"/> est l'état « le serveur a
+    /// signalé un état de slot corrompu (code <c>data-loss</c>) ». Il vit ici, comme le bâtiment et l'appel en cours,
+    /// pour survivre aux écrans. Posé seulement par une réponse <c>data-loss</c> d'un appel sérialisé (connexion,
+    /// lancement, collecte, arrêt ; <see cref="ApplyServerMaintenance"/>), traitée comme une réponse : même filtre de
+    /// numéro d'envoi, admise aussi sur un store non amorcé, sans toucher gold, inventaire ni bâtiment. Levé seulement
+    /// par une réponse de connexion appliquée (<see cref="ApplyServerLoginState"/>, avec ou sans bâtiment). Aucun
+    /// autre chemin. Le store ne décide rien de plus : l'écran lit l'état pour bloquer ses actions.
+    ///
     /// <see cref="Changed"/> est levé une fois par écriture appliquée, et à chaque début ou fin d'appel ; un écran
     /// s'y abonne en OnEnable et s'en désabonne en OnDisable (doctrine C9).
     /// </summary>
@@ -44,8 +52,14 @@ namespace GuildsAndEmpires.State
         public BuildingSnapshot Building { get; private set; }
 
         /// <summary>
-        /// Levé après chaque écriture appliquée d'une valeur serveur (gold, inventaire ou bâtiment), et au début et à
-        /// la fin de chaque appel sérialisé.
+        /// Compte en maintenance : le serveur a répondu <c>data-loss</c> (état de slot corrompu) à un appel sérialisé,
+        /// et aucune connexion n'a réussi depuis (19.4d).
+        /// </summary>
+        public bool IsMaintenance { get; private set; }
+
+        /// <summary>
+        /// Levé après chaque écriture appliquée d'une valeur serveur (gold, inventaire ou bâtiment), quand l'état de
+        /// maintenance change, et au début et à la fin de chaque appel sérialisé.
         /// </summary>
         public event Action Changed;
 
@@ -114,8 +128,8 @@ namespace GuildsAndEmpires.State
 
         /// <summary>
         /// Réponse de chargement (resolveLoginState) numérotée : gold, inventaire et bâtiment (s'il y en a un) écrits
-        /// ensemble, un seul <see cref="Changed"/>. Ignorée (retour false, store inchangé) si son numéro ne dépasse pas
-        /// le dernier appliqué.
+        /// ensemble, un seul <see cref="Changed"/> ; lève l'état de maintenance (connexion réussie, avec ou sans
+        /// bâtiment). Ignorée (retour false, store inchangé) si son numéro ne dépasse pas le dernier appliqué.
         /// </summary>
         public bool ApplyServerLoginState(
             long requestNumber, long gold, InventoryState inventory, BuildingSnapshot building)
@@ -126,6 +140,7 @@ namespace GuildsAndEmpires.State
             Inventory = inventory;
             HasState  = true;
             if (building != null) Building = building;
+            IsMaintenance = false;
             GELogger.Debug("PlayerEconomyStateStore", $"ApplyServerLoginState — requête {requestNumber}, gold={gold}");
             Changed?.Invoke();
             return true;
@@ -151,6 +166,25 @@ namespace GuildsAndEmpires.State
             if (inventory != null) Inventory = inventory;
             GELogger.Debug("PlayerEconomyStateStore", $"ApplyServerProductionState — requête {requestNumber}");
             Changed?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// Réponse <c>data-loss</c> numérotée (connexion, lancement, collecte ou arrêt) : pose l'état de maintenance,
+        /// sans toucher gold, inventaire ni bâtiment ; admise aussi sur un store non amorcé (data-loss à la première
+        /// connexion). Même filtre qu'une réponse : ignorée (retour false, store inchangé) si son numéro ne dépasse pas
+        /// le dernier appliqué ; sinon fait avancer <see cref="LastAppliedRequest"/>. <see cref="Changed"/> levé
+        /// seulement si l'état change.
+        /// </summary>
+        public bool ApplyServerMaintenance(long requestNumber)
+        {
+            if (!Accept(requestNumber, "ApplyServerMaintenance")) return false;
+
+            var changed = !IsMaintenance;
+            IsMaintenance = true;
+            GELogger.Warning("PlayerEconomyStateStore",
+                $"ApplyServerMaintenance — requête {requestNumber} : compte en maintenance (data-loss).");
+            if (changed) Changed?.Invoke();
             return true;
         }
 

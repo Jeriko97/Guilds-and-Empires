@@ -5,7 +5,8 @@ using GuildsAndEmpires.State;
 namespace GuildsAndEmpires.UI.Screens
 {
     /// <summary>
-    /// Application d'une réponse serveur de production au store (19.4c-1), sans Firebase ni objet de scène.
+    /// Application d'une réponse serveur de production au store (19.4c-1), sans Firebase ni objet de scène ; une
+    /// réponse <c>data-loss</c> (compte en maintenance, 19.4d) suit le même patron.
     ///
     /// Ordre imposé : la réponse est proposée au store (valeurs serveur telles quelles, doctrine C7) AVANT tout
     /// contrôle d'annulation ; seules les écritures d'UI sont abandonnées après annulation (doctrine C9). Une
@@ -42,6 +43,18 @@ namespace GuildsAndEmpires.UI.Screens
             CancellationToken ct)
         {
             store?.ApplyServerProductionState(requestNumber, building, inventory);
+            return !ct.IsCancellationRequested;
+        }
+
+        /// <summary>
+        /// Réponse <c>data-loss</c> (connexion, lancement, collecte ou arrêt ; 19.4d) : traitée comme une réponse,
+        /// l'état de maintenance est proposé au store (même filtre de numéro d'envoi) AVANT le contrôle d'annulation.
+        /// Retourne true si l'appelant peut encore écrire dans l'UI (jeton non annulé), que l'état ait été posé ou
+        /// ignoré.
+        /// </summary>
+        public static bool ApplyMaintenance(PlayerEconomyStateStore store, long requestNumber, CancellationToken ct)
+        {
+            store?.ApplyServerMaintenance(requestNumber);
             return !ct.IsCancellationRequested;
         }
     }

@@ -5,6 +5,14 @@
         <ui:Label name="status-label" text="Chargement…" class="status status--loading" />
         <ui:Label name="economy-label" text="Or : —" class="economy" />
         <ui:ScrollView name="slots-container" class="slots-container" />
+        <!-- Panneau de maintenance (19.4d, D-ETAPE19-010 Q5) : remplace la liste des slots ; textes posés par
+             ProductionScreen depuis PlayerMessages. -->
+        <ui:VisualElement name="maintenance-panel" class="maintenance-panel">
+            <ui:Label name="maintenance-label" class="maintenance-text" />
+            <ui:VisualElement name="maintenance-action-row" class="launch-row">
+                <ui:Button name="retry-button" class="launch-action-btn launch-action-btn--primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
         <!-- Panneau de lancement (19.4c-1) : textes posés par ProductionScreen depuis PlayerMessages. -->
         <ui:VisualElement name="launch-panel" class="launch-panel">
             <ui:VisualElement name="recipe-row" class="launch-row">
