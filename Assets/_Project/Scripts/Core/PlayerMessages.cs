@@ -68,5 +68,57 @@ namespace GuildsAndEmpires.Core
         public const string ActivePlanks  = "Planks en cours";
         public const string ActiveKits    = "Kits en cours";
         public const string ActiveUnknown = "Production en cours";
+
+        // ── Slot actif et arrêt d'un slot (19.4c-2, D-ETAPE19-010 options A, réponse F2 du founder D-ETAPE19-014) ──
+
+        /// <summary>Bouton d'un slot actif et bouton de la confirmation d'arrêt (texte 7).</summary>
+        public const string StopButton = "Arrêter";
+
+        /// <summary>
+        /// Confirmation d'arrêt, sans chiffres (D-ETAPE19-010 Q4, options A). Texte du founder, inchangé quel que soit
+        /// le slot (logs compris).
+        /// </summary>
+        public const string StopConfirmation =
+            "Le cycle en cours sera perdu. Les intrants des cycles non commencés seront rendus dans la limite de la place libre.";
+
+        /// <summary>Rejeu d'un arrêt déjà appliqué (options A).</summary>
+        public const string StopAlreadyApplied = "Arrêt déjà enregistré";
+
+        /// <summary>
+        /// Lignes des résumés de collecte et d'arrêt (texte 8) ; {0} : liste « quantité ressource » séparée par
+        /// <see cref="ResourceListSeparator"/>. Lignes à zéro masquées (Q4).
+        /// </summary>
+        public const string SummaryCollectedFormat       = "Récolté : {0}";
+        public const string SummaryDiscardedFormat       = "Perdu (stock plein) : {0}";
+        public const string SummaryRefundedFormat        = "Rendu : {0}";
+        public const string SummaryRefundDiscardedFormat = "Intrants perdus (stock plein) : {0}";
+
+        /// <summary>Séparateur des ressources dans une ligne de résumé (celui du texte de collecte existant).</summary>
+        public const string ResourceListSeparator = ", ";
+
+        /// <summary>Collecte sans rien de récolté ni de perdu (texte existant, inchangé).</summary>
+        public const string NothingToCollect = "Rien à récolter pour l'instant.";
+
+        /// <summary>Avancement estimé d'un lot (options A, ex. « lot 3/10 ») ; {0} : k, {1} : N.</summary>
+        public const string BatchProgressFormat = "lot {0}/{1}";
+
+        /// <summary>Lot estimé fini (options A) : affichage seulement, le serveur tranche à la collecte.</summary>
+        public const string BatchFinished = "Lot terminé — collecter";
+
+        /// <summary>
+        /// Temps restant d'un lot (texte 9 ; « 1 min restante » : arbitre, 2026-11-04, D-REPRISE-012). Minutes
+        /// tronquées ; l'accord suit le nombre affiché. Distincts des formats de l'aperçu (<see cref="DurationHoursFormat"/>,
+        /// <see cref="DurationMinutesFormat"/>), qui restent sans « restantes ».
+        /// </summary>
+        public const string RemainingHoursFormat    = "{0} h {1:00} restantes";
+        public const string RemainingMinutesFormat  = "{0} min restantes";
+        public const string RemainingOneMinute      = "1 min restante";
+        public const string RemainingUnderOneMinute = "< 1 min";
+
+        /// <summary>
+        /// Erreur inattendue de l'écran de production (texte existant, inchangé ; tutoiement : lot de textes F2,
+        /// TD-033).
+        /// </summary>
+        public const string UnexpectedError = "Erreur inattendue, consulte la console.";
     }
 }

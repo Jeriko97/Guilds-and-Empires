@@ -24,6 +24,14 @@
                 <ui:Button name="cancel-button" class="launch-action-btn" />
             </ui:VisualElement>
         </ui:VisualElement>
+        <!-- Confirmation d'arrêt (19.4c-2) : textes posés par ProductionScreen depuis PlayerMessages. -->
+        <ui:VisualElement name="stop-confirm-panel" class="stop-confirm-panel">
+            <ui:Label name="stop-confirm-label" class="stop-confirm-text" />
+            <ui:VisualElement name="stop-action-row" class="launch-row">
+                <ui:Button name="stop-confirm-button" class="launch-action-btn stop-confirm-btn" />
+                <ui:Button name="stop-cancel-button" class="launch-action-btn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:Button name="collect-button" text="Collecter" class="collect-button" />
         <ui:Button name="market-button" text="Marché" class="market-button" />
     </ui:VisualElement>

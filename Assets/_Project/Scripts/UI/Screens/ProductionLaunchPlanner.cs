@@ -152,6 +152,9 @@ namespace GuildsAndEmpires.UI.Screens
         /// Production restante des autres slots occupés produisant la même ressource que <paramref name="recipe"/> :
         /// Σ max(0, cyclesPlanned − cyclesProcessed) × outputQty, lus du snapshot serveur (aucune estimation par
         /// l'horloge). Compteur absent → 0 ; recette inconnue du client → slot ignoré.
+        /// <c>cyclesProcessed</c> est celui du dernier règlement serveur (réponse reçue en dernier) : entre deux appels,
+        /// les cycles finis depuis n'y sont pas encore comptés, le restant est donc surestimé et l'avertissement de
+        /// saturation qui en dépend est conservateur (report de 19.4c-1).
         /// </summary>
         public static long RemainingOutputOfOtherSlots(RecipeInfo recipe, IReadOnlyList<SlotSnapshot> slots, int panelSlotIndex)
         {

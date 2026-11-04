@@ -16,6 +16,9 @@ namespace GuildsAndEmpires.UI.Screens
     /// <summary>
     /// Premier écran gameplay — liste les slots de la Sawmill ; sur un slot libre, « Produire » ouvre le panneau de
     /// lancement (recette, N par 1 / 10 / Max, aperçu, avertissement de saturation — 19.4c-1, D-ETAPE19-014).
+    /// Sur un slot actif (19.4c-2) : recette réelle ; pour planks et kits, « lot k/N » et temps restant estimés,
+    /// rafraîchis ~1 s, puis « Lot terminé — collecter » ; « Arrêter » ouvre une confirmation sans chiffres, puis le
+    /// résumé tiré de la réponse du serveur (D-ETAPE19-010 Q4). Une seule confirmation ou un seul panneau ouvert.
     ///
     /// Règles absolues :
     /// - Aucun calcul économique/temporel local — état brut depuis la CF. Doctrine server-auth.
@@ -27,12 +30,18 @@ namespace GuildsAndEmpires.UI.Screens
     ///   Annotation (19.4c-1, arbitrage 1a-1f) : Max, aperçu et saturation sont calculés pour l'affichage seulement
     ///   (ProductionLaunchPlanner, copie des recettes TD-027) ; seuls blocages client : boutons N grisés au-delà de
     ///   Max, « Lancer » inactif sans N choisi. Seul N (Max compris) part au serveur, qui le revalide.
+    ///   Annotation (19.4c-2, D-ETAPE19-013) : l'estimation du slot actif (ProductionSlotProgress) est recalculée à
+    ///   chaque tick depuis le SlotSnapshot du store, jamais un compteur local ; écoulé ancré sur l'heure de l'appareil
+    ///   et Time.realtimeSinceStartup, ancre relevée à chaque notification du store (réponse reçue comprise) ; aucune
+    ///   valeur estimée dans le store ni dans une requête ; « Arrêter » et « Collecter » ne dépendent pas de
+    ///   l'estimation ; tick créé en OnEnable, arrêté en OnDisable, sans chaîne allouée quand la valeur affichée ne
+    ///   change pas.
     /// - État métier : le PlayerEconomyStateStore seul (doctrine C7), bâtiment compris ; l'écran n'en garde aucune
     ///   copie. Chaque réponse serveur est proposée au store AVANT le contrôle d'annulation ; seules les écritures
     ///   d'UI sont abandonnées après annulation (C9). Un écran recréé affiche le bâtiment du store sans relancer
     ///   resolveLoginState.
     /// - Sérialisation (bloquants de revue 19.4c-1) : un seul appel qui écrit bâtiment et inventaire (chargement,
-    ///   lancement, collecte) à la fois, tous écrans confondus ; l'état « appel en cours » vit dans le store, posé à
+    ///   lancement, collecte, arrêt) à la fois, tous écrans confondus ; l'état « appel en cours » vit dans le store, posé à
     ///   l'envoi, levé quand l'appel revient (réponse ou erreur), jamais par l'annulation de l'écran. Un écran recréé
     ///   pendant un appel garde ses boutons d'action inactifs jusqu'à la fin de l'appel, puis se met à jour depuis le
     ///   store (Changed). Filet : le store écarte une réponse dont le numéro d'envoi n'est pas le plus grand.
@@ -79,13 +88,45 @@ namespace GuildsAndEmpires.UI.Screens
         private Button        _launchButton;
         private Button        _cancelButton;
 
+        // Confirmation d'arrêt (persistante, UXML ; 19.4c-2).
+        private VisualElement _stopConfirmPanel;
+        private Label         _stopConfirmLabel;
+        private Button        _stopConfirmButton;
+        private Button        _stopCancelButton;
+
         // ── State (UI seulement : aucune valeur métier) ───────────────────────
         private PlayerEconomyStateStore _store;
-        private readonly List<Button>   _slotButtons = new();
+        private readonly List<Button>   _slotButtons = new();   // « Produire » et « Arrêter » des slots
         private bool                    _awaitingLoad;     // aucun bâtiment dans le store à l'OnEnable
         private int?                    _panelSlotIndex;   // null = panneau fermé
         private RecipeInfo              _panelRecipe;
         private CyclesChoice            _panelChoice;
+        private int?                    _confirmSlotIndex; // null = confirmation d'arrêt fermée
+
+        // Tick d'affichage du slot actif (~1 s, 19.4c-2) : créé en OnEnable, arrêté en OnDisable (C9).
+        private const long TickIntervalMs = 1000;
+        private IVisualElementScheduledItem    _tick;
+        private readonly List<SlotProgressView> _progressViews = new();
+
+        // Ancre de l'écoulé (affichage seulement, jamais écrite dans le store) : heure UTC de l'appareil et horloge
+        // monotone, relevées en OnEnable, à chaque notification du store et au retour au premier plan.
+        private long   _anchorWallClockMs;
+        private double _anchorRealtime;
+
+        /// <summary>
+        /// Libellés « lot k/N » et temps restant d'un slot actif. Slot et recette : références du store et de la copie
+        /// des recettes (aucune valeur recopiée) ; derniers k et minutes affichés : seulement pour ne réécrire un texte
+        /// que si la valeur affichée change (pas de chaîne allouée par tick).
+        /// </summary>
+        private sealed class SlotProgressView
+        {
+            public SlotSnapshot Slot;
+            public RecipeInfo   Recipe;
+            public Label        Batch;
+            public Label        Remaining;
+            public int          ShownCycle   = int.MinValue;
+            public long         ShownMinutes = long.MinValue;
+        }
 
         private void Awake()
         {
@@ -113,12 +154,18 @@ namespace GuildsAndEmpires.UI.Screens
                 _marketButton.clicked += OnMarketClicked;
 
             BindLaunchPanel(root);
+            BindStopConfirm(root);
 
-            // Panneau fermé. L'état « appel en cours » n'est PAS remis à zéro : il vit dans le store et n'est levé que
-            // par le retour de l'appel ; une tâche d'une génération précédente ne touche plus l'UI de cet écran (C9).
-            _panelSlotIndex = null;
-            _panelRecipe    = null;
-            _panelChoice    = CyclesChoice.None;
+            // Panneau et confirmation fermés. L'état « appel en cours » n'est PAS remis à zéro : il vit dans le store et
+            // n'est levé que par le retour de l'appel ; une tâche d'une génération précédente ne touche plus l'UI de cet
+            // écran (C9).
+            _panelSlotIndex   = null;
+            _panelRecipe      = null;
+            _panelChoice      = CyclesChoice.None;
+            _confirmSlotIndex = null;
+
+            AnchorElapsed();
+            _tick = root.schedule.Execute(OnTick).Every(TickIntervalMs);
 
             ServiceLocator.TryResolve(out _store);
             if (_store != null)
@@ -133,7 +180,9 @@ namespace GuildsAndEmpires.UI.Screens
                 SetStatus("Chargement…", "status--loading");
                 _slotsContainer.Clear();
                 _slotButtons.Clear();
+                _progressViews.Clear();
                 RefreshLaunchPanel();
+                RefreshStopConfirm();
 
                 // Un appel déjà en cours (lancé par un écran précédent) : on attend sa fin (OnStoreChanged).
                 if (!CallInFlight)
@@ -143,17 +192,23 @@ namespace GuildsAndEmpires.UI.Screens
             {
                 RenderSlots();
                 RefreshLaunchPanel();
+                RefreshStopConfirm();
                 SetStatus("Prêt.", "status--success");
             }
         }
 
         private void OnDisable()
         {
+            _tick?.Pause();
+            _tick = null;
+            _progressViews.Clear();
+
             if (_collectButton != null)
                 _collectButton.clicked -= OnCollectClicked;
             if (_marketButton != null)
                 _marketButton.clicked -= OnMarketClicked;
             UnbindLaunchPanel();
+            UnbindStopConfirm();
             if (_store != null)
                 _store.Changed -= OnStoreChanged;
             _store = null;
@@ -201,7 +256,7 @@ namespace GuildsAndEmpires.UI.Screens
                 if (ct.IsCancellationRequested) return;
                 GELogger.Warning("ProductionScreen", "Chargement annulé hors annulation de l'écran.");
                 _awaitingLoad = false;
-                SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
             }
             catch (PlayerServiceException ex)
             {
@@ -215,7 +270,7 @@ namespace GuildsAndEmpires.UI.Screens
                 GELogger.Error("ProductionScreen", $"Erreur inattendue au chargement: {ex.Message}");
                 if (ct.IsCancellationRequested) return;
                 _awaitingLoad = false;
-                SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
             }
             finally
             {
@@ -232,9 +287,12 @@ namespace GuildsAndEmpires.UI.Screens
         /// recalculés depuis le store (Max, boutons N, aperçu, saturation ; panneau fermé si son slot est devenu
         /// occupé ; boutons inactifs pendant un appel). Écran ouvert sans bâtiment pendant l'appel d'un écran
         /// précédent : à la fin de cet appel, « Prêt. » si le bâtiment est arrivé, sinon chargement relancé.
+        /// Slot actif (19.4c-2) : nouvelle ancre de l'écoulé, puis rendu depuis le bâtiment du store (l'affichage repart
+        /// de la dernière réponse) ; confirmation d'arrêt fermée si son slot n'est plus actif.
         /// </summary>
         private void OnStoreChanged()
         {
+            AnchorElapsed();
             RenderEconomy();
             RenderSlots();
             SetAllButtonsEnabled(!CallInFlight);
@@ -257,6 +315,7 @@ namespace GuildsAndEmpires.UI.Screens
         {
             _slotsContainer.Clear();
             _slotButtons.Clear();
+            _progressViews.Clear();
 
             var building = _store?.Building;
             if (building == null)
@@ -272,7 +331,7 @@ namespace GuildsAndEmpires.UI.Screens
             {
                 var card = new VisualElement();
                 card.AddToClassList("slot-card");
-                if (_panelSlotIndex == slot.SlotIndex)
+                if (_panelSlotIndex == slot.SlotIndex || _confirmSlotIndex == slot.SlotIndex)
                     card.AddToClassList("slot-card--selected");
 
                 var header = new Label($"Slot {slot.SlotIndex}");
@@ -295,6 +354,36 @@ namespace GuildsAndEmpires.UI.Screens
                     var activeLabel = new Label(ProductionLaunchPlanner.ActiveSlotLabel(slot.RecipeId));
                     activeLabel.AddToClassList("slot-active-label");
                     card.Add(activeLabel);
+
+                    // Planks et kits aux compteurs cohérents : « lot k/N » et temps restant estimés (affichage
+                    // seulement). Sinon (logs, compteurs incohérents, recette inconnue) : libellé de recette seul.
+                    var recipe = ProductionRecipes.Find(slot.RecipeId);
+                    if (ProductionSlotProgress.TryEstimate(slot, recipe, 0L, out _))
+                    {
+                        var view = new SlotProgressView
+                        {
+                            Slot      = slot,
+                            Recipe    = recipe,
+                            Batch     = new Label { name = $"slot-batch-{slot.SlotIndex}" },
+                            Remaining = new Label { name = $"slot-remaining-{slot.SlotIndex}" },
+                        };
+                        view.Batch.AddToClassList("slot-batch-label");
+                        view.Remaining.AddToClassList("slot-remaining-label");
+                        card.Add(view.Batch);
+                        card.Add(view.Remaining);
+                        _progressViews.Add(view);
+                        UpdateProgressView(view);
+                    }
+
+                    // « Arrêter » sur tout slot actif, logs compris (le serveur ne refuse que le slot libre).
+                    var capturedIndex = slot.SlotIndex;
+                    var stopBtn = new Button(() => OnStopClicked(capturedIndex));
+                    stopBtn.name = $"stop-slot-{slot.SlotIndex}";
+                    stopBtn.text = PlayerMessages.StopButton;
+                    stopBtn.AddToClassList("slot-stop-btn");
+                    stopBtn.SetEnabled(!CallInFlight);
+                    card.Add(stopBtn);
+                    _slotButtons.Add(stopBtn);
                 }
 
                 _slotsContainer.Add(card);
@@ -361,15 +450,20 @@ namespace GuildsAndEmpires.UI.Screens
             if (_cancelButton       != null) _cancelButton.clicked       -= OnCancelClicked;
         }
 
-        /// <summary>« Produire » sur un slot libre : panneau ouvert sur ce slot, recette et N remis à zéro (aucune requête).</summary>
+        /// <summary>
+        /// « Produire » sur un slot libre : panneau ouvert sur ce slot, recette et N remis à zéro (aucune requête) ;
+        /// confirmation d'arrêt fermée (un seul panneau ou une seule confirmation à la fois).
+        /// </summary>
         private void OnProduceClicked(int slotIndex)
         {
             if (CallInFlight) return;
-            _panelSlotIndex = slotIndex;
-            _panelRecipe    = null;
-            _panelChoice    = CyclesChoice.None;
+            _confirmSlotIndex = null;
+            _panelSlotIndex   = slotIndex;
+            _panelRecipe      = null;
+            _panelChoice      = CyclesChoice.None;
             RenderSlots();
             RefreshLaunchPanel();
+            RefreshStopConfirm();
         }
 
         private void OnRecipeLogsClicked()   => SelectRecipe(ProductionRecipes.LogsId);
@@ -540,7 +634,14 @@ namespace GuildsAndEmpires.UI.Screens
 
                 SetStatus("Production démarrée.", "status--success");
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // Annulation par l'écran : rien à afficher (C9). Annulation venue du SDK, jeton intact : traitée en
+                // erreur, comme LoadAsync.
+                if (ct.IsCancellationRequested) return;
+                GELogger.Warning("ProductionScreen", "Lancement annulé hors annulation de l'écran.");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
+            }
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur production: {ex.UserMessage}");
@@ -551,7 +652,7 @@ namespace GuildsAndEmpires.UI.Screens
             {
                 GELogger.Error("ProductionScreen", $"Erreur inattendue: {ex.Message}");
                 if (ct.IsCancellationRequested) return;
-                SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
             }
             finally
             {
@@ -613,9 +714,17 @@ namespace GuildsAndEmpires.UI.Screens
                 if (!ProductionStoreWriter.ApplyProductionState(
                         store, requestNumber, result.Building, result.Inventory, ct)) return;
 
-                SetStatus(FormatCollectMessage(result), "status--success");
+                // Résumé tiré de la réponse : lignes à zéro masquées, « stock plein » (texte 8, 19.4c-2).
+                SetStatus(ProductionSlotProgress.BuildCollectSummary(result), "status--success");
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // Annulation par l'écran : rien à afficher (C9). Annulation venue du SDK, jeton intact : traitée en
+                // erreur, comme LoadAsync.
+                if (ct.IsCancellationRequested) return;
+                GELogger.Warning("ProductionScreen", "Collecte annulée hors annulation de l'écran.");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
+            }
             catch (ProductionServiceException ex)
             {
                 GELogger.Warning("ProductionScreen", $"Erreur collecte: {ex.UserMessage}");
@@ -626,7 +735,7 @@ namespace GuildsAndEmpires.UI.Screens
             {
                 GELogger.Error("ProductionScreen", $"Erreur inattendue: {ex.Message}");
                 if (ct.IsCancellationRequested) return;
-                SetStatus("Erreur inattendue, consulte la console.", "status--error");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
             }
             finally
             {
@@ -634,6 +743,252 @@ namespace GuildsAndEmpires.UI.Screens
                 // annulation de l'écran).
                 store.EndServerCall(requestNumber);
             }
+        }
+
+        // ── Stop handler (19.4c-2) ────────────────────────────────────────────
+
+        private void BindStopConfirm(VisualElement root)
+        {
+            _stopConfirmPanel  = root.Q<VisualElement>("stop-confirm-panel");
+            _stopConfirmLabel  = root.Q<Label>("stop-confirm-label");
+            _stopConfirmButton = root.Q<Button>("stop-confirm-button");
+            _stopCancelButton  = root.Q<Button>("stop-cancel-button");
+
+            if (_stopConfirmLabel != null) _stopConfirmLabel.text = PlayerMessages.StopConfirmation;
+            SetText(_stopConfirmButton, PlayerMessages.StopButton);
+            SetText(_stopCancelButton,  PlayerMessages.CancelButton);
+
+            if (_stopConfirmButton != null) _stopConfirmButton.clicked += OnStopConfirmClicked;
+            if (_stopCancelButton  != null) _stopCancelButton.clicked  += OnStopCancelClicked;
+        }
+
+        private void UnbindStopConfirm()
+        {
+            if (_stopConfirmButton != null) _stopConfirmButton.clicked -= OnStopConfirmClicked;
+            if (_stopCancelButton  != null) _stopCancelButton.clicked  -= OnStopCancelClicked;
+        }
+
+        /// <summary>
+        /// « Arrêter » sur un slot actif : confirmation ouverte sur ce slot (aucune requête) ; panneau de lancement fermé
+        /// (un seul à la fois). Indépendant de l'estimation : seuls le store et l'appel en cours comptent.
+        /// </summary>
+        private void OnStopClicked(int slotIndex)
+        {
+            if (CallInFlight) return;
+            var building = _store?.Building;
+            if (building == null || !IsSlotActive(building, slotIndex)) return;
+
+            _panelSlotIndex   = null;
+            _panelRecipe      = null;
+            _panelChoice      = CyclesChoice.None;
+            _confirmSlotIndex = slotIndex;
+            RenderSlots();
+            RefreshLaunchPanel();
+            RefreshStopConfirm();
+        }
+
+        /// <summary>« Annuler » : confirmation fermée, aucune requête.</summary>
+        private void OnStopCancelClicked()
+        {
+            if (CallInFlight) return;
+            _confirmSlotIndex = null;
+            RenderSlots();
+            RefreshStopConfirm();
+        }
+
+        /// <summary>
+        /// Recalcule la confirmation depuis le store : fermée si son slot n'est plus actif (collecte, autre réponse) ;
+        /// boutons inactifs pendant un appel (règle existante).
+        /// </summary>
+        private void RefreshStopConfirm()
+        {
+            if (_stopConfirmPanel == null) return;
+
+            var building = _store?.Building;
+            if (_confirmSlotIndex == null || building == null || !IsSlotActive(building, _confirmSlotIndex.Value))
+            {
+                var wasOpen = _confirmSlotIndex != null;
+                _confirmSlotIndex = null;
+                _stopConfirmPanel.style.display = DisplayStyle.None;
+                if (wasOpen) RenderSlots();   // retire la mise en évidence du slot
+                return;
+            }
+
+            _stopConfirmPanel.style.display = DisplayStyle.Flex;
+            _stopConfirmButton?.SetEnabled(!CallInFlight);
+            _stopCancelButton?.SetEnabled(!CallInFlight);
+        }
+
+        /// <summary>
+        /// Confirmation de l'arrêt : requête avec une clé d'idempotence ancrée sur le bâtiment du store (même patron que
+        /// le lancement, D-ETAPE19-003) ; appel sérialisé (règle d'appel en cours existante).
+        /// </summary>
+        private void OnStopConfirmClicked()
+        {
+            if (CallInFlight || _confirmSlotIndex == null) return;
+
+            var slotIndex = _confirmSlotIndex.Value;
+            var building  = _store?.Building;
+            if (building == null || !IsSlotActive(building, slotIndex))
+            {
+                RefreshStopConfirm();
+                return;
+            }
+
+            if (!ServiceLocator.TryResolve<IProductionService>(out var productionService))
+            {
+                GELogger.Error("ProductionScreen", "IProductionService non enregistré.");
+                SetStatus("Erreur : service manquant.", "status--error");
+                return;
+            }
+
+            // Clé ancrée sur le bâtiment du store ; libellé = contenu complet de la requête. Intentions formées sur un
+            // autre état : purgées.
+            var intent = ProductionSlotProgress.BuildStopIntent(building.Id, slotIndex);
+            PendingIntents.PurgeStale(building);
+            var key = PendingIntents.GetOrCreate(intent, building);
+
+            // Confirmation fermée à l'envoi ; appel sérialisé : état « appel en cours » posé dans le store (boutons
+            // inactifs, rendu via Changed).
+            _confirmSlotIndex = null;
+            var store = _store;
+            if (!store.TryBeginServerCall(out var requestNumber))
+            {
+                RenderSlots();
+                RefreshStopConfirm();
+                return;
+            }
+            _ = StopSlotAsync(productionService, store, requestNumber, building.Id, slotIndex, intent, key, _cts.Token);
+        }
+
+        private async Task StopSlotAsync(
+            IProductionService productionService, PlayerEconomyStateStore store, long requestNumber,
+            string buildingId, int slotIndex, string intent, string key, CancellationToken ct)
+        {
+            try
+            {
+                var result = await productionService.StopProductionSlotAsync(buildingId, slotIndex, key, ct);
+
+                // Réponse parsée avec succès (rejeu compris) : l'intention est close, même si le store l'écarte.
+                PendingIntents.Resolve(intent, key);
+
+                // Bâtiment et inventaire de la réponse proposés au store avant le contrôle d'annulation (C9).
+                if (!ProductionStoreWriter.ApplyProductionState(
+                        store, requestNumber, result.Building, result.Inventory, ct)) return;
+
+                // Résumé tiré de la réponse (Q4) : rejeu → « Arrêt déjà enregistré » ; lignes à zéro masquées ; tout
+                // vide → texte d'état vidé (le slot libéré est le retour visible).
+                SetStatus(ProductionSlotProgress.BuildStopSummary(result), "status--success");
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation par l'écran : rien à afficher (C9). Annulation venue du SDK, jeton intact : traitée en
+                // erreur, comme LoadAsync.
+                if (ct.IsCancellationRequested) return;
+                GELogger.Warning("ProductionScreen", "Arrêt annulé hors annulation de l'écran.");
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
+            }
+            catch (ProductionServiceException ex)
+            {
+                GELogger.Warning("ProductionScreen", $"Erreur arrêt: {ex.UserMessage}");
+                if (ct.IsCancellationRequested) return;
+                SetStatus(FormatError(ex.UserMessage, ex.IsMaintenance), "status--error");
+            }
+            catch (Exception ex)
+            {
+                GELogger.Error("ProductionScreen", $"Erreur inattendue: {ex.Message}");
+                if (ct.IsCancellationRequested) return;
+                SetStatus(PlayerMessages.UnexpectedError, "status--error");
+            }
+            finally
+            {
+                // L'appel est revenu (réponse ou erreur) : état levé, quel que soit l'écran (jamais sur la seule
+                // annulation de l'écran).
+                store.EndServerCall(requestNumber);
+            }
+        }
+
+        private static bool IsSlotActive(BuildingSnapshot building, int slotIndex)
+        {
+            foreach (var slot in building.Slots)
+                if (slot.SlotIndex == slotIndex) return slot.RecipeId != null;
+            return false;
+        }
+
+        // ── Slot actif : tick d'affichage (19.4c-2, affichage seulement) ─────
+
+        /// <summary>
+        /// Relève l'ancre de l'écoulé (heure UTC de l'appareil, horloge monotone). Sans nouvelle réponse, ne change pas
+        /// l'écoulé (sauf changement d'heure de l'appareil entre-temps) : reprend seulement l'horloge murale.
+        /// </summary>
+        private void AnchorElapsed()
+        {
+            _anchorWallClockMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _anchorRealtime    = Time.realtimeSinceStartupAsDouble;
+        }
+
+        /// <summary>
+        /// Tick (~1 s) : estimation recalculée depuis le SlotSnapshot du store pour chaque slot affiché ; seuls des
+        /// entiers sont calculés, un texte n'est réécrit que si la valeur affichée change.
+        /// </summary>
+        private void OnTick()
+        {
+            for (var i = 0; i < _progressViews.Count; i++)
+                UpdateProgressView(_progressViews[i]);
+        }
+
+        private void UpdateProgressView(SlotProgressView view)
+        {
+            var monotonicMs = (long)((Time.realtimeSinceStartupAsDouble - _anchorRealtime) * 1000.0);
+            var elapsedMs   = ProductionSlotProgress.ElapsedMs(
+                ProductionSlotProgress.ReferenceMs(view.Slot), _anchorWallClockMs, monotonicMs);
+            if (!ProductionSlotProgress.TryEstimate(view.Slot, view.Recipe, elapsedMs, out var estimate)) return;
+
+            // « lot k/N », ou « Lot terminé — collecter » quand k = N (restant = 0).
+            if (estimate.Cycle != view.ShownCycle)
+            {
+                view.ShownCycle = estimate.Cycle;
+                view.Batch.text = estimate.IsFinished
+                    ? PlayerMessages.BatchFinished
+                    : ProductionSlotProgress.FormatBatch(estimate.Cycle, estimate.Planned);
+            }
+
+            // Temps restant, seulement s'il est strictement positif (minutes tronquées ; −1 = lot estimé fini).
+            var minutes = ProductionSlotProgress.DisplayedMinutes(estimate.RemainingMs);
+            if (minutes != view.ShownMinutes)
+            {
+                view.ShownMinutes = minutes;
+                if (minutes < 0)
+                {
+                    view.Remaining.style.display = DisplayStyle.None;
+                }
+                else
+                {
+                    view.Remaining.text          = ProductionSlotProgress.FormatRemaining(estimate.RemainingMs);
+                    view.Remaining.style.display = DisplayStyle.Flex;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retour au premier plan : nouvelle ancre et rendu immédiat, seulement si l'écran est actif (tick et jeton
+        /// d'annulation en cours, symétrie C9).
+        /// </summary>
+        private void OnApplicationPause(bool paused)
+        {
+            if (!paused) ReanchorIfActive();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (hasFocus) ReanchorIfActive();
+        }
+
+        private void ReanchorIfActive()
+        {
+            if (_tick == null || _cts == null) return;
+            AnchorElapsed();
+            OnTick();
         }
 
         // ── Helpers UI ────────────────────────────────────────────────────────
@@ -676,10 +1031,10 @@ namespace GuildsAndEmpires.UI.Screens
         private bool CallInFlight => _store != null && _store.CallInFlight;
 
         /// <summary>
-        /// Règle existante, étendue au panneau et à l'appel en cours de tout écran : slots et « Collecter » suivent
-        /// <paramref name="enabled"/> (appelée avec !CallInFlight à chaque Changed) ; les boutons du panneau sont
-        /// inactifs pendant un appel, puis reprennent leur état calculé (1a-1c), jamais une réactivation en bloc.
-        /// « Marché » n'est pas touché.
+        /// Règle existante, étendue au panneau et à l'appel en cours de tout écran : slots (« Produire », « Arrêter ») et
+        /// « Collecter » suivent <paramref name="enabled"/> (appelée avec !CallInFlight à chaque Changed) ; les boutons du
+        /// panneau sont inactifs pendant un appel, puis reprennent leur état calculé (1a-1c), jamais une réactivation en
+        /// bloc ; ceux de la confirmation d'arrêt aussi (19.4c-2). « Marché » n'est pas touché.
         /// </summary>
         private void SetAllButtonsEnabled(bool enabled)
         {
@@ -687,6 +1042,7 @@ namespace GuildsAndEmpires.UI.Screens
                 btn.SetEnabled(enabled);
             _collectButton?.SetEnabled(enabled);
             RefreshLaunchPanel();
+            RefreshStopConfirm();
         }
 
         private static void SetText(Button button, string text)
@@ -696,25 +1052,5 @@ namespace GuildsAndEmpires.UI.Screens
 
         private static void SetSelected(VisualElement element, bool selected) =>
             element?.EnableInClassList("launch-choice-btn--selected", selected);
-
-        private static string FormatCollectMessage(CollectProductionResult result)
-        {
-            if (result.Collected.Count == 0 && result.Discarded.Count == 0)
-                return "Rien à récolter pour l'instant.";
-
-            var parts = new List<string>();
-            foreach (var kv in result.Collected)
-                parts.Add($"{kv.Value} {kv.Key}");
-            var msg = "Récolté : " + string.Join(", ", parts);
-
-            if (result.Discarded.Count > 0)
-            {
-                var lostParts = new List<string>();
-                foreach (var kv in result.Discarded)
-                    lostParts.Add($"{kv.Value} {kv.Key}");
-                msg += " — perdu (cap plein) : " + string.Join(", ", lostParts);
-            }
-            return msg;
-        }
     }
 }

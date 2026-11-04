@@ -73,9 +73,10 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
 - Tests : **366/366** verts le 11-03 après l'ÉTAPE 19.4b (365 après 19.4a, dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
-- Tests client : **116/116** EditMode verts le 11-03 après 19.4c-1 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9
+- Tests client : **146/146** EditMode verts le 11-04 après 19.4c-2 (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9
   de la garde du mode émulateur, ÉTAPE 19.4a ; 18 des parsings et utilitaires de production, ÉTAPE 19.4b ; 43 du
-  panneau de lancement, du registre et du store, ÉTAPE 19.4c-1 ;
+  panneau de lancement, du registre et du store, ÉTAPE 19.4c-1 ; 30 de l'estimation du slot actif, des résumés et de
+  l'arrêt, ÉTAPE 19.4c-2 ;
   `Assets/_Project/Tests/Editor/`) : `unity test . --mode EditMode --output <rapport.xml>`, Éditeur fermé (mode batch),
   ou `unity command test.run --mode EditMode` dans l'Éditeur ouvert.
 - Facturation Firebase réactivée le 11-01 (elle était coupée : toutes les CF renvoyaient `INTERNAL`).
@@ -563,7 +564,12 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
       6 validés par le founder (D-ETAPE19-014, version finale). 19.4c-1 ne touche pas le message de limite d'appels
       (« Trop d'actions récentes, réessaie dans 2s. ») : son délai réel par action et son vouvoiement passent
       ensemble au prochain lot de textes F2 (ci-dessous) ;
-    - 19.4c-2 — slot actif (lot « k/N » estimé, temps restant rafraîchi ~1 s, « Lot terminé — collecter »,
+    - 19.4c-2 — **fait le 11-04** (D-ETAPE19-014, « Fait » ; arbitrage de l'arbitre du 2026-11-04 sur « 1 min
+      restante ») : estimation du slot actif dans une classe pure `ProductionSlotProgress` (référence = `lastProcessedAt`,
+      sinon `startedAt`, comme le serveur ; compteurs incohérents → pas d'estimation, parsing inchangé), tick ~1 s,
+      bouton « Arrêter » et confirmation, résumés de collecte et d'arrêt (zéros filtrés, ordre fixe, « stock plein »,
+      une ligne par catégorie), reports 1 et 2 du relais de 19.4c-1 faits, « Erreur inattendue, consulte la console. »
+      en une constante ; 146/146 tests EditMode ; Play sur émulateurs, puits actif. Contenu prévu, pour mémoire : slot actif (lot « k/N » estimé, temps restant rafraîchi ~1 s, « Lot terminé — collecter »,
       contraintes D-ETAPE19-013), arrêt (bouton, confirmation sans chiffres, résumé du serveur, rejeu), entrées à 0
       filtrées partout (collecte et arrêt), « stock plein » (texte 8), traitement de `ParseOptionalInt` avant
       l'affichage « lot k/N ». Textes validés par le founder (D-ETAPE19-014) : 7. « Arrêter » ; 8. « Récolté : … »,
@@ -579,7 +585,7 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
       `cyclesProcessed` = dernier règlement serveur ; restant surestimé entre deux appels, avertissement
       conservateur ; (2) lancement et collecte : `catch (OperationCanceledException) { }` — une annulation levée par
       le SDK (jeton intact) reste muette ; aligner sur `LoadAsync` (19.4c-1 v4) ;
-  - 19.4d — panneau de maintenance (inchangée) ;
+  - 19.4d — **sous-étape suivante** — panneau de maintenance (inchangée) ;
   - **Diagnostic 19.4 (Tâche 0, 2026-11-03) — constats pour rédiger 19.4b à 19.4d** (lignes relevées au commit
     `eb3b4d4` ; décisions du founder : D-ETAPE19-010) :
     - a.1 Lancement : le serveur attend `buildingId`, `slotIndex`, `recipeId`, `cycles?`, `idempotencyKey` (UUID
@@ -715,7 +721,17 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     (données de l'orchestrateur à la préparation de l'index) : mode ticket, 6 passes de Codex et 6 de l'auditeur (v1
     à v6), aucun NO-GO de l'arbitre, une question au founder (posée sans l'arbitre ; réponse : texte C) ; limite :
     les passes du mode diff et l'audit de clôture ne sont pas comptés, faute d'être connus à la préparation de
-    l'index.
+    l'index. 19.4c-2 (données de l'orchestrateur à la préparation de l'index) : ticket 4 versions (Codex 4 passes,
+    auditeur 4 passes, un « GO APRÈS CORRECTION » de l'auditeur en v1, aucun NO-GO), arbitre 1 arbitrage (« 1 min
+    restante ») plus 1 écarté (lancé depuis `.revue-croisee/`, lectures refusées par son filtre, relancé depuis la
+    racine : incident à consigner, TD-031 ; « signal skill » s'il se répète) ; aucune escalade ; même limite pour le
+    mode diff et l'audit de clôture.
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.4c-2** — libellé court décidé par l'arbitre (D-REPRISE-012,
+    condition du founder : « à condition d'être listés dans le résumé d'étape ») : « 1 min restante » (texte), temps
+    restant d'un slot actif de planks ou de kits, écran de production (`PlayerMessages.RemainingOneMinute`) (endroit).
+    Changements visibles de la collecte (application de la réponse F2 du founder, texte 8, et de Q4) : noms de
+    ressource invariables (« kits » au lieu de la clé `reconstructionKits`), lignes à zéro masquées, une ligne par
+    catégorie (« Récolté : … », « Perdu (stock plein) : … ») au lieu de « Récolté : … — perdu (cap plein) : … ».
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -725,7 +741,10 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     deux changements ensemble : délai réel par action (6 s pour la collecte, constat a.7) et vouvoiement ; (3) le
     passage au vouvoiement (D-REPRISE-012) des autres phrases existantes encore tutoyées, par exemple « Une erreur
     est survenue, réessaie. », « Erreur inattendue, consulte la console. » ; leur liste exacte est relevée dans ce
-    lot, non avant. La question est formulée par l'arbitre (`CLAUDE.md` §c) ; conversion des textes après la réponse
+    lot, non avant ; (4) remarque non bloquante de l'arbitre (arbitrage du 2026-11-04, 19.4c-2) : « 1 h 00 restantes »
+    (temps restant d'un slot actif), livré tel que décidé (texte 9 du founder), à faire confirmer ou corriger par le
+    founder ; (5) risque relevé en revue du ticket 19.4c-2 : le texte Q4 de confirmation d'arrêt s'affiche aussi pour
+    un slot de logs, qui n'a pas d'intrants (texte inchangé, aucune variante créée). La question est formulée par l'arbitre (`CLAUDE.md` §c) ; conversion des textes après la réponse
     du founder seulement. Le lot est soumis au founder avant le déploiement de 19.5, pour qu'aucun texte au
     tutoiement n'arrive aux joueurs.
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
