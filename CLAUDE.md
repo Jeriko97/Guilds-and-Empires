@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014)
 
 La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
 neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
@@ -86,6 +86,10 @@ commence par le **type d'appel** ; les pièces requises en dépendent (D-REPRISE
 - **audit de clôture, ou proposition de modification de code ou de comportement** : le rapport (ou l'exposé de la
   proposition), le diff complet de l'index (`git diff --cached`), les résultats des tests, les décisions applicables.
   En audit de clôture, **pas** les verdicts des autres relecteurs (ancrage).
+  En audit de clôture, en plus : la sortie brute de `git status --porcelain`, prise sur l'index préparé. Règle du
+  founder (D-REPRISE-014, 2026-11-04), citée telle quelle : « Ajoute à l'audit de clôture de l'arbitre et à la vérification avant push un contrôle obligatoire : `git status --porcelain` doit être vide, en dehors des dossiers ignorés. Sinon, NO-GO. »
+  Règle unique de l'arbitre (arbitrage du 2026-11-04, D-REPRISE-014), citée telle quelle :
+  « Application avant le commit (arbitre, 2026-11-04, précision d'application de D-REPRISE-014 ; contestable par le founder au résumé d'arbitrages de l'étape 19) : à l'audit de clôture, l'index préparé est par construction non vide ; le contrôle se lit donc « en dehors des fichiers de l'index préparé (`git diff --cached --name-only`) et des dossiers ignorés, `git status --porcelain` doit être vide » : aucune ligne `??` (`git ls-files --others --exclude-standard` vide), aucune ligne dont la 2ᵉ colonne est non vide (`git diff --name-only` vide) ; chaque ligne restante est un fichier de `git diff --cached --name-only`. Pièce absente ou contrôle échoué → NO-GO. Après le commit, avant le push : sortie vide, à la lettre (§d, §g). »
 Pièce requise absente → NO-GO, avec la liste. En cas de doute sur le type, l'arbitre applique la règle la plus
 exigeante et le dit. Pièce trop longue pour être collée : écrite dans `.claude/instantanes/cloture/` (non versionné,
 lisible par l'arbitre ; jamais `.revue-croisee/`), vidé avant chaque dépôt, et désignée par son chemin et son
@@ -124,7 +128,8 @@ Verdict binaire GO / NO-GO. Chaque arbitrage entre au journal, attribué à « a
   dans la session en cours. Avant de s'appuyer sur son verdict, vérifier l'empreinte de son prompt (`systemHash` de
   `~/.claude/projects/<projet>/<session>/subagents/agent-<id>.prefix.json`) ; si elle n'a pas changé, nouvelle
   session.
-- Après le commit, avant tout push : `git rev-parse HEAD^{tree}` doit être identique à l'arbre audité (skill §6).
+- Après le commit, avant tout push : `git rev-parse HEAD^{tree}` doit être identique à l'arbre audité (skill §6), et
+  `git status --porcelain` doit donner une sortie vide, à la lettre (D-REPRISE-014, règle unique de l'arbitre, §c).
   Sinon : pas de push, arbitre saisi.
 - `git show --stat` figure dans le rapport final, après le commit.
 
@@ -170,12 +175,15 @@ Précisions d'application (Claude Code ; toutes vers plus de prudence par rappor
   **jamais `main`** ; un push direct sur `main` est assimilé au merge vers `main` (F3).
 - Avant le push : la plage `origin/<branche>..HEAD` ne contient que des commits qui ont chacun reçu les trois GO et la
   vérification de l'arbre (§d) ; sinon, pas de push, arbitre saisi. Premier push d'une branche (pas encore de
-  `origin/<branche>`) : plage `origin/main..HEAD`, ou arbitre saisi en cas de doute.
+  `origin/<branche>`) : plage `origin/main..HEAD`, ou arbitre saisi en cas de doute. Et `git status --porcelain` :
+  sortie vide, à la lettre (D-REPRISE-014, règle unique de l'arbitre, §c, §d) ; sinon, pas de push, arbitre saisi.
 - Un push qui déclencherait un déploiement (workflow ajouté plus tard) reste F3, au titre du déploiement.
 - Suppression d'une branche locale dont les commits ne sont poussés nulle part : arbitre.
 - Jusqu'au lot de retouches du corps de l'arbitre (briefings, « Prochaine retouche »), chaque saisine d'audit de
   clôture rappelle « push normal autorisé (D-REPRISE-009) » : le corps de l'agent range encore le push en F3. Ce
-  rappel est retiré quand le lot est appliqué.
+  rappel est retiré quand le lot est appliqué. De même, jusqu'à ce lot, chaque saisine d'audit de clôture rappelle le
+  contrôle `git status --porcelain` en citant la règle unique de l'arbitre (§c, D-REPRISE-014), sans autre
+  formulation : le corps de l'agent ne le prévoit pas encore.
 
 ### h. Sessions : orchestrateur et exécutant (D-REPRISE-011)
 Décision du founder (2026-11-03, garde-fou resserré), règle d'origine citée telle quelle : « Une session = une
@@ -197,26 +205,41 @@ founder, citée telle quelle : « On fait comme ça a partir de maitenant, tu me
 nouvelle session enfant. » Elle approuve la réponse de Claude Code citée en entier au journal (D-REPRISE-013) et
 révise D-REPRISE-011 sur la relance seulement.
 Phrase de relance standard (founder) : « Nouvelle session — reprends depuis le briefing : sous-étape suivante. »
-Claude Code la donne lui-même comme seule consigne de la session qu'il ouvre ; outil indisponible ou refusé → le
-founder relance, comme avant.
+Claude Code la donne lui-même comme seule consigne de la session qu'il ouvre.
+Relance sans question (D-REPRISE-014, 2026-11-04, F4, garde-fou). Décision du founder, citée telle quelle : « Ne me
+repose plus jamais la question « où lancer ». » ; « Ne me propose pas de l'ouvrir à la main. »
+Précision de Claude Code : Claude Code ouvre lui-même la session enfant, sans question au founder, à chaque relance ;
+en 19.5, la session ouverte enchaîne 19.5a → 19.5d puis prépare la demande regroupée. Outil absent, bloqué ou
+refusé → Claude Code écrit le blocage exact, sur le seul texte du founder (« autorisation demandée », « outil
+absent : … », ou le texte exact du refus de la plateforme, dont la limite qui réserve le démarrage direct d'une
+session à une demande écrite de l'utilisateur dans la session), et ne propose rien d'autre : ni carte de
+proposition, ni ouverture manuelle ; puis il s'arrête, sans autre action.
 Précisions d'application (Claude Code ; relues en revue croisée) :
 - **Orchestrateur** (session principale) : lit le briefing ; §a.1–§a.2 (ticket, revue du ticket), §a.6–§a.8 (revue
-  du diff, audit de clôture, commit, contrôle de l'arbre), push (§g), relais écrit dans le briefing ; sous-étape
-  suivante. Il ne lit pas le code en détail et ne recopie aucun diff volumineux.
+  du diff, audit de clôture, commit, contrôle de l'arbre), push (§g), relais écrit dans un chemin versionné (puce
+  « Relais ») ; sous-étape suivante. Il ne lit pas le code en détail et ne recopie aucun diff volumineux.
 - **Exécutant** (sous-agent `general-purpose` neuf par sous-étape) : reçoit le ticket par chemin de fichier ; §a.3–§a.5
   (implémentation, tests backend sur émulateur, compilation Unity, EditMode, Play) ; écrit son rapport et ses sorties
-  dans `.claude/instantanes/executant/` (non versionné, jamais sous `Assets/` ni `.revue-croisee/`), et aucune capture
-  ne reste sous `Assets/` ; ne touche ni à l'index ni à git (ni `git add`, ni commit, ni push) ; ne lance ni les
-  relecteurs ni l'arbitre. Une commande refusée (il est non interactif), une clause STOP ou un point F1–F4 l'arrête :
+  dans `.claude/instantanes/executant/` (non versionné, jamais sous `Assets/` ni `.revue-croisee/` ; pièces de
+  travail : ce qu'elles contiennent de durable est versé dans le commit, puce « Relais »), et aucune capture ne reste
+  sous `Assets/` ; ne touche ni à l'index ni à git (ni `git add`, ni commit, ni push) ; ne lance ni les relecteurs
+  ni l'arbitre. Une commande refusée (il est non interactif), une clause STOP ou un point F1–F4 l'arrête :
   il le consigne et rend la main, sans contournement. Le Play de preuve reste soumis au puits actif (briefing,
   « Jouer le client sur les émulateurs »). Une correction demandée par un relecteur ou l'arbitre lui est renvoyée (le
   même, repris par message, ou un neuf).
 - **Fichiers** : diffs et sorties volumineuses transmis par chemin et sha1 (relecteurs : skill `revue-croisee` §3 ;
   arbitre : §c).
-- **Relance (D-REPRISE-013)** : nouvelle session principale à la fin d'une étape, ou relance décidée par le founder.
-  Ordre : trois GO, commit du relais, vérification de l'arbre, push, rapport de clôture remis au founder, puis
-  ouverture. Session liée, même dossier, sans worktree, phrase standard pour seule consigne, contexte vierge. Lien
-  donné au founder, qui garde la main. Précision de Claude Code (resserrement) : la session parente cesse toute
+- **Relais (D-REPRISE-014, précision de Claude Code)** : un relais, et toute pièce durable, est écrit dans un chemin
+  versionné — dans le briefing, ou sous `docs/sessions/relais-<sous-étape>.md` — jamais sous `.claude/` (ignoré par
+  git), et commité avec la sous-étape qui le produit ; retour à la règle d'origine de D-REPRISE-011 (« relais écrit
+  dans le briefing »). Le rapport de l'exécutant et les pièces de revue sous `.claude/instantanes/` restent des pièces
+  de travail : tout ce qu'ils contiennent de durable (reports, coût de coordination, arbitrages) est versé dans le
+  commit de la sous-étape.
+- **Relance (D-REPRISE-013, D-REPRISE-014)** : nouvelle session principale à la fin d'une étape, ou relance décidée
+  par le founder ; ouverte par Claude Code sans question au founder (blocage : ci-dessus). Ordre : trois GO, commit
+  du relais, vérification de l'arbre, push, rapport de clôture remis au founder, puis ouverture. Session liée, même
+  dossier, sans worktree, phrase standard pour seule consigne, contexte vierge. Lien donné au founder, qui garde la
+  main. Précision de Claude Code (resserrement) : la session parente cesse toute
   action sur le dépôt et n'envoie aucun message à la session enfant. En relance d'étape, « sous-étape suivante »
   désigne la première sous-étape de l'étape suivante dans le briefing ; relance en milieu d'étape → sous-étape
   suivante de la même étape (19.4c-2).

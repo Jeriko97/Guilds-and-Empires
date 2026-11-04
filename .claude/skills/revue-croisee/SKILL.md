@@ -140,11 +140,17 @@ Après le GO des deux relecteurs (`go.tree`), sur ce même index :
 ```bash
 git -C "$REPO" write-tree                  # doit être identique à go.tree
 git -C "$REPO" diff --cached --binary --no-textconv > "$OUT/cloture.patch"
+git -C "$REPO" status --porcelain          # sortie brute : pièce de l'audit de clôture (D-REPRISE-014)
 ```
+Contrôle `git status --porcelain` — règle du founder (D-REPRISE-014, 2026-11-04), citée telle quelle :
+« Ajoute à l'audit de clôture de l'arbitre et à la vérification avant push un contrôle obligatoire : `git status --porcelain` doit être vide, en dehors des dossiers ignorés. Sinon, NO-GO. »
+Règle unique de l'arbitre (arbitrage du 2026-11-04, D-REPRISE-014 ; `CLAUDE.md` §c), citée telle quelle :
+« Application avant le commit (arbitre, 2026-11-04, précision d'application de D-REPRISE-014 ; contestable par le founder au résumé d'arbitrages de l'étape 19) : à l'audit de clôture, l'index préparé est par construction non vide ; le contrôle se lit donc « en dehors des fichiers de l'index préparé (`git diff --cached --name-only`) et des dossiers ignorés, `git status --porcelain` doit être vide » : aucune ligne `??` (`git ls-files --others --exclude-standard` vide), aucune ligne dont la 2ᵉ colonne est non vide (`git diff --name-only` vide) ; chaque ligne restante est un fichier de `git diff --cached --name-only`. Pièce absente ou contrôle échoué → NO-GO. Après le commit, avant le push : sortie vide, à la lettre (§d, §g). »
 - **Arbitre** : outil Agent, `subagent_type: "arbitre-strategique"`, contexte neuf, lancé depuis la racine du dépôt.
   Pièces obligatoires, collées intégralement : le rapport de la sous-étape (sans `git show --stat`, qui n'existe
   qu'après le commit, et sans ses sections de verdicts bruts et d'arbitrage, `CLAUDE.md` §f point 2), les décisions
-  applicables (ID et texte), les résultats des tests, `cloture.patch` (diff complet de l'index). **Jamais** les
+  applicables (ID et texte), les résultats des tests, `cloture.patch` (diff complet de l'index), la sortie brute de
+  `git status --porcelain` (ci-dessus ; pièce absente ou contrôle échoué → NO-GO). **Jamais** les
   verdicts des autres relecteurs ni la recommandation de Claude Code. Pièce trop longue pour être collée : copiée dans
   `.claude/instantanes/cloture/` (non versionné, lisible par l'arbitre ; jamais `.revue-croisee/`, que son filtre
   refuse), dossier vidé avant chaque dépôt pour qu'aucune pièce d'un audit précédent n'y reste, et désignée dans la
@@ -165,5 +171,6 @@ git -C "$REPO" diff --cached --binary --no-textconv > "$OUT/cloture.patch"
 - **Commit** :
   - avant : `git -C "$REPO" write-tree` identique à l'arbre audité par l'arbitre (= `go.tree`), et
     `git -C "$REPO" diff --cached --name-only` liste FICHIERS et rien d'autre ; sinon, pas de commit ;
-  - après : `git -C "$REPO" rev-parse HEAD^{tree}` identique à l'arbre audité ; sinon, pas de push, arbitre saisi ;
+  - après : `git -C "$REPO" rev-parse HEAD^{tree}` identique à l'arbre audité, et `git -C "$REPO" status --porcelain` :
+    sortie vide, à la lettre (D-REPRISE-014, règle unique ci-dessus) ; sinon, pas de push, arbitre saisi ;
   - push seulement s'il est autorisé (`CLAUDE.md` §g) ; puis `git show --stat` dans le rapport final.

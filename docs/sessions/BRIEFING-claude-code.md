@@ -33,8 +33,9 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   `.claude/hooks/arbitre-lecture.js` qui lui interdit `.revue-croisee/` ; TD-031). La consigne commence par le type
   d'appel : « arbitrage d'une question » (ni diff ni tests) ou « audit de clôture / proposition de modification »
   (diff de l'index, tests, rapport, décisions). Décisions applicables d'une saisine : joindre leur texte, ou leur
-  « chemin + ligne » (règle « ID et texte », `CLAUDE.md` §c ; remarque de l'audit de clôture de 19.4c-1). Le founder
-  n'est sollicité que pour **F1** (game
+  « chemin + ligne » (règle « ID et texte », `CLAUDE.md` §c ; remarque de l'audit de clôture de 19.4c-1). Joindre
+  aussi le texte brut de tout arbitrage cité dans le diff d'une sous-étape doc (arbitre, audit de clôture de 19.5-0b,
+  2026-11-04, remarque non bloquante). Le founder n'est sollicité que pour **F1** (game
   design et gameplay, règle d'effet indirect), **F2** (direction artistique, textes affichés ; révisé par
   D-REPRISE-012, ci-dessous), **F3** (actions
   irréversibles en production), **F4** (garde-fous, skills, désaccord persistant) ; tout le reste est tranché par
@@ -42,26 +43,37 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   historiques). Dernier GO de D-REPRISE-004 = GO de Codex, de l'auditeur **et** de l'arbitre (audit de clôture sur
   `git diff --cached`) sur le même arbre ; l'arbitre peut dire NO-GO seul ; toute modification de l'index après un GO
   → passe courte des deux relecteurs puis nouvel audit de clôture ; après le commit, arbre du commit = arbre audité,
-  avant tout push (`CLAUDE.md` §d, skill §6). Résumé d'arbitrages à chaque clôture d'étape :
-  `docs/sessions/<date>-etape-N-arbitrages.md` (pièce de l'audit indépendant dans Claude.ai). Une modification de
-  l'agent n'est pas toujours rechargée dans la session en cours : vérifier l'empreinte de son prompt (`CLAUDE.md`
-  §d) avant de s'appuyer sur son verdict.
+  avant tout push (`CLAUDE.md` §d, skill §6). Contrôle `git status --porcelain` (D-REPRISE-014, décision du
+  founder) : sortie brute prise sur l'index préparé, pièce obligatoire de l'audit de clôture, appliquée selon la
+  règle unique de l'arbitre citée dans `CLAUDE.md` §c (arbitrage du 2026-11-04 ; pièce absente ou contrôle échoué →
+  NO-GO) ; après le commit, avant tout push, sortie vide, à la lettre (`CLAUDE.md` §d, §g ; sinon pas de push,
+  arbitre saisi). Résumé d'arbitrages à chaque clôture
+  d'étape : `docs/sessions/<date>-etape-N-arbitrages.md` (pièce de l'audit indépendant dans Claude.ai). Une
+  modification de l'agent n'est pas toujours rechargée dans la session en cours : vérifier l'empreinte de son prompt
+  (`CLAUDE.md` §d) avant de s'appuyer sur son verdict.
 - **Sessions (D-REPRISE-011, 2026-11-03)** : la session principale orchestre ; chaque sous-étape est implémentée par
   un sous-agent exécutant neuf ; contenus volumineux par fichier ; une session principale par étape, terminée par la
   relance (D-REPRISE-013, ci-dessous ; `CLAUDE.md` §h) ; rien de durable ne vit seulement dans la conversation ou la
   mémoire de session.
   Contrôle de l'orchestrateur, dès 19.4c : noter `HEAD` avant de lancer l'exécutant, puis vérifier à la reprise de
   main que `HEAD` est inchangé et que `git diff --cached --name-only` est vide (item (g) du lot unique). Relance :
-  depuis D-REPRISE-013 (ci-dessous), Claude Code ouvre lui-même la session suivante ; le reste de D-REPRISE-011 est
-  inchangé.
+  depuis D-REPRISE-013 (ci-dessous), Claude Code ouvre lui-même la session suivante, sans question au founder
+  (D-REPRISE-014) ; le reste de D-REPRISE-011 est inchangé. Relais (D-REPRISE-014, `CLAUDE.md` §h) : écrit dans un
+  chemin versionné — dans le briefing, ou sous `docs/sessions/relais-<sous-étape>.md` — jamais sous `.claude/`
+  (ignoré par git), et commité avec la sous-étape qui le produit ; ce que les pièces de travail de
+  `.claude/instantanes/` (rapport de l'exécutant, pièces de revue) contiennent de durable est versé dans ce commit.
 - **Relance de session par Claude Code (D-REPRISE-013, 2026-11-03, F4, décision du founder)** — question, réponse de
   Claude Code approuvée et décision citées au journal ; inscrite dans `CLAUDE.md` §h. À la fin d'une étape, ou sur
   relance décidée par le founder : trois GO, commit du relais, vérification de l'arbre, push, rapport de clôture
   remis au founder, puis ouverture d'une session liée, dans le même dossier `G:\Unity\GuildsAndEmpires` (sans
   worktree : l'Éditeur Unity et les émulateurs sont rattachés à ce dossier), contexte vierge, avec pour seule
-  consigne la phrase standard ; lien donné au founder, qui garde la main ; outil indisponible ou refusé → le founder
-  relance, comme avant. Précision de Claude Code (resserrement) : la session parente cesse toute action sur le dépôt
-  et n'envoie aucun message à la session enfant. Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04),
+  consigne la phrase standard ; lien donné au founder, qui garde la main. Depuis D-REPRISE-014 (décision du founder,
+  F4, 2026-11-04 ; citée telle quelle : « Ne me repose plus jamais la question « où lancer ». ») : ouverture sans
+  question au founder, à chaque relance ; outil absent, bloqué ou refusé → Claude Code écrit le blocage exact
+  (« autorisation demandée », « outil absent : … », ou le texte exact du refus de la plateforme) et ne propose rien
+  d'autre (ni carte de proposition, ni ouverture manuelle ; founder : « Ne me propose pas de l'ouvrir à la main. »),
+  puis s'arrête (`CLAUDE.md` §h). Précision de Claude Code (resserrement) : la session parente cesse toute action
+  sur le dépôt et n'envoie aucun message à la session enfant. Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04),
   inscrite dans `CLAUDE.md` §b, citée telle quelle : « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
   Filtre de lecture étendu à l'auditeur (et à Codex si c'est possible) : lot unique, item (i) ; condition (d) du
   déploiement de 19.5 : ci-dessous (19.5) ; révisée le 11-04 par D-ETAPE19-016 (décision du founder, F4).
@@ -319,6 +331,15 @@ modification d'un garde-fou → F4. Contenu du lot :
 - (j) `CLAUDE.md` §h, puce « Relance (D-REPRISE-013) » : « (19.4c-2) » y est inscrit en dur comme exemple de
   relance en milieu d'étape ; à remplacer par un exemple daté ou à retirer (modification d'un garde-fou → F4, avec
   le lot ; remarque des relecteurs, sous-étape doc D-REPRISE-013).
+- (k) corps de l'arbitre (`.claude/agents/arbitre-strategique.md`) : contrôle `git status --porcelain` à l'audit de
+  clôture, le corps reprenant la règle unique de l'arbitre citée dans `CLAUDE.md` §c (arbitrage du 2026-11-04, une
+  seule formulation ; remarque 2 de l'arbitre) — décision du founder (2026-11-04, D-REPRISE-014), citée telle quelle :
+  « Ajoute à l'audit de clôture de l'arbitre et à la vérification avant push un contrôle obligatoire : `git status --porcelain` doit être vide, en dehors des dossiers ignorés. Sinon, NO-GO. »
+  Précision de Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade
+  (`CLAUDE.md` §b), au doute → F4 ; report (d) de D-REPRISE-014 : corps de l'arbitre non modifié en 19.5-0b ; le
+  contrôle est écrit dans `CLAUDE.md` §c et rappelé dans chaque saisine d'audit de clôture jusqu'au lot, par la
+  citation de la règle unique (`CLAUDE.md` §g), comme le rappel du push ; ce rappel est retiré quand le lot est
+  appliqué.
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -799,6 +820,23 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     Changements visibles de la collecte (application de la réponse F2 du founder, texte 8, et de Q4) : noms de
     ressource invariables (« kits » au lieu de la clé `reconstructionKits`), lignes à zéro masquées, une ligne par
     catégorie (« Récolté : … », « Perdu (stock plein) : … ») au lieu de « Récolté : … — perdu (cap plein) : … ».
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.5-0b (D-REPRISE-014)** — **signal skill** (`CLAUDE.md` §f :
+    « même type d'erreur relevé deux fois ») : fichiers de relais non versionnés, deuxième occurrence
+    (`relais-195.md`, puis `relais-195a.md`) ; décision du founder, citée telle quelle : « Note-le comme « signal skill » pour le résumé de l'étape 19. »
+    Limite du contrôle (remarque 1 de l'arbitre, arbitrage du 2026-11-04 ; résumé fidèle) : le contrôle
+    `git status --porcelain` n'aurait détecté ni `relais-195.md` ni `relais-195a.md` (sous `.claude/instantanes/`,
+    ignoré) ; c'est la règle « Relais » de `CLAUDE.md` §h (chemin versionné) qui couvre l'incident. Arbitrage de
+    l'arbitre (2026-11-04, bloquant de Codex en revue du diff de 19.5-0b ; journal, D-REPRISE-014), **contestable
+    par le founder** : application du contrôle avant le commit par une règle unique, citée dans `CLAUDE.md` §c et le
+    skill `revue-croisee` §6 (à l'audit de clôture, en dehors des fichiers de l'index préparé et des dossiers
+    ignorés, sortie vide ; après le commit, avant le push, sortie vide, à la lettre). Point en attente (précision de
+    Claude Code, contestable) : le report (d) (corps de l'arbitre non modifié, contrôle écrit dans `CLAUDE.md` §c et
+    rappelé dans chaque saisine par la citation de la règle unique jusqu'au lot unique, item (k)). Coût de
+    coordination de 19.5-0b (provisoire, mis à jour à chaque correction de l'index) : ticket 3 versions (1 relecture
+    complète et 2 passes courtes, par chacun des deux relecteurs) ; 3 bloquants, corrigés ; diff 3 passes (revue,
+    passe courte après correction, passe courte après la remarque de l'audit de clôture) ; 2 bloquants, l'un corrigé,
+    l'autre tranché par l'arbitre ; arbitrages hors clôture : 1 ; audits de clôture : 2 (le premier GO avec une
+    remarque versée au dépôt) ; escalade : aucune.
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -823,9 +861,13 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   Découpage de la préparation de 19.5 (proposé en 19.5-0 ; ordre ajustable par l'arbitre ; D-ETAPE19-016) :
   - 19.5-0 — documentation : décisions du founder du 2026-11-04 (D-PLATEFORMES-001, D-ETAPE19-016), TD-036, note
     de la chaîne iOS (`docs/architecture/note-chaine-ios.md`), relais de 19.4d versé — fait le 11-04 ;
+  - 19.5-0b — documentation et garde-fous (D-REPRISE-014, décision du founder) : relais de 19.5a versionné
+    (`docs/sessions/relais-195a.md`), contrôle `git status --porcelain` à l'audit de clôture et avant le push, relais
+    écrit dans un chemin versionné, relance ouverte par Claude Code sans question au founder — fait le 11-04 ;
   - 19.5a — **sous-étape suivante** — TD-021 : alerte sur les erreurs des CF planifiées et les erreurs
     `data-loss`, préparée et testée hors production ; son activation en production fait partie de la demande
-    regroupée (F3) ;
+    regroupée (F3) ; entrée du ticket : le relais `docs/sessions/relais-195a.md` ; rappel : les deux arbitrages de
+    son point 1 (arbitre, audit de clôture de 19.5-0) entrent au journal en 19.5a, attribués à « arbitre » ;
   - 19.5b — lisibilité dans le simulateur d'appareils de Unity (au moins un petit écran Android et un iPhone récent
     à encoche) et boucle complète produire → lancer un lot → arrêter → collecter → vendre jouée sur l'émulateur ;
     tout changement de mise en page qui relève de la direction artistique → F2 (dans la demande regroupée) ;
@@ -838,6 +880,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
     TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
+  Enchaînement (D-REPRISE-014, décision du founder, citée telle quelle : « crée toi-même la session enfant pour 19.5a,
+  et enchaîne 19.5a → 19.5d sans me demander. ») : la session ouverte pour 19.5a enchaîne 19.5a → 19.5d sans
+  question au founder, puis prépare la demande regroupée (précision de Claude Code ; `CLAUDE.md` §h).
   Relais de 19.4d, point 7 (audit de clôture) : les conditions (a)-(d) de D-ETAPE19-008 — dont TD-021 en prérequis,
   le build Android joué sur appareil réel [annotation (19.5-0) : condition (d) révisée par D-ETAPE19-016, ci-dessous]
   et le lot de textes F2 soumis avant le déploiement — doivent être vérifiées avant toute question au founder.

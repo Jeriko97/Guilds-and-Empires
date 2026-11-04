@@ -16,6 +16,10 @@ affichés ; depuis D-REPRISE-012, les libellés courts sont délégués à l'arb
 d'étape, les phrases restent F2, et le vouvoiement est la règle pour tous les textes affichés au joueur), F3
 (actions irréversibles en production), F4 (garde-fous, skills, désaccord persistant). Dernier GO d'un commit = GO
 de Codex, de l'auditeur de diff et de l'arbitre, sur le même arbre d'index ; arbre du commit vérifié avant le push.
+Contrôle `git status --porcelain` (D-REPRISE-014, décision du founder) : sa sortie brute, prise sur l'index préparé,
+est une pièce obligatoire de l'audit de clôture, appliquée selon la règle unique de l'arbitre citée dans `CLAUDE.md`
+§c (arbitrage du 2026-11-04, contestable par le founder ; sinon NO-GO) ; après le commit, avant le push, sortie vide,
+à la lettre (sinon pas de push, arbitre saisi).
 Push normal sur la branche de travail (jamais `main`) autorisé après ces trois GO et cette vérification
 (D-REPRISE-009) ; restent en F3 : merge vers `main`, force-push ou réécriture d'historique, suppression de branche
 distante.
@@ -50,7 +54,12 @@ de design (gameplay, valeurs économiques, scope Phase 1 vs Phase 2+).
   la relance seulement) : à la fin d'une étape, ou sur relance décidée par le founder, après les trois GO, le commit
   du relais, la vérification de l'arbre, le push et le rapport de clôture remis au founder, Claude Code ouvre une
   session liée, dans le même dossier (sans worktree), contexte vierge, avec la phrase standard pour seule consigne ;
-  lien donné au founder, qui garde la main ; outil indisponible ou refusé → le founder relance (`CLAUDE.md` §h).
+  lien donné au founder, qui garde la main (`CLAUDE.md` §h). Depuis D-REPRISE-014 (2026-11-04, F4, décision du
+  founder) : ouverture sans question au founder, à chaque relance ; outil absent, bloqué ou refusé → Claude Code
+  écrit le blocage exact (« autorisation demandée », « outil absent : … », ou le texte exact du refus de la
+  plateforme), ne propose rien d'autre (ni carte de proposition, ni ouverture manuelle) et s'arrête ; relais écrit
+  dans un chemin versionné (briefing, ou `docs/sessions/relais-<sous-étape>.md`), jamais sous `.claude/` (ignoré par
+  git), et commité avec la sous-étape qui le produit.
   Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04), inscrite dans `CLAUDE.md` §b, citée telle quelle :
   « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
 
