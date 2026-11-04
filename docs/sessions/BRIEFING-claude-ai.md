@@ -229,6 +229,11 @@ Au début de chaque session, demander que ces docs soient attachés :
   erreurs « slot corrompu » (connexion, collecte, arrêt) et prérequis du déploiement 19.5 (D-ETAPE19-008) : à
   résoudre au premier des deux déploiements.
 - **Canvas pré-alpha** dans Boot.unity : supprimé (ÉTAPE 17.0).
+- **Plateformes de sortie** (décision du founder, F1, 2026-11-04, D-PLATEFORMES-001) : iOS et Android, priorité
+  immédiate Android ; la chaîne iOS sera mise en place plus tard ; note de préparation, rien créé ni payé :
+  `docs/architecture/note-chaine-ios.md`.
+- **TD-036** (11-04) : test sur un vrai téléphone Android — avant tout testeur externe (jauge Phase 1) ; remplace la
+  condition (d) du déploiement de 19.5 (D-ETAPE19-016) ; déclencheur : appareil disponible chez le founder.
 
 ### Prochaine retouche de CLAUDE.md
 
@@ -398,6 +403,20 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   l'arrêt), prérequis du déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code
   `data-loss`, D-ETAPE19-010 Q1 ; citation conservée telle quelle.]
   (d) — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 2 ; D-REPRISE-013), citée telle quelle : « Build Android installé et joué sur un appareil réel avant le déploiement 19.5 : boucle produire → lancer un lot → arrêter → collecter → vendre, et lisibilité des écrans sur petit format. » Phrase du founder sur F3, même message, citée telle quelle : « Si un appareil ou un outil manque, ce sera une question F3 pour le founder au moment de 19.5. »
+  [Annotation (19.5-0) : condition (d) ci-dessus **remplacée par D-ETAPE19-016** (décision du founder, F4,
+  2026-11-04), ci-dessous ; texte d'origine conservé. Phrase F3 (précision de Claude Code) : l'appareil manque, et
+  la décision du 2026-11-04 y répond — le test sur un appareil réel passe avant tout testeur externe (TD-036) ; il
+  n'est plus une question F3 du déploiement de 19.5.]
+  (d) révisée — décision du founder (2026-11-04, message après la clôture de 19.4d, point 2 ; D-ETAPE19-016 ; mise en forme aplatie, mots inchangés), citée telle quelle : « 2. **F4 : assouplissement de la condition 19.5 (d).** - Pour 19.5 : lisibilité vérifiée dans le simulateur d'appareils de Unity (au moins un petit écran Android, un format iPhone récent, avec encoche), et boucle complète jouée sur l'émulateur. - Le test sur un vrai téléphone Android devient une condition **avant tout testeur externe**, ajoutée à la jauge Phase 1. Le founder n'a pas d'Android aujourd'hui : prépare le build Android jusqu'à l'installation, et quand j'aurai un appareil, donne-moi les instructions exactes (réglages à activer, branchement). »
+  Préparation de 19.5 (D-ETAPE19-016 ; découpage détaillé au briefing Claude Code) : « Le reste de la préparation de 19.5 continue comme prévu, avec une seule demande regroupée à la fin (F2 textes, F3 alerte TD-021 et déploiement). »
+  Découpage : 19.5-0 documentation (fait le 11-04) ; 19.5a TD-021, alerte préparée et testée hors production ;
+  19.5b simulateur d'appareils de Unity et boucle sur l'émulateur ; 19.5c build Android jusqu'à l'installation et
+  instructions pour le founder (TD-036) ; 19.5d lot de textes F2 préparé, non soumis ; puis demande regroupée au
+  founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par l'arbitre. Avant la demande :
+  19.5a à 19.5d faites (alerte préparée et testée hors production, simulateur et émulateur, build Android
+  préparé, question F2 prête) ; dans la demande : réponse F2, autorisation F3 d'activer l'alerte et de déployer ;
+  après la réponse : conversion des textes, activation de l'alerte, revérification (b) en lecture seule,
+  déploiement, Play de bout en bout.
 
 **ÉTAPE 20 — Contrats impériaux** : backend `processWorldEventLifecycle` + alimentation de `contractPool`, puis service et écran
 (`acceptContract`, `deliverToContract`). **Première sous-étape, bloquante : corriger TD-020** (prix d'event absolu 9 / 22,

@@ -1112,6 +1112,36 @@ testeur externe ».
 
 ---
 
+### TD-036 — Test sur un vrai téléphone Android
+
+**Identifié :** 2026-11-04 (décision du founder, F4, D-ETAPE19-016 ; sous-étape doc 19.5-0)
+**Criticité actuelle :** ÉLEVÉE avant tout testeur externe ; sans effet aujourd'hui (aucun joueur, app non distribuée)
+**Composant :** client Unity, build Android (installation sur un appareil réel) ; aucun code identifié à ce jour
+
+**Description :**
+Décision du founder (2026-11-04, D-ETAPE19-016), extrait cité tel quel : « Le test sur un vrai téléphone Android devient
+une condition **avant tout testeur externe**, ajoutée à la jauge Phase 1. Le founder n'a pas d'Android aujourd'hui :
+prépare le build Android jusqu'à l'installation, et quand j'aurai un appareil, donne-moi les instructions exactes
+(réglages à activer, branchement). » Elle remplace, pour le déploiement de 19.5, la condition (d) de D-ETAPE19-008
+(build Android joué sur un appareil réel) : 19.5 est vérifiée dans le simulateur d'appareils de Unity et sur
+l'émulateur ; le test sur appareil réel n'est pas fait.
+Contenu du test (précision de Claude Code, reprise de la condition (d) du 2026-11-03) : boucle produire → lancer un lot
+→ arrêter → collecter → vendre, jouée sur l'appareil, et lisibilité des écrans sur l'appareil (petit format).
+
+**Impact :**
+Un défaut propre à un vrai téléphone (rendu, tactile, performance, réseau mobile) peut rester invisible au simulateur
+d'appareils et à l'émulateur, et n'apparaître qu'aux premiers testeurs externes.
+
+**Résolution :**
+Instructions exactes données au founder (réglages à activer sur le téléphone, branchement), préparées en 19.5c avec le
+build Android de développement ; installation sur l'appareil ; partie jouée (boucle ci-dessus et lisibilité),
+constatée au rapport. Toute clé de publication ou action sur une console (Firebase, Google Play) → F3.
+
+**Trigger de résolution :**
+Appareil Android disponible chez le founder ; au plus tard avant tout testeur externe (jauge Phase 1, `CLAUDE.md` §f).
+
+---
+
 ## TD Résolues
 
 ### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)

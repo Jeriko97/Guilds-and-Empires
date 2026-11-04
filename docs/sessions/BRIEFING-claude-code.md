@@ -6,6 +6,9 @@
 
 Guilds & Empires (GAE) — MMORPG économique mobile médiéval-fantasy.
 Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
+Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîne iOS sera mise en place plus tard
+(décision du founder, F1, 2026-11-04, D-PLATEFORMES-001) ; préparation seulement, rien créé ni payé :
+`docs/architecture/note-chaine-ios.md`.
 
 ## Reprise 2026-11-01 — LIRE EN PREMIER
 
@@ -61,7 +64,7 @@ Phase 1 Vertical Slice en cours. Backend Firebase + Cloud Functions v2.
   et n'envoie aucun message à la session enfant. Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04),
   inscrite dans `CLAUDE.md` §b, citée telle quelle : « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
   Filtre de lecture étendu à l'auditeur (et à Codex si c'est possible) : lot unique, item (i) ; condition (d) du
-  déploiement de 19.5 : ci-dessous (19.5).
+  déploiement de 19.5 : ci-dessous (19.5) ; révisée le 11-04 par D-ETAPE19-016 (décision du founder, F4).
 - **Libellés courts et vouvoiement (D-REPRISE-012, 2026-11-03, F4, décision du founder)**, citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
   Inscrite dans `CLAUDE.md` §b et §f. Précisions de Claude Code : un libellé court décidé par l'arbitre entre au
   journal (attribué à « arbitre ») et au résumé d'arbitrages d'étape ; au doute entre libellé court et phrase → F2 ;
@@ -605,7 +608,23 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     chaque `catch`) ; 170/170 tests EditMode (24 nouveaux) ; Play sur émulateurs, puits actif : panneau au
     chargement, réessai encore corrompu puis réparé (purge et re-seed), `data-loss` à la collecte et à l'arrêt,
     séquence Collecter → Marché pendant l'appel → `data-loss` → retour → panneau sans nouvel appel obtenue. Fin des
-    sous-étapes de 19.4 ;
+    sous-étapes de 19.4 ; commit `8d8782a`, poussé.
+    Relais de 19.4d (audit de clôture de l'arbitre, GO, et revues, remarques non bloquantes ; versé en 19.5-0) :
+    (1) pour mémoire, sans action : en maintenance, sur un écran recréé, le titre revient au texte par défaut de
+    l'UXML « Sawmill » au lieu de « sawmill lv1 » (`RenderSlots` sort avant d'écrire `_titleLabel`,
+    `ProductionScreen.cs` l. ~361-368) ; texte existant, pas F2 ; à corriger au premier ticket qui retouche
+    l'en-tête de `ProductionScreen` (remarque 1 de l'audit) ; (2) `Assets/_Project/Tests/Editor/
+    ProductionMaintenanceTests.cs`, test `Ecran_RetourDuMarcheAvantLaReponse_DataLoss_EntreeEnMaintenance_LigneVidee` :
+    le commentaire nomme un relecteur (« Relecture du diff (Codex) ») ; un commentaire de test décrit le cas, pas sa
+    provenance — à reprendre au prochain passage sur ce fichier (remarque 2 de l'audit ; non modifié en 19.5-0) ;
+    (3) pratique : voir « Coût de coordination » ci-dessous ; (4) la correction faite après la revue du diff de 19.4d
+    (ligne d'état vidée à l'entrée en maintenance) n'a pas été rejouée en Play ; couverte par les tests EditMode ; la
+    Play de bout en bout de 19.5 la couvrira si un `data-loss` y est provoqué (remarque 4 de l'audit) ; (5) coût de
+    coordination : ci-dessous ; (6) remarques non bloquantes des revues de 19.4d non appliquées, consignées au rapport
+    de clôture (risques résiduels) : classe `status--error` sur une ligne d'état vide ; erreur non `data-loss` d'un
+    « Réessayer » lancé par un écran précédent non réaffichée ; `data-loss` écarté hors séquence → rien dans l'UI ;
+    câblage de `OnStoreChanged` (décision lue avant le rendu) non couvert par un test d'écran ; (7) 19.5 : voir
+    ci-dessous (conditions à vérifier avant toute question au founder) ;
   - **Diagnostic 19.4 (Tâche 0, 2026-11-03) — constats pour rédiger 19.4b à 19.4d** (lignes relevées au commit
     `eb3b4d4` ; décisions du founder : D-ETAPE19-010) :
     - a.1 Lancement : le serveur attend `buildingId`, `slotIndex`, `recipeId`, `cycles?`, `idempotencyKey` (UUID
@@ -733,7 +752,11 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - **À soumettre au founder au résumé d'arbitrages de l'ÉTAPE 19 — F2 en attente** (classement de Claude Code) :
     mise en page du panneau de lancement de 19.4c-1 — le panneau comprime la liste des slots (Game view) (remarque de
     l'audit de clôture de 19.4c-1). Précision de Claude Code : à juger sur le rendu sur appareil, lié à la condition
-    (d) du déploiement de 19.5 (lisibilité des écrans sur petit format). Aussi (relais de 19.4c-2, point 1) : arrêt
+    (d) du déploiement de 19.5 (lisibilité des écrans sur petit format). [Annotation (19.5-0, D-ETAPE19-016) :
+    condition (d) révisée ; ce point se juge d'abord en 19.5b (simulateur d'appareils de Unity, petit écran Android
+    et iPhone à encoche ; tout changement de mise en page de direction artistique → F2, dans la demande regroupée),
+    puis sur le rendu sur un vrai appareil, exigé avant tout testeur externe (TD-036).] Aussi (relais de 19.4c-2,
+    point 1) : arrêt
     dont toutes les catégories sont vides (slot de logs sans cycle fini) — texte d'état vidé, aucun retour écrit
     (point (6) du prochain lot de textes, ci-dessous).
   - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.4d** — risque résiduel inscrit mot pour mot (arbitrage de l'arbitre
@@ -764,7 +787,12 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     de l'orchestrateur à la préparation de l'index) : ticket 4 versions (Codex 4 passes, auditeur 4 passes ; GO APRÈS
     CORRECTION des deux en v1, de l'auditeur en v2), arbitre 1 arbitrage (NO-GO sur v2, option 2) ; aucune
     escalade ; même limite que 19.4c-2 : les passes du mode diff et l'audit de clôture ne sont pas comptés, faute
-    d'être connus à la préparation de l'index.
+    d'être connus à la préparation de l'index. Complément 19.4d (relais de l'audit de clôture, point 5) : diff 2
+    versions (revue initiale puis 1 passe courte après correction de remarques non bloquantes ; Codex 2 passes GO,
+    auditeur 2 passes GO), audit de clôture 1 (GO), aucun NO-GO en mode diff, aucune escalade ; mode ticket (au
+    commit) : 4 versions, 1 arbitrage (NO-GO sur v2, option 2). Pratique (relais de 19.4d, point 3, remarque 3 de
+    l'audit) : les comptes de passes du coût de coordination versés au briefing dans le diff audité ne sont pas une
+    contamination de l'audit de clôture.
   - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.4c-2** — libellé court décidé par l'arbitre (D-REPRISE-012,
     condition du founder : « à condition d'être listés dans le résumé d'étape ») : « 1 min restante » (texte), temps
     restant d'un slot actif de planks ou de kits, écran de production (`PlayerMessages.RemainingOneMinute`) (endroit).
@@ -789,8 +817,38 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     l'étape 19 (questions F2 en attente). La question est formulée par l'arbitre (`CLAUDE.md` §c) ; conversion des
     textes après la réponse du founder seulement. Le lot est soumis au founder avant le déploiement de 19.5, pour
     qu'aucun texte au tutoiement n'arrive aux joueurs.
-- 19.5 — **sous-étape suivante** (après 19.4d) — déploiement backend (escalade cas 2), puis Play de bout en bout
+- 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout
   logs → planks → kits → vente d'un kit.
+  Décision du founder (2026-11-04, D-ETAPE19-016), citée telle quelle : « Le reste de la préparation de 19.5 continue comme prévu, avec une seule demande regroupée à la fin (F2 textes, F3 alerte TD-021 et déploiement). »
+  Découpage de la préparation de 19.5 (proposé en 19.5-0 ; ordre ajustable par l'arbitre ; D-ETAPE19-016) :
+  - 19.5-0 — documentation : décisions du founder du 2026-11-04 (D-PLATEFORMES-001, D-ETAPE19-016), TD-036, note
+    de la chaîne iOS (`docs/architecture/note-chaine-ios.md`), relais de 19.4d versé — fait le 11-04 ;
+  - 19.5a — **sous-étape suivante** — TD-021 : alerte sur les erreurs des CF planifiées et les erreurs
+    `data-loss`, préparée et testée hors production ; son activation en production fait partie de la demande
+    regroupée (F3) ;
+  - 19.5b — lisibilité dans le simulateur d'appareils de Unity (au moins un petit écran Android et un iPhone récent
+    à encoche) et boucle complète produire → lancer un lot → arrêter → collecter → vendre jouée sur l'émulateur ;
+    tout changement de mise en page qui relève de la direction artistique → F2 (dans la demande regroupée) ;
+  - 19.5c — build Android jusqu'à l'installation (aucune publication) et instructions exactes pour le founder
+    (réglages à activer sur le téléphone, branchement), prêtes pour le jour où il aura un appareil (TD-036) ; rien
+    n'est créé en dehors d'un build de développement : toute clé de publication (keystore) ou action sur une
+    console (Firebase, Google Play) relève de F3, à poser au ticket de 19.5c ;
+  - 19.5d — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
+    l'arbitre, non soumise ; elle part seulement dans la demande regroupée ;
+  - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
+    l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
+    TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
+  Relais de 19.4d, point 7 (audit de clôture) : les conditions (a)-(d) de D-ETAPE19-008 — dont TD-021 en prérequis,
+  le build Android joué sur appareil réel [annotation (19.5-0) : condition (d) révisée par D-ETAPE19-016, ci-dessous]
+  et le lot de textes F2 soumis avant le déploiement — doivent être vérifiées avant toute question au founder.
+  [Annotation (19.5-0), lecture du point 7 avec D-ETAPE19-016 et la demande regroupée : (i) vérifié **avant** la
+  demande regroupée : alerte TD-021 préparée et testée hors production (19.5a) ; lisibilité au simulateur
+  d'appareils et boucle sur l'émulateur (19.5b, condition (d) révisée) ; build Android préparé (19.5c) ; question
+  F2 prête (19.5d) ; (ii) réglé **dans** la demande regroupée : réponse F2 du founder sur les textes, autorisation
+  F3 d'activer l'alerte TD-021 et de déployer ; (iii) **après** la réponse : conversion des textes, activation de
+  l'alerte TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en
+  bout. La condition (c) (TD-021) et le lot F2 sont donc préparés avant la question, et remplis après la
+  réponse, avant le déploiement.]
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
   (b) juste avant le déploiement, revérifier en lecture seule l'absence de slots de planks ou de kits, étendue à tous
@@ -802,6 +860,13 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   l'arrêt), prérequis du déploiement 19.5. » [Annotation : depuis 19.4b, ces erreurs portent le code
   `data-loss`, D-ETAPE19-010 Q1 ; citation conservée telle quelle.]
   (d) — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 2 ; D-REPRISE-013), citée telle quelle : « Build Android installé et joué sur un appareil réel avant le déploiement 19.5 : boucle produire → lancer un lot → arrêter → collecter → vendre, et lisibilité des écrans sur petit format. » Phrase du founder sur F3, même message, citée telle quelle : « Si un appareil ou un outil manque, ce sera une question F3 pour le founder au moment de 19.5. »
+  [Annotation (19.5-0) : condition (d) ci-dessus **remplacée par D-ETAPE19-016** (décision du founder, F4,
+  2026-11-04), ci-dessous ; texte d'origine conservé. Phrase F3 (précision de Claude Code) : l'appareil manque, et
+  la décision du 2026-11-04 y répond — le test sur un appareil réel passe avant tout testeur externe (TD-036) ; il
+  n'est plus une question F3 du déploiement de 19.5.]
+  (d) révisée — décision du founder (2026-11-04, message après la clôture de 19.4d, point 2 ; D-ETAPE19-016 ; mise en forme aplatie, mots inchangés), citée telle quelle : « 2. **F4 : assouplissement de la condition 19.5 (d).** - Pour 19.5 : lisibilité vérifiée dans le simulateur d'appareils de Unity (au moins un petit écran Android, un format iPhone récent, avec encoche), et boucle complète jouée sur l'émulateur. - Le test sur un vrai téléphone Android devient une condition **avant tout testeur externe**, ajoutée à la jauge Phase 1. Le founder n'a pas d'Android aujourd'hui : prépare le build Android jusqu'à l'installation, et quand j'aurai un appareil, donne-moi les instructions exactes (réglages à activer, branchement). »
+  Pour 19.5 : 19.5b (simulateur d'appareils, émulateur) ; avant tout testeur externe : TD-036 (vrai téléphone
+  Android ; instructions préparées en 19.5c).
   Renvoi (précision de Claude Code) : le prochain lot de textes (F2) est soumis au founder avant le déploiement de
   19.5, pour qu'aucun texte au tutoiement n'arrive aux joueurs (19.4, « Prochain lot de textes à soumettre au
   founder », D-ETAPE19-014).
