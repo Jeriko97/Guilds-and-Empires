@@ -1,6 +1,8 @@
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/logger";
 
-import { updateMarketPricesHandler } from "../market/updateMarketPrices";
+import { updateMarketPrices, updateMarketPricesHandler } from "../market/updateMarketPrices";
+import { ALERTE_CF_PLANIFIEE, CHAMP_ALERTE } from "../shared/alertes";
 import { MARKET_PRICE_BOUNDS } from "../shared/marketPrices";
 import { db } from "./helpers";
 import type { MarketStateDocument, WorldEventDocument } from "../shared/types";
@@ -230,6 +232,38 @@ describe("updateMarketPrices", () => {
     await expect(
       updateMarketPricesHandler(() => 0.5, NOW_TS)
     ).rejects.toThrow("marketState corrupted: missing prices.logs.currentPrice");
+  });
+
+  // ── H2. Enveloppe d'alerte TD-021 (ÉTAPE 19.5a) ───────────────────────
+
+  it("26b. Export planifié updateMarketPrices, marketState absent → marqueur cf-planifiee journalisé, même erreur relancée", async () => {
+    // marketState absent (beforeEach) : le handler existant refuse déjà ce cas (D-TD018-001).
+    // Appel de l'export planifié lui-même (`.run`), pas du handler : prouve que l'enveloppe est câblée.
+    // Rien n'est écrit : l'état de marketState/state (absent) est le même avant et après.
+    const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
+
+    try {
+      let relancee: unknown;
+      try {
+        await updateMarketPrices.run({ scheduleTime: new Date(NOW_TS.toMillis()).toISOString() });
+      } catch (err) {
+        relancee = err;
+      }
+
+      expect(relancee).toBeInstanceOf(Error);
+      expect((relancee as Error).message).toMatch(/^marketState\/state not found/);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy).toHaveBeenCalledWith("updateMarketPrices: échec de la CF planifiée", {
+        [CHAMP_ALERTE]: ALERTE_CF_PLANIFIEE,
+        fonction:       "updateMarketPrices",
+        erreur:         (relancee as Error).message,
+      });
+    } finally {
+      errorSpy.mockRestore();
+    }
+
+    const snap = await db.collection("marketState").doc("state").get();
+    expect(snap.exists).toBe(false);
   });
 
   // ── I. Déterminisme ──────────────────────────────────────────────────────

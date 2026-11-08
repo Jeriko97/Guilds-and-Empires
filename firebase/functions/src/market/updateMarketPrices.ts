@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
+import { avecAlerteCfPlanifiee } from "../shared/alertes";
 import { MARKET_PRICE_BOUNDS } from "../shared/marketPrices";
 import type { MarketResource } from "../shared/marketPrices";
 import { computeMarketPrice, computeTrend } from "../shared/computeMarketPrice";
@@ -107,9 +108,10 @@ export async function updateMarketPricesHandler(
   });
 }
 
+// Enveloppe TD-021 : un échec journalise le marqueur d'alerte `cf-planifiee`, puis est relancé tel quel.
 export const updateMarketPrices = onSchedule(
   "every 5 minutes",
-  async () => {
+  avecAlerteCfPlanifiee("updateMarketPrices", async () => {
     await updateMarketPricesHandler();
-  },
+  }),
 );

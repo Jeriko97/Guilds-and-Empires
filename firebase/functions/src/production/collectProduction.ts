@@ -7,6 +7,7 @@ import { logger } from "firebase-functions/logger";
 import { requireAuth, requireSchemaVersion, requireValidDocumentId } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { processBuildingSlots, corruptSlotDetails } from "../shared/production";
+import { champsAlerteSlotCorrompu } from "../shared/alertes";
 import type { ProcessBuildingResult, ResourceKey } from "../shared/production";
 import type { PlayerDocument, BuildingDocument, InventoryState } from "../shared/types";
 
@@ -103,7 +104,10 @@ export async function collectProductionHandler(
           // État de slot corrompu (HttpsError data-loss, D-ETAPE19-010 Q1) : journalisé, renvoyé tel quel.
           const corrupt = corruptSlotDetails(helperErr);
           if (corrupt) {
-            logger.error("collectProduction: état de slot corrompu", { uid, buildingId, ...corrupt });
+            // Marqueur TD-021 ; corruptSlotDetails non null ⇒ helperErr est une HttpsError.
+            logger.error("collectProduction: état de slot corrompu", {
+              uid, buildingId, ...corrupt, ...champsAlerteSlotCorrompu(helperErr as HttpsError),
+            });
             throw helperErr;
           }
           // Error standard du helper (recipe inconnue = corruption data) → internal, journalisée.

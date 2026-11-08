@@ -22,8 +22,8 @@
   à confirmer dans la console, sans rien y changer.
 - **Recommandation** : GitHub Actions avec les outils libres GameCI et fastlane, parce que l'envoi automatique à
   TestFlight avec la licence Unity gratuite (Personal) y est documenté de bout en bout, avec un
-  coffre de secrets, pour quelques dollars par mois ; Unity Build Automation est une alternative proche (gratuite
-  pour commencer, envoi par script à vérifier) (détail plus bas).
+  coffre de secrets, pour quelques dollars par mois. Unity Build Automation est une alternative proche, gratuite
+  pour commencer, dont l'envoi automatique par script reste à vérifier. Détail au § 6.
 
 ## 1. Compte Apple Developer
 
@@ -46,7 +46,7 @@ aucun envoi de build par son site web — seule l'API d'App Store Connect est in
 
 | Service | Coût (2026-11-04, **à vérifier au moment de la souscription**) | Intégration Unity | Publication TestFlight |
 |---|---|---|---|
-| **Unity Build Automation** (Unity DevOps) | Unity annonce un accès gratuit à Build Automation pour toute personne qui a un Unity ID, sans inscription supplémentaire (annonce du 10 novembre 2025), avec 100 minutes Mac (Standard) gratuites par mois (builds iOS compris) depuis le 1er mars 2026 ; au-delà, facturation à l'usage (0,07 USD par minute Mac selon l'article de support) ; plafond mensuel de minutes réglable. Quota gratuit dépassé sans carte enregistrée : accès bloqué et données exposées à la suppression, selon Unity. | Native : service d'Unity, branché sur le dépôt ; certificat de distribution et profil de provisionnement Apple téléversés dans le service. Accès gratuit avec un Unity ID annoncé ; usage avec la licence Personal du projet : **à vérifier**. Scripts personnalisés documentés : méthodes C# avant et après l'export, scripts bash avant et après la compilation ; les valeurs secrètes passent par des variables d'environnement masquées dans les journaux (pas de coffre de secrets décrit sur cette page). | L'article de support d'Unity décrit un envoi **manuel** de l'IPA vers App Store Connect (impossible sans Mac : pas d'outil Apple d'envoi sous Windows). La documentation des scripts indique qu'un script lancé après la compilation peut servir à un envoi automatique vers une boutique et renvoie à une page sur fastlane pour iOS : envoi automatique à TestFlight par ce moyen **à vérifier**. |
+| **Unity Build Automation** (Unity DevOps) | Unity annonce un accès gratuit à Build Automation pour toute personne qui a un Unity ID, sans inscription supplémentaire (annonce du 10 novembre 2025), avec 100 minutes Mac (Standard) gratuites par mois (builds iOS compris) depuis le 1er mars 2026 ; au-delà, facturation à l'usage (0,07 USD par minute Mac selon l'article de support) ; plafond mensuel de minutes réglable. Quota gratuit dépassé sans carte enregistrée : accès bloqué et données exposées à la suppression, selon Unity. | Native : service d'Unity, branché sur le dépôt ; certificat de distribution et profil de provisionnement Apple téléversés dans le service. Accès gratuit avec un Unity ID annoncé ; usage avec la licence Personal du projet : **à vérifier**. Scripts personnalisés documentés : méthodes C# avant et après l'export, scripts bash avant et après la compilation ; les valeurs secrètes ne sont masquées dans les journaux que si le script les enregistre explicitement avec la commande `::mask-value::` (`echo "::mask-value::$VALEUR"`), avant toute sortie de la valeur ; la page ne décrit pas de coffre de secrets (documentation Unity des scripts de build, voir « Sources »). | L'article de support d'Unity décrit un envoi **manuel** de l'IPA vers App Store Connect (impossible sans Mac : pas d'outil Apple d'envoi sous Windows). La documentation des scripts indique qu'un script lancé après la compilation peut servir à un envoi automatique vers une boutique et renvoie à une page sur fastlane pour iOS : envoi automatique à TestFlight par ce moyen **à vérifier**. |
 | **Codemagic** | Offre « individus » : 500 minutes macOS M2 gratuites par mois, 1 build à la fois ; au-delà 0,095 USD par minute (M2) ; forfait annuel à partir de 3 990 USD. | Guide Unity officiel ; **exige une licence Unity payante** pour les builds dans le cloud (son guide nomme « Plus or Pro » ; l'offre Plus n'apparaît plus parmi les offres annoncées par Unity — Personal, Pro, Enterprise, Industry —, donc aujourd'hui une licence Pro ou supérieure, à vérifier) — coût Unity supplémentaire (Unity annonce Pro à 2 310 USD par an et par siège, hausse de 5 % au renouvellement à partir du 12 janvier 2026), **à vérifier**. | Automatique : section `app_store_connect` du fichier `codemagic.yaml`, avec une clé d'API App Store Connect ; l'app doit déjà exister dans App Store Connect ; le guide recommande d'envoyer la première version à la main. |
 | **GitHub Actions** (+ GameCI et fastlane, outils libres) | Dépôt privé (offre gratuite) : 12 USD de calcul inclus par mois ; Linux 2 cœurs 0,006 USD par minute ; macOS 3-4 cœurs 0,062 USD par minute. | GameCI exporte le projet Xcode sur une machine **Linux** (moins chère), puis une machine macOS compile, signe et envoie. **Licence Unity Personal acceptée** (fichier de licence `.ulf` + e-mail et mot de passe du compte Unity en secrets GitHub). Le dépôt est déjà sur GitHub (`origin`). | Automatique : `fastlane` (`upload_to_testflight`) avec une clé d'API App Store Connect ; certificats gérés par `fastlane match` dans un dépôt Git privé. |
 | Xcode Cloud (Apple, pour mémoire) | 25 heures de calcul par mois incluses dans l'adhésion Apple Developer ; au-delà, abonnements mensuels (49,99 USD pour 100 h). | **Non retenu** : il compile un projet Xcode présent dans le dépôt ; il n'exporte pas un projet Unity (pas d'Unity sur ses machines). Il faudrait générer et versionner le projet Xcode ailleurs. | Native (service d'Apple). |
@@ -117,13 +117,15 @@ n'est à faire maintenant.
 ## 6. Recommandation
 
 **GitHub Actions avec GameCI et fastlane**, parce que l'envoi automatique à TestFlight avec la licence Unity
-gratuite y est documenté de bout en bout, avec un coffre de secrets, sur le dépôt GitHub existant, pour un coût à la minute faible (la partie Unity tourne sur Linux, la moins chère).
+gratuite y est documenté de bout en bout, avec un coffre de secrets, sur le dépôt GitHub existant, pour un coût à
+la minute faible (la partie Unity tourne sur Linux, la moins chère).
 
-Mise à jour après la revue (2026-11-04) : Unity annonce un accès gratuit à Build Automation avec un Unity ID et
-documente des scripts lancés pendant ou après la compilation, qui peuvent servir à un envoi automatique (renvoi à
-fastlane pour iOS). L'écart avec GitHub Actions se réduit, mais la recommandation ne change pas : l'envoi à
-TestFlight par ce moyen et l'usage avec la licence Personal restent à vérifier, les secrets passent par des
-variables d'environnement plutôt que par un coffre, et un quota gratuit dépassé sans carte bloque l'accès.
+Unity Build Automation s'en approche : Unity annonce un accès gratuit avec un Unity ID et documente des scripts
+lancés pendant ou après la compilation, qui peuvent servir à un envoi automatique (renvoi à fastlane pour iOS).
+Il reste en second parce que l'envoi à TestFlight par ce moyen et l'usage avec la licence Personal sont à
+vérifier, que le masquage des secrets dans les journaux repose sur l'enregistrement explicite de chaque valeur par
+le script (`::mask-value::`) plutôt que sur un coffre de secrets, et qu'un quota gratuit dépassé sans carte bloque
+l'accès.
 
 Alternatives : Unity Build Automation (alternative proche ; le plus simple à brancher, 100 minutes Mac gratuites par
 mois), si l'envoi automatique à TestFlight par un script après la compilation est confirmé ; Codemagic si une
@@ -167,7 +169,8 @@ où la chaîne iOS sera ouverte.
 - Unity — plafonds de builds simultanés : https://docs.unity.com/en-us/build-automation/manage-consumption-costs
 - Unity — mises à jour des prix (accès gratuit à Build Automation avec un Unity ID, quotas, offres Personal / Pro,
   annonce du 10 novembre 2025) : https://unity.com/products/pricing-updates
-- Unity — scripts personnalisés pendant la compilation (Build Automation) :
+- Unity — scripts personnalisés pendant la compilation (Build Automation ; masquage des valeurs dans les journaux
+  par `::mask-value::`, relu le 2026-11-08) :
   https://docs.unity.com/en-us/build-automation/advanced-build-configuration/run-custom-scripts-during-the-build-process
 - Codemagic — tarifs : https://codemagic.io/pricing/
 - Codemagic — build d'une app Unity : https://docs.codemagic.io/yaml-quick-start/building-a-unity-app/

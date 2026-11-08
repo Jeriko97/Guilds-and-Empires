@@ -7,6 +7,7 @@ import { logger } from "firebase-functions/logger";
 import { requireAuth, requireSchemaVersion } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { processBuildingSlots, corruptSlotDetails } from "../shared/production";
+import { champsAlerteSlotCorrompu } from "../shared/alertes";
 import type { ProcessBuildingResult } from "../shared/production";
 import { CURRENT_SCHEMA_VERSION } from "../shared/types";
 import type {
@@ -165,6 +166,8 @@ export async function resolveLoginStateHandler(
               uid,
               buildingId: buildingSnap.id,
               ...corrupt,
+              // Marqueur TD-021 ; corruptSlotDetails non null ⇒ helperErr est une HttpsError.
+              ...champsAlerteSlotCorrompu(helperErr as HttpsError),
             });
           }
           throw helperErr; // Error (recette inconnue) → internal, journalisée par le catch externe.

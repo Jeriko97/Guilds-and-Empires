@@ -7,6 +7,7 @@ import { stopProductionSlotHandler } from "../production/stopProductionSlot";
 import type { StopProductionSlotRequest } from "../production/stopProductionSlot";
 import { collectProductionHandler } from "../production/collectProduction";
 import type { CollectProductionRequest } from "../production/collectProduction";
+import { ALERTE_SLOT_CORROMPU, CHAMP_ALERTE } from "../shared/alertes";
 import { RECIPES } from "../shared/recipes";
 import { MAX_DOCUMENT_ID_BYTES } from "../shared/validators";
 import type { InventoryState, ProductionSlotState } from "../shared/types";
@@ -387,8 +388,15 @@ describe("stopProductionSlot", () => {
       const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
       try {
-        await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key })))
+        const appel = stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key }));
+        await expect(appel)
           .rejects.toMatchObject({ code: "data-loss" } satisfies Partial<HttpsError>);
+        // TD-021 (19.5a) : marqueur d'alerte et code de l'HttpsError renvoyée (même appel, pas de second appel).
+        const renvoyee = (await appel.catch((err: unknown) => err)) as HttpsError;
+        expect(errorSpy).toHaveBeenCalledWith(
+          "stopProductionSlot: état de slot corrompu",
+          expect.objectContaining({ [CHAMP_ALERTE]: ALERTE_SLOT_CORROMPU, code: renvoyee.code }),
+        );
         expect(errorSpy).toHaveBeenCalledWith(
           "stopProductionSlot: état de slot corrompu",
           expect.objectContaining({
@@ -416,8 +424,15 @@ describe("stopProductionSlot", () => {
       const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
       try {
-        await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key })))
+        const appel = stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 1, idempotencyKey: key }));
+        await expect(appel)
           .rejects.toMatchObject({ code: "data-loss" } satisfies Partial<HttpsError>);
+        // TD-021 (19.5a) : marqueur d'alerte et code de l'HttpsError renvoyée (même appel, pas de second appel).
+        const renvoyee = (await appel.catch((err: unknown) => err)) as HttpsError;
+        expect(errorSpy).toHaveBeenCalledWith(
+          "stopProductionSlot: état de slot corrompu",
+          expect.objectContaining({ [CHAMP_ALERTE]: ALERTE_SLOT_CORROMPU, code: renvoyee.code }),
+        );
         expect(errorSpy).toHaveBeenCalledWith(
           "stopProductionSlot: état de slot corrompu",
           expect.objectContaining({
@@ -564,8 +579,15 @@ describe("stopProductionSlot", () => {
       const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
       try {
-        await expect(stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 0, idempotencyKey: key })))
+        const appel = stopProductionSlotHandler(makeStopRequest(uid, { slotIndex: 0, idempotencyKey: key }));
+        await expect(appel)
           .rejects.toMatchObject({ code: "data-loss" } satisfies Partial<HttpsError>);
+        // TD-021 (19.5a) : marqueur d'alerte et code de l'HttpsError renvoyée (même appel, pas de second appel).
+        const renvoyee = (await appel.catch((err: unknown) => err)) as HttpsError;
+        expect(errorSpy).toHaveBeenCalledWith(
+          "stopProductionSlot: état de slot corrompu",
+          expect.objectContaining({ [CHAMP_ALERTE]: ALERTE_SLOT_CORROMPU, code: renvoyee.code }),
+        );
         expect(errorSpy).toHaveBeenCalledWith(
           "stopProductionSlot: état de slot corrompu",
           expect.objectContaining({ uid, buildingId: "sawmill_0", reason: "corrupt-slot", slotIndex: 0, motif: expect.stringMatching(motif) }),

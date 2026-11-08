@@ -1,0 +1,24 @@
+{
+  "displayName": "TD-021 — Échec d'une Cloud Function planifiée",
+  "documentation": {
+    "mimeType": "text/markdown",
+    "content": "## Échec d'une Cloud Function planifiée (TD-021)\n\n**Ce que signifie l'alerte** : une Cloud Function planifiée (aujourd'hui `updateMarketPrices`, toutes les 5 minutes) a échoué. Tant que l'erreur se répète, les prix du marché ne sont plus mis à jour pour tous les joueurs.\n\n**Première chose à regarder** : dans Cloud Logging, les entrées `jsonPayload.alerte=\"cf-planifiee\"` (champs `fonction` et `erreur`, message de l'erreur d'origine), puis les journaux du service Cloud Run `updatemarketprices` à la même heure. Causes connues : `marketState/state` absent (lancer le seed, TD-018) ou corrompu.\n\n**Plusieurs entrées pour une même panne** : un seul échec peut produire le marqueur de l'enveloppe, l'erreur du runtime `onSchedule`, la requête Cloud Run en échec et la tentative échouée de Cloud Scheduler. La limite d'une notification par heure s'applique ; l'incident ouvert se ferme automatiquement au bout de 30 minutes (`autoClose`).\n\nProcédure et retour arrière : `firebase/monitoring/README.md`."
+  },
+  "conditions": [
+    {
+      "displayName": "Erreur journalisée par une CF planifiée, son service Cloud Run ou son job Cloud Scheduler",
+      "conditionMatchedLog": {
+        "filter": "severity>=ERROR AND (jsonPayload.alerte=\"cf-planifiee\" OR (resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"updatemarketprices\") OR (resource.type=\"cloud_scheduler_job\" AND resource.labels.job_id:\"updateMarketPrices\"))"
+      }
+    }
+  ],
+  "combiner": "OR",
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "3600s"
+    },
+    "autoClose": "1800s"
+  },
+  "notificationChannels": [],
+  "enabled": true
+}

@@ -701,6 +701,28 @@ les joueurs ; compte bloqué par un état de slot corrompu.
 **Résolution :**
 Alerte sur les erreurs de ces fonctions ; canal à définir à ce moment-là. Rien à implémenter avant le déclencheur.
 
+**Préparée et testée hors production en 19.5a (2026-11-08, D-ETAPE19-017)** — TD-021 **reste ouverte** jusqu'à
+l'activation :
+- marqueur `alerte` dans les journaux et enveloppe des CF planifiées : `firebase/functions/src/shared/alertes.ts` ;
+  `updateMarketPrices` passe par l'enveloppe (`firebase/functions/src/market/updateMarketPrices.ts`) ; les trois
+  `logger.error` « état de slot corrompu » (`resolveLoginState.ts`, `collectProduction.ts`,
+  `stopProductionSlot.ts`) portent `alerte: "slot-corrompu"` et le code de l'`HttpsError` (`data-loss`) ;
+- politiques d'alerte versionnées, une condition chacune : `firebase/monitoring/td021-cf-planifiees.json`,
+  `firebase/monitoring/td021-slot-corrompu.json` (filtre sur `data-loss`, D-ETAPE19-010 Q1) ; procédure d'activation
+  et retour arrière : `firebase/monitoring/README.md` ;
+- tests : `firebase/functions/src/__test__/alertes.test.ts` (enveloppe, forme des politiques, source unique des
+  constantes, du code réel et des filtres) et ajouts dans les tests de `updateMarketPrices`, `resolveLoginState`,
+  `collectProduction`, `stopProductionSlot`.
+
+Ce qui reste :
+- **activation** (canal de notification, création des deux politiques) : F3, dans la demande regroupée au founder
+  (D-ETAPE19-016) ; le type et la cible du canal sont des options de cette demande ;
+- **`processWorldEventLifecycle`** (ÉTAPE 20) devra utiliser l'enveloppe `avecAlerteCfPlanifiee`, et son service
+  Cloud Run et son job Cloud Scheduler devront être ajoutés au filtre unique de la politique planifiée
+  (`td021-cf-planifiees.json`) ; plus généralement, toute nouvelle CF planifiée doit utiliser l'enveloppe, et tout
+  nouveau point de journalisation d'un état de slot corrompu doit porter les champs `alerte` et `code`
+  (`champsAlerteSlotCorrompu`), sinon aucune alerte ne part.
+
 **Trigger de résolution :**
 Avant le premier lancement d'un événement en production : prérequis du déploiement de
 `processWorldEventLifecycle`, inscrit dans l'ordre de déploiement imposé de TD-020 (décision du founder du

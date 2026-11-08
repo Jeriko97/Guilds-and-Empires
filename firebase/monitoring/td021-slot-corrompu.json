@@ -1,0 +1,24 @@
+{
+  "displayName": "TD-021 — État de slot corrompu (data-loss)",
+  "documentation": {
+    "mimeType": "text/markdown",
+    "content": "## État de slot corrompu (TD-021)\n\n**Ce que signifie l'alerte** : un compte a un slot de production corrompu (`HttpsError` `data-loss`, D-ETAPE19-010 Q1). Sa connexion, sa collecte ou son arrêt de slot sont refusés jusqu'à la reprise manuelle des données ; le joueur voit le panneau de maintenance.\n\n**Première chose à regarder** : dans Cloud Logging, les entrées `jsonPayload.alerte=\"slot-corrompu\"` : message (`resolveLoginState`, `collectProduction` ou `stopProductionSlot`), `uid`, `buildingId`, `slotIndex`, `recipeId` et `motif`. Toute correction des données de production est une action F3 (autorisation du founder).\n\nLa limite d'une notification par heure s'applique ; l'incident ouvert se ferme automatiquement au bout de 30 minutes (`autoClose`).\n\nProcédure et retour arrière : `firebase/monitoring/README.md`."
+  },
+  "conditions": [
+    {
+      "displayName": "Erreur « état de slot corrompu » journalisée avec le code data-loss",
+      "conditionMatchedLog": {
+        "filter": "severity>=ERROR AND jsonPayload.code=\"data-loss\" AND jsonPayload.alerte=\"slot-corrompu\""
+      }
+    }
+  ],
+  "combiner": "OR",
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "3600s"
+    },
+    "autoClose": "1800s"
+  },
+  "notificationChannels": [],
+  "enabled": true
+}

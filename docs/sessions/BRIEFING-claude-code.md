@@ -87,7 +87,7 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   force-push ou réécriture d'historique, suppression de branche distante (`CLAUDE.md` §g).
 - Runtime CF : **Node 22**, déployé le 11-01 (TD-013 résolue).
 - `claimDailyBonus` retiré du code (D-REPRISE-001/002).
-- Tests : **366/366** verts le 11-03 après l'ÉTAPE 19.4b (365 après 19.4a, dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
+- Tests : **378/378** verts le 11-08 après 19.5a (dont 12 des alertes TD-021 ; 366 après l'ÉTAPE 19.4b le 11-03 ; 365 après 19.4a, dont 18 du script de données de test ; 347 après 19.2b ; 318 après 19.2 ; 260 après 19.1 ; 222 au 11-01, dont 13 du seed marché TD-018).
 - Tests client : **170/170** EditMode verts le 11-04 après 19.4d (46 de caractérisation du parsing, ÉTAPE 19.3 ; 9
   de la garde du mode émulateur, ÉTAPE 19.4a ; 18 des parsings et utilitaires de production, ÉTAPE 19.4b ; 43 du
   panneau de lancement, du registre et du store, ÉTAPE 19.4c-1 ; 30 de l'estimation du slot actif, des résumés et de
@@ -837,6 +837,24 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     passe courte après correction, passe courte après la remarque de l'audit de clôture) ; 2 bloquants, l'un corrigé,
     l'autre tranché par l'arbitre ; arbitrages hors clôture : 1 ; audits de clôture : 2 (le premier GO avec une
     remarque versée au dépôt) ; escalade : aucune.
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.5-0 et 19.5a** (relais de 19.5a, points 1, 2 et 6, versés en
+    19.5a) — arbitrages de l'arbitre (audit de clôture de 19.5-0, 2026-11-04 ; journal, D-ETAPE19-016) : (a) lecture
+    du point 7 du relais de 19.4d confirmée (préparation vérifiée avant la question ; activation de l'alerte et
+    déploiement en F3 dans la demande regroupée, exécutés après la réponse, revérification (b) juste avant le
+    déploiement) ; (b) ordre du découpage accepté (19.5-0 → 19.5a → 19.5b → 19.5c → 19.5d → demande regroupée).
+    **Jauge Phase 1** : TD-036 (test sur un vrai téléphone Android) dans la liste des TD « avant tout testeur
+    externe ». Décision prise sans le founder : D-ETAPE19-017 (mécanisme d'alerte de TD-021, Claude Code, relu en
+    revue croisée). Action F3 à autoriser : activation de l'alerte TD-021 (canal de notification, type et cible au
+    choix du founder ; deux politiques), dans la demande regroupée. Coût de coordination de 19.5-0 : ticket 2
+    versions (v1 : Codex GO, auditeur GO ; v2 passe courte : GO des deux) ; diff 2 versions (v1 : Codex GO APRÈS
+    CORRECTION — 1 bloquant, ambiguïté du point 7 —, auditeur GO ; passe courte : GO des deux) ; audit de clôture 1
+    (GO) ; aucun arbitrage hors clôture ; aucune escalade. Coût de coordination de 19.5a (provisoire, complété par
+    l'orchestrateur : revue du diff et audit de clôture) : ticket 3 versions (v1 : Codex GO APRÈS CORRECTION — 2
+    bloquants : politique à deux conditions `conditionMatchedLog` refusée par l'API, clause STOP sans décision du
+    founder —, auditeur GO APRÈS CORRECTION — 2 bloquants : même point API, filtre « slot corrompu » qui ne visait pas
+    le code `data-loss` ; v2 passe courte : GO des deux ; v3 passe courte (non-bloquants de l'auditeur intégrés) : GO
+    des deux) ; 1 passe Codex écartée, version intermédiaire ; aucun arbitrage ; aucune escalade ; diff v1 : Codex GO,
+    auditeur GO (non-bloquant commun : champ `message` écrasé par le logger ; corrigé) ; passe courte en cours.
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -864,13 +882,15 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - 19.5-0b — documentation et garde-fous (D-REPRISE-014, décision du founder) : relais de 19.5a versionné
     (`docs/sessions/relais-195a.md`), contrôle `git status --porcelain` à l'audit de clôture et avant le push, relais
     écrit dans un chemin versionné, relance ouverte par Claude Code sans question au founder — fait le 11-04 ;
-  - 19.5a — **sous-étape suivante** — TD-021 : alerte sur les erreurs des CF planifiées et les erreurs
-    `data-loss`, préparée et testée hors production ; son activation en production fait partie de la demande
-    regroupée (F3) ; entrée du ticket : le relais `docs/sessions/relais-195a.md` ; rappel : les deux arbitrages de
-    son point 1 (arbitre, audit de clôture de 19.5-0) entrent au journal en 19.5a, attribués à « arbitre » ;
-  - 19.5b — lisibilité dans le simulateur d'appareils de Unity (au moins un petit écran Android et un iPhone récent
-    à encoche) et boucle complète produire → lancer un lot → arrêter → collecter → vendre jouée sur l'émulateur ;
-    tout changement de mise en page qui relève de la direction artistique → F2 (dans la demande regroupée) ;
+  - 19.5a — TD-021 : alerte sur les erreurs des CF planifiées et les erreurs `data-loss`, préparée et testée hors
+    production (D-ETAPE19-017 ; `firebase/functions/src/shared/alertes.ts`, `firebase/monitoring/`) ; son activation
+    en production fait partie de la demande regroupée (F3, procédure `firebase/monitoring/README.md`) ; relais
+    `docs/sessions/relais-195a.md` consommé (les deux arbitrages de son point 1 sont au journal, D-ETAPE19-016,
+    attribués à « arbitre ») — fait le 11-08 ;
+  - 19.5b — **sous-étape suivante** — lisibilité dans le simulateur d'appareils de Unity (au moins un petit écran
+    Android et un iPhone récent à encoche) et boucle complète produire → lancer un lot → arrêter → collecter →
+    vendre jouée sur l'émulateur ; tout changement de mise en page qui relève de la direction artistique → F2 (dans
+    la demande regroupée) ;
   - 19.5c — build Android jusqu'à l'installation (aucune publication) et instructions exactes pour le founder
     (réglages à activer sur le téléphone, branchement), prêtes pour le jour où il aura un appareil (TD-036) ; rien
     n'est créé en dehors d'un build de développement : toute clé de publication (keystore) ou action sur une
@@ -886,14 +906,14 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   Relais de 19.4d, point 7 (audit de clôture) : les conditions (a)-(d) de D-ETAPE19-008 — dont TD-021 en prérequis,
   le build Android joué sur appareil réel [annotation (19.5-0) : condition (d) révisée par D-ETAPE19-016, ci-dessous]
   et le lot de textes F2 soumis avant le déploiement — doivent être vérifiées avant toute question au founder.
-  [Annotation (19.5-0), lecture du point 7 avec D-ETAPE19-016 et la demande regroupée : (i) vérifié **avant** la
-  demande regroupée : alerte TD-021 préparée et testée hors production (19.5a) ; lisibilité au simulateur
-  d'appareils et boucle sur l'émulateur (19.5b, condition (d) révisée) ; build Android préparé (19.5c) ; question
-  F2 prête (19.5d) ; (ii) réglé **dans** la demande regroupée : réponse F2 du founder sur les textes, autorisation
-  F3 d'activer l'alerte TD-021 et de déployer ; (iii) **après** la réponse : conversion des textes, activation de
-  l'alerte TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en
-  bout. La condition (c) (TD-021) et le lot F2 sont donc préparés avant la question, et remplis après la
-  réponse, avant le déploiement.]
+  [Annotation (19.5-0), précision de Claude Code, lecture du point 7 avec D-ETAPE19-016 et la demande regroupée : (i)
+  vérifié **avant** la demande regroupée : alerte TD-021 préparée et testée hors production (19.5a) ; lisibilité au
+  simulateur d'appareils et boucle sur l'émulateur (19.5b, condition (d) révisée) ; build Android préparé (19.5c) ;
+  question F2 prête (19.5d) ; (ii) réglé **dans** la demande regroupée : réponse F2 du founder sur les textes,
+  autorisation F3 d'activer l'alerte TD-021 et de déployer ; (iii) **après** la réponse : conversion des textes,
+  activation de l'alerte TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement du
+  backend et du client ensemble (condition (a)), Play de bout en bout. La condition (c) (TD-021) et le lot F2 sont
+  donc préparés avant la question, et remplis après la réponse, avant le déploiement.]
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;
   (b) juste avant le déploiement, revérifier en lecture seule l'absence de slots de planks ou de kits, étendue à tous

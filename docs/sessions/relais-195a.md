@@ -1,5 +1,10 @@
 # Relais vers 19.5a — à reprendre au ticket (versionné, D-REPRISE-014)
 
+Consommé en 19.5a (commit de 19.5a) : points 1 à 7 versés dans `docs/architecture/phase-1-decisions-log.md` (point 1 :
+D-ETAPE19-016 ; point 3 : D-PLATEFORMES-001), `docs/sessions/BRIEFING-claude-code.md` (points 1, 2 et 6 : « Pour le
+résumé d'arbitrages de l'ÉTAPE 19, 19.5-0 et 19.5a » ; point 5 : annotation (19.5-0) du point 7) et
+`docs/architecture/note-chaine-ios.md` (point 4 ; point 7 : déjà présent depuis `b0f413b`, aucun ajout).
+
 Origine : `.claude/instantanes/relais-195a.md` (ignoré par git), écrit le 2026-11-04 après 19.5-0 ; versionné le
 2026-11-04 en 19.5-0b.
 

@@ -4,6 +4,7 @@ import { logger } from "firebase-functions/logger";
 
 import { collectProductionHandler } from "../production/collectProduction";
 import type { CollectProductionRequest } from "../production/collectProduction";
+import { ALERTE_SLOT_CORROMPU, CHAMP_ALERTE } from "../shared/alertes";
 import { RECIPES } from "../shared/recipes";
 import { MAX_DOCUMENT_ID_BYTES } from "../shared/validators";
 import {
@@ -342,10 +343,15 @@ describe("collectProduction", () => {
     const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
     try {
-      await expect(
-        collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
-      ).rejects.toMatchObject(
+      const appel = collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }));
+      await expect(appel).rejects.toMatchObject(
         { code: "data-loss" } satisfies Partial<HttpsError>
+      );
+      // TD-021 (19.5a) : marqueur d'alerte et code de l'HttpsError renvoyée (même appel, pas de second appel).
+      const renvoyee = (await appel.catch((err: unknown) => err)) as HttpsError;
+      expect(errorSpy).toHaveBeenCalledWith(
+        "collectProduction: état de slot corrompu",
+        expect.objectContaining({ [CHAMP_ALERTE]: ALERTE_SLOT_CORROMPU, code: renvoyee.code }),
       );
       expect(errorSpy).toHaveBeenCalledWith(
         "collectProduction: état de slot corrompu",
@@ -369,10 +375,15 @@ describe("collectProduction", () => {
     const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
     try {
-      await expect(
-        collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }))
-      ).rejects.toMatchObject(
+      const appel = collectProductionHandler(makeCollectRequest(uid, { buildingId: "sawmill_0" }));
+      await expect(appel).rejects.toMatchObject(
         { code: "data-loss" } satisfies Partial<HttpsError>
+      );
+      // TD-021 (19.5a) : marqueur d'alerte et code de l'HttpsError renvoyée (même appel, pas de second appel).
+      const renvoyee = (await appel.catch((err: unknown) => err)) as HttpsError;
+      expect(errorSpy).toHaveBeenCalledWith(
+        "collectProduction: état de slot corrompu",
+        expect.objectContaining({ [CHAMP_ALERTE]: ALERTE_SLOT_CORROMPU, code: renvoyee.code }),
       );
       expect(errorSpy).toHaveBeenCalledWith(
         "collectProduction: état de slot corrompu",

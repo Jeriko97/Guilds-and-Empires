@@ -13,6 +13,7 @@ import {
 } from "../shared/validators";
 import { checkRateLimit } from "../shared/rateLimiter";
 import { computeSlotStop, corruptSlotDetails } from "../shared/production";
+import { champsAlerteSlotCorrompu } from "../shared/alertes";
 import type { ResourceKey, SlotStopResult } from "../shared/production";
 import type {
   PlayerDocument,
@@ -176,8 +177,10 @@ export async function stopProductionSlotHandler(
         // Le slot fautif (corrupt.slotIndex) peut être un voisin du slot demandé (règlement complet).
         const corrupt = corruptSlotDetails(helperErr);
         if (corrupt) {
+          // Marqueur TD-021 ; corruptSlotDetails non null ⇒ helperErr est une HttpsError.
           logger.error("stopProductionSlot: état de slot corrompu", {
             uid, buildingId, stoppedSlotIndex: slotIndex, ...corrupt,
+            ...champsAlerteSlotCorrompu(helperErr as HttpsError),
           });
         }
         throw helperErr; // Error (recette inconnue) → internal, journalisée par le catch externe.

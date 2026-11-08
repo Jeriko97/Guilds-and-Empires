@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/logger";
 
 import { resolveLoginStateHandler } from "../login/resolveLoginState";
+import { ALERTE_SLOT_CORROMPU, CHAMP_ALERTE } from "../shared/alertes";
 import { RECIPES } from "../shared/recipes";
 import {
   clearTestData,
@@ -259,12 +260,19 @@ describe("resolveLoginState", () => {
     const errorSpy = jest.spyOn(logger, "error").mockImplementation(() => undefined);
 
     try {
-      await expect(resolveLoginStateHandler(makeRequest(uid))).rejects.toMatchObject(
+      const appel = resolveLoginStateHandler(makeRequest(uid));
+      await expect(appel).rejects.toMatchObject(
         { code: "data-loss" } satisfies Partial<HttpsError>
       );
       expect(errorSpy).toHaveBeenCalledWith(
         "resolveLoginState: état de slot corrompu",
         expect.objectContaining({ uid, buildingId: "sawmill_0", reason: "corrupt-slot", motif: expect.stringMatching(motif) }),
+      );
+      // TD-021 (19.5a) : marqueur d'alerte et code de l'HttpsError renvoyée (même appel, pas de second appel).
+      const renvoyee = (await appel.catch((err: unknown) => err)) as HttpsError;
+      expect(errorSpy).toHaveBeenCalledWith(
+        "resolveLoginState: état de slot corrompu",
+        expect.objectContaining({ [CHAMP_ALERTE]: ALERTE_SLOT_CORROMPU, code: renvoyee.code }),
       );
     } finally {
       errorSpy.mockRestore();
