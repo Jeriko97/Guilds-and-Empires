@@ -16,13 +16,13 @@ PluginImporter:
   validateReferences: 1
   platformData:
     Android:
-      enabled: 0
+      enabled: 1
       settings:
         CPU: AnyCPU
     Any:
       enabled: 1
       settings:
-        Exclude Android: 1
+        Exclude Android: 0
         Exclude Editor: 0
         Exclude Linux64: 0
         Exclude OSXUniversal: 0

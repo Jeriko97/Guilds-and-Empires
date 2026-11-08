@@ -887,17 +887,48 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     demande regroupée ») ; F2, défauts de mise en page F2-1 à F2-9, marge fixe, « sawmill lv1 ». **Jauge Phase 1** :
     TD-037, « avant le déploiement de 19.5 » (si le founder la reporte, elle rejoint les TD « avant tout testeur
     externe », avec TD-036). Défauts F2 : « Défauts de mise en page relevés en 19.5b », ci-dessous. Coût de
-    coordination de 19.5b (provisoire, version finale au commit de 19.5c) : ticket 2 versions (v1 : Codex GO, auditeur
-    GO APRÈS CORRECTION — 1 bloquant : zone sûre non gérée, écart à la doctrine C4, à classer en défaut technique et
-    non en F2 — ; v2 passe courte : GO des deux, trois non-bloquants de l'auditeur acceptés) ; 1 arbitrage (T1,
-    D-ETAPE19-018) ; aucune escalade ; revue du diff v1 écartée (les deux relecteurs avaient lu des fichiers de
-    `.claude/instantanes/executant/` ; dossier mis hors du dépôt pendant la relance) ; relance : GO des deux ; passe
-    courte en cours ; audit de clôture : à compléter. La version finale est écrite dans le relais versionné
-    `docs/sessions/relais-195c.md`, puis versée au commit de 19.5c.
+    coordination final de 19.5b (relais `docs/sessions/relais-195c.md`, point 1 ; remplace la version provisoire, versé
+    au commit de 19.5c) : ticket 2 versions (v1 : Codex GO, auditeur GO APRÈS CORRECTION — 1 bloquant : zone sûre non
+    gérée, écart à la doctrine C4, à classer en défaut technique et non en F2 — ; v2 passe courte : GO des deux, trois
+    non-bloquants de l'auditeur acceptés) ; 1 arbitrage (T1 et suite des défauts, D-ETAPE19-018) ; diff : revue v1
+    écartée (les deux relecteurs avaient lu des fichiers de `.claude/instantanes/executant/`), relance avec le dossier
+    hors du dépôt : GO des deux ; passe courte après corrections : GO des deux ; audit de clôture 1 (GO) ; NO-GO : 0 ;
+    escalade immédiate : 0 (F1 orientation et F2 mise en page portées à la demande regroupée). Passes par relecteur :
+    Codex 5 (dont 1 écartée), auditeur 5 (dont 1 écartée), arbitre 2 (1 arbitrage, 1 clôture).
+  - **Signal skill, au résumé d'arbitrages de l'ÉTAPE 19** (`CLAUDE.md` §f ; relais `docs/sessions/relais-195c.md`,
+    point 2) : un relecteur a lu les fichiers de l'exécutant une deuxième fois (19.4c-1, puis 19.5b, cette fois les
+    deux relecteurs) — « même type d'erreur relevé deux fois ». Contre-mesure appliquée en 19.5b : dossier
+    `.claude/instantanes/executant/` déplacé hors du dépôt pendant les revues. Périmètre de TD-032 et de l'item (i) du
+    lot unique (filtre de lecture) étendu à `.claude/instantanes/executant/` (TD-032, titre et exemple de 19.5b) ;
+    toute modification de filtre ou de skill reste F4, au lot unique.
+  - **Remarque (1) de l'audit de clôture de 19.5b, au résumé d'arbitrages de l'ÉTAPE 19** (relais
+    `docs/sessions/relais-195c.md`, point 3 (1), sans action) : les résumés de verdicts du coût de coordination ont été
+    lus comme contenu de `CLAUDE.md` §f, sans ancrage.
   - **Incident de procédure de 19.5b, au résumé d'arbitrages de l'ÉTAPE 19** : en revue du diff, les deux relecteurs
     (auditeur et Codex) ont lu des fichiers de `.claude/instantanes/executant/` (pièces de travail de l'exécutant) ;
     revue v1 écartée, relancée. Cause : TD-032, un filtre de lecture manque pour l'auditeur et Codex (lot unique,
     item (i)). Contre-mesure appliquée : dossier de l'exécutant déplacé hors du dépôt pendant les revues.
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.5c** — décisions prises sans le founder : D-ETAPE19-019 (arbitre ;
+    trois arbitrages : téléchargements du build et réglage EDM4U ; réglages d'import Android des DLL Firebase et
+    fichiers réécrits par le build ; **correction d'une erreur de fait de l'arbitre (le `.meta` était suivi, non créé
+    par l'Éditeur)** : `Assets/Resources.meta`, suivi depuis l'initialisation du projet, est conservé ; seuls les
+    `PerformanceTest*` créés par le build sont supprimés). TD ouverte : TD-038 (dossier vide `Assets/Resources/`) ;
+    TD-017 complétée (ligne AppCheck). Coût de coordination de 19.5c (provisoire, version finale au relais de 19.5d) :
+    ticket 3 versions (v1 : Codex GO, auditeur GO APRÈS CORRECTION — 1 bloquant : téléchargements du build certains,
+    clause STOP sans décision du founder, inapplicable — ; v2 après l'arbitrage des téléchargements : passe courte, GO
+    des deux, six non-bloquants acceptés ; v3 après l'arbitrage des DLL et des fichiers réécrits : passe courte, GO des
+    deux, non-bloquants de l'auditeur et de Codex acceptés en six points) ; arbitrages hors clôture : 3
+    (téléchargements ; DLL et fichiers réécrits ; correction de fait de la Q2), plus 1 appel perdu ; un build échoué
+    (DLL Firebase exclues d'Android), repris après l'arbitrage ; build repris : réussi ; diff v1 : GO des deux
+    (non-bloquants acceptés) ; passe courte en cours ; aucune escalade.
+  - **Incidents de procédure de 19.5c, au résumé d'arbitrages de l'ÉTAPE 19** : (1) un premier appel de l'arbitre a
+    été lancé depuis `.revue-croisee/` : son filtre a refusé toute lecture, il n'a rien tranché (NO-GO de lancement) ;
+    relancé depuis la racine du dépôt (`CLAUDE.md` §c : « lancé depuis la racine du dépôt (jamais depuis
+    `.revue-croisee/`, que son filtre refuse) »). (2) Premier build Android échoué : `Firebase.Auth.dll` et
+    `Firebase.Firestore.dll` exclues d'Android dans leurs `.meta` ; arrêt de l'exécutant, arbitrage, correction par
+    l'API d'import de Unity, build repris. (3) En appliquant la Q2, `Assets/Resources.meta` (suivi) a été supprimé puis
+    rétabli aussitôt (` D` constaté, `git checkout -- Assets/Resources.meta`, dossier vide recréé) ; l'arbitre a
+    corrigé sa Q2 (D-ETAPE19-019).
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -947,15 +978,30 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     vendre jouée sur l'émulateur ; tout changement de mise en page qui relève de la direction artistique → F2 (dans
     la demande regroupée) ; constat `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md` ; relais
     `docs/sessions/relais-195b.md` consommé — fait le 11-08 ;
-  - 19.5c — **sous-étape suivante** — build Android jusqu'à l'installation (aucune publication) et instructions
+  - 19.5c — build Android jusqu'à l'installation (aucune publication) et instructions
     exactes pour le founder (réglages à activer sur le téléphone, branchement), prêtes pour le jour où il aura un appareil (TD-036) ; rien
     n'est créé en dehors d'un build de développement : toute clé de publication (keystore) ou action sur une
-    console (Firebase, Google Play) relève de F3, à poser au ticket de 19.5c ;
-  - 19.5d — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
+    console (Firebase, Google Play) relève de F3, à poser au ticket de 19.5c — fait le 11-08. Résultat : build de
+    développement produit dans l'Éditeur ouvert, `Builds/Android/GuildsAndEmpires-dev.apk` (ignoré par git ;
+    89 656 647 octets, sha256 `4C834F95…A041DE`, 36 min 56 s, IL2CPP, clé de débogage de Unity), après réactivation
+    d'Android dans les `.meta` de `Firebase.Auth.dll` et `Firebase.Firestore.dll` (premier build échoué ; arbitrage,
+    D-ETAPE19-019) et réglage EDM4U `AndroidPackageInstallationEnabled` à `False` ; contrôle sans appareil (`aapt2`) :
+    `com.gne.guildsandempires`, versionCode 1, versionName 1.0, SDK min 24, cible 36, `arm64-v8a` et `armeabi-v7a`,
+    débogable ; aucune chaîne du mode émulateur dans `global-metadata.dat` ni dans aucun fichier de l'APK ;
+    téléchargements Gradle : +605 Mo dans `%USERPROFILE%\.gradle\caches` (Firebase, services Google Play, AndroidX),
+    SDK inchangé. Instructions pour le founder : `docs/guides/installer-build-android.md` (fichier à reconstruire au
+    déploiement, jamais installé avant) ;
+  - 19.5d — **sous-étape suivante** — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
     l'arbitre, non soumise ; elle part seulement dans la demande regroupée ;
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
     TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
+    [Avant le build de déploiement (D-ETAPE19-019, relais de 19.5c ; précision de Claude Code) : à reprendre
+    `ProjectSettings/UnityConnectSettings.asset` (valeur en mémoire à 1 dans l'Éditeur lié aux services Unity, à
+    trancher par l'arbitre) ; `Assets/Plugins/Android/FirebaseApp.androidlib/res/values/google-services.xml` suivi
+    alors que `google-services.json` est ignoré (question à poser à l'arbitre) ; règle « même traitement à chaque
+    build » des fichiers réécrits (rétablis ou supprimés par l'orchestrateur avant les revues) ; nature du build de
+    déploiement (de développement ou non) à trancher par l'arbitre.]
     [Ajustement du découpage par l'arbitre (arbitrage du 2026-11-08, D-ETAPE19-018 ; D-ETAPE19-016 : « ordre
     ajustable par l'arbitre ») : après la réponse du founder et **avant** le déploiement, une **sous-étape de
     corrections** — correction technique de T1 (TD-037, zone sûre) et corrections F2 approuvées par le founder,
@@ -963,7 +1009,7 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     vérifie qu'aucun texte ni valeur ne change au passage). Le founder peut reporter TD-037 à « avant tout testeur
     externe » dans sa réponse. Risque relevé par l'arbitre (D-ETAPE19-018), cité tel quel : « chaque libellé reste
     soumis à D-REPRISE-012 » — tout libellé touché par une correction de mise en page suit D-REPRISE-012 (libellés
-    courts listés au résumé d'étape, phrases F2, vouvoiement). Les corrections du marché (F2-5, F2-6) touchent
+    courts listés au résumé d'étape, phrases F2, vouvoiement). (Précision de Claude Code) Les corrections du marché (F2-5, F2-6) touchent
     `MarketScreen` : elles déclenchent TD-035 (déclencheur, `docs/architecture/technical-debt.md` : « Premier ticket
     qui touche `MarketScreen`, ou décision du founder au résumé d'arbitrages de l'étape 19 ») ; sa résolution suppose
     une décision du founder (F1 : maintenance étendue au marché ; F2 : la phrase affichée), à prévoir dans la demande
@@ -985,7 +1031,11 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     (2) **F2 — textes et mise en page** : textes du lot 19.5d (« Prochain lot de textes à soumettre au founder »,
     ci-dessus) ; mise en page F2-1 à F2-9 (« Défauts de mise en page relevés en 19.5b », ci-dessus), marge fixe de
     120 px une fois la zone sûre appliquée (une ligne), « sawmill lv1 » ; pour chaque défaut, la proposition de
-    correction et la mention « avant / après le déploiement ». Recommandation de l'arbitre (Q4), citée telle quelle :
+    correction et la mention « avant / après le déploiement ». Reports du relais de 19.5c (`docs/sessions/relais-195c.md`,
+    points 3 (3) et 4 ; à écrire en 19.5d) : la question F1/F2 de TD-035 (maintenance étendue au marché, phrase
+    affichée) figure d'emblée dans la demande regroupée, sous forme conditionnelle (si F2-5 ou F2-6 sont retenues) ;
+    F2-2 a été élargi après l'arbitrage (carte du slot actif, « Arrêter » à moitié visible sur S10e) : le dire dans la
+    demande regroupée. Recommandation de l'arbitre (Q4), citée telle quelle :
     « **avant le déploiement** — T1 (technique, TD-037), **F2-1** (le compteur de Kits n'est jamais visible : le
     joueur ne voit pas une ressource qu'il possède), **F2-2** (liste des slots à hauteur nulle, « Marché » hors écran
     sur S10e), **F2-5** (« Tout » caché, « Vendre 10 » coupé), et la question F1 d'orientation (qui règle F2-9) ;

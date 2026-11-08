@@ -369,6 +369,9 @@ par tout client authentifié (anonymement), hors de l'app.
 **Trigger de résolution :**
 Avant tout déploiement non-solo : DebugProvider en `#if UNITY_EDITOR`, Play Integrity
 en prod (D4.2), puis `enforceAppCheck: true` sur les callables.
+Étape ajoutée par l'arbitre (arbitrage du 2026-11-08, 19.5c, D-ETAPE19-019), citée telle quelle : « réactiver Android
+dans `Assets/Firebase/Plugins/Firebase.AppCheck.dll.meta` au moment d'adopter App Check côté client » (la DLL gérée
+est aujourd'hui exclue d'Android ; le code client ne la référence pas).
 
 ---
 
@@ -1001,7 +1004,7 @@ Une permission par agent appliquée par la plateforme, ou toute lecture hors pé
 
 ---
 
-### TD-032 — L'auditeur n'a pas de filtre de lecture sur `.revue-croisee/`
+### TD-032 — L'auditeur n'a pas de filtre de lecture sur `.revue-croisee/` ni sur `.claude/instantanes/executant/`
 
 **Identifié :** 2026-11-03 (arbitrage de la transmission par fichier, D-REPRISE-011 ; risque relevé par l'arbitre)
 **Criticité actuelle :** MOYENNE (indépendance des deux relecteurs)
@@ -1027,6 +1030,11 @@ Exemple (19.4c-1, 2026-11-03) : un auditeur a lu `.claude/instantanes/executant/
 auditeur neuf l'a refaite, et le dossier de l'exécutant a été déplacé hors du dépôt pendant les revues suivantes.
 Suite donnée par le founder : point 1 de son message de clôture de 19.4c-1 (D-REPRISE-013), filtre de lecture étendu
 à l'auditeur, et à Codex si c'est possible (lot unique, item (i)).
+Exemple (19.5b, 2026-11-08) : en revue du diff, les deux relecteurs (auditeur et Codex) ont lu des fichiers de
+`.claude/instantanes/executant/` ; revue écartée, relancée avec le dossier de l'exécutant déplacé hors du dépôt. Deuxième
+occurrence du même type d'erreur (« signal skill », `CLAUDE.md` §f ; relais `docs/sessions/relais-195c.md`, point 2) :
+le filtre du lot unique, item (i), vise aussi `.claude/instantanes/executant/` (précision de Claude Code ; aucune
+modification de filtre ici, toute modification de filtre ou de skill reste F4, au lot unique).
 
 **Trigger de résolution :**
 Décision du founder (D-REPRISE-013) : lot unique de retouches, item (i) — étendre le filtre de lecture à l'auditeur
@@ -1158,6 +1166,9 @@ d'appareils et à l'émulateur, et n'apparaître qu'aux premiers testeurs extern
 Instructions exactes données au founder (réglages à activer sur le téléphone, branchement), préparées en 19.5c avec le
 build Android de développement ; installation sur l'appareil ; partie jouée (boucle ci-dessus et lisibilité),
 constatée au rapport. Toute clé de publication ou action sur une console (Firebase, Google Play) → F3.
+Préparé en 19.5c (2026-11-08) : build Android de développement produit et contrôlé sans appareil (briefing, 19.5c ;
+D-ETAPE19-019) ; instructions pour le founder : `docs/guides/installer-build-android.md`. Le fichier sera reconstruit
+au déploiement de 19.5 ; seuls l'installation et la partie jouée restent à faire.
 
 **Trigger de résolution :**
 Appareil Android disponible chez le founder ; au plus tard avant tout testeur externe (jauge Phase 1, `CLAUDE.md` §f).
@@ -1196,11 +1207,11 @@ d'orientation ou de résolution ») ; vérification au simulateur en portrait, e
 rotation (question F1 de la demande regroupée). Note de l'arbitre : l'exemple de code de
 `docs/skills/unity-firebase-architect/references/doctrine-mobile-performance.md` (bloc ouvert l. 215, code à partir de
 l. 216, classe `SafeAreaPanel` l. 217) est en uGUI (`RectTransform`) ; le client est en UI Toolkit ; la doctrine C4 fixe
-l'exigence, pas la technique : aucune modification de doctrine nécessaire. Technique nommée par la doctrine backend,
+l'exigence, pas la technique : aucune modification de doctrine nécessaire. (Précision de Claude Code) Technique nommée par la doctrine backend,
 citée telle quelle : `doctrine-mobile-performance.md` l. 238-239, « **Règle :** Chaque Canvas racine a un
 `SafeAreaPanel` comme enfant direct. Tous les éléments UI sont enfants du `SafeAreaPanel`, jamais du Canvas
 directement. » ; `docs/skills/unity-firebase-architect/SKILL.md` l. 112, « Safe Area handled via `SafeAreaPanel` on
-every screen — no exceptions for notched devices. » La sous-étape de corrections garde le nom `SafeAreaPanel` (ou une
+every screen — no exceptions for notched devices. » (Précision de Claude Code) La sous-étape de corrections garde le nom `SafeAreaPanel` (ou une
 règle équivalente : un conteneur racine par `UIDocument`, parent de tous les éléments de l'écran) ; sinon, l'écart est
 noté comme adaptation à UI Toolkit et porté au lot de retouches (F4 si le texte d'une doctrine doit changer). Correction
 faite dans une seule sous-étape de corrections avec les corrections F2 approuvées par le founder ; la relecture vérifie
@@ -1210,6 +1221,33 @@ qu'aucun texte ni valeur ne change au passage.
 Fixé par l'arbitre : **avant le déploiement de 19.5**, dans la sous-étape de corrections qui suivra la réponse du
 founder à la demande regroupée. Le déploiement restant F3, le founder peut reporter ce déclencheur à « avant tout
 testeur externe » dans sa réponse ; la demande regroupée le lui dit.
+
+---
+
+### TD-038 — Dossier vide `Assets/Resources/` et son `.meta` suivi, aimant à résidus de build
+
+**Identifié :** 2026-11-08 (arbitrage de l'arbitre, 19.5c, correction de la Q2 ; D-ETAPE19-019)
+**Criticité actuelle :** FAIBLE (nettoyage manuel à chaque build)
+**Composant :** `Assets/Resources/` (vide) et `Assets/Resources.meta` (suivi depuis `79c0e66`, initialisation du projet)
+
+**Description :**
+Proposition de l'arbitre, citée telle quelle : « Supprimer le dossier vide `Assets/Resources/` et son `.meta` suivi, ou
+le réserver à un usage réel ; vérifier qu'aucun chemin de build ne le requiert ». Aucun `Resources.Load` ni référence à
+`Assets/Resources` dans `Assets/` (vérifié par l'arbitre). Le paquet Performance Testing y écrit au début d'un build
+(`PerformanceTestRunInfo.json`, `PerformanceTestRunSettings.json` et leurs `.meta`), constaté au premier build Android
+de 19.5c (build échoué).
+
+**Impact :**
+Risque relevé par l'arbitre (résumé fidèle) : tant que le dossier existe, les quatre `PerformanceTest*` sont à
+supprimer à la main après chaque séquence de build ; le dossier et son `.meta` suivi, eux, restent (règle corrigée,
+D-ETAPE19-019). Précision de Claude Code : après un build réussi, le paquet Performance Testing supprime de lui-même
+les quatre `PerformanceTest*` (`TestRunBuilder.OnPostprocessBuild()` ; constaté au build réussi de 19.5c) ; le
+nettoyage manuel ne concerne que les résidus effectivement présents, notamment après un échec de build.
+
+**Trigger de résolution :**
+Fixé par l'arbitre, cité tel quel : « première sous-étape touchant `Assets/` hors 19.5c, ou tout build de preuve où les
+résidus `PerformanceTest*` réapparaissent une deuxième fois (signal « même type d'erreur relevé deux fois »,
+`CLAUDE.md` §f) ».
 
 ---
 
