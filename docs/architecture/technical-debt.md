@@ -1251,6 +1251,33 @@ résidus `PerformanceTest*` réapparaissent une deuxième fois (signal « même 
 
 ---
 
+### TD-039 — Codex n'est pas isolé en lecture : la preuve est « n'a pas lu », pas « ne peut pas lire »
+
+**Identifié :** 2026-11-08 (commit de doc avant L1 ; décision F4 du founder du 2026-11-08, option 1)
+**Criticité actuelle :** MOYENNE (indépendance de Codex constatée après coup, pas garantie)
+**Composant :** lancement de Codex CLI dans le skill `revue-croisee` (TD-031, TD-032)
+
+**Description :**
+Essai de l'orchestrateur (2026-11-08, relais `docs/sessions/relais-195-lot.md`, point 5) : Codex lancé en
+`--sandbox read-only` dans un dossier vide a lu, par son chemin absolu, un fichier témoin placé ailleurs ; son bac à
+sable limite l'écriture, pas la lecture. Décision du founder (F4, 2026-11-08), citée telle quelle : « Option 1. Pour
+Codex, la preuve exigée devient "n'a pas lu", contrôlée par l'analyse automatique de son journal après chaque
+relecture. Toute commande visant un chemin hors de la copie de revue → relecture écartée et refaite par un Codex neuf.
+Pour les relecteurs Claude, la preuve "ne peut pas lire" par le filtre reste exigée. »
+Dette ouverte par le founder, texte cité tel quel : « Isolation réelle de Codex en lecture : à étudier par conteneur
+(Docker ou WSL) qui ne monte que la copie de revue. Déclencheur : une deuxième lecture interdite détectée malgré le
+contrôle du journal, ou avant tout testeur externe. Rien à installer sur le poste du founder sans décision F3. »
+
+**Impact :**
+Précision de Claude Code : une lecture interdite de Codex est détectée après la relecture et coûte une relecture
+refaite ; elle n'est pas empêchée.
+
+**Trigger de résolution :**
+Fixé par le founder, cité tel quel : « une deuxième lecture interdite détectée malgré le contrôle du journal, ou avant
+tout testeur externe. » Toute installation sur le poste du founder (conteneur, WSL) : F3.
+
+---
+
 ## TD Résolues
 
 ### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)

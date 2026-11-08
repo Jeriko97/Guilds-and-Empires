@@ -991,7 +991,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     téléchargements Gradle : +605 Mo dans `%USERPROFILE%\.gradle\caches` (Firebase, services Google Play, AndroidX),
     SDK inchangé. Instructions pour le founder : `docs/guides/installer-build-android.md` (fichier à reconstruire au
     déploiement, jamais installé avant) ;
-  - 19.5d — **sous-étape suivante** — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
+  - lot de retouches (L1 puis L2, consignes du founder du 2026-11-08) — **sous-étape suivante**, avant 19.5d : entrée
+    `docs/sessions/relais-195-lot.md` (précision de Claude Code) ;
+  - 19.5d — après le lot de retouches — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
     l'arbitre, non soumise ; elle part seulement dans la demande regroupée ;
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
