@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014, D-REPRISE-015)
 
 La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
 neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
@@ -51,6 +51,8 @@ Précisions d'application (Claude Code, relues en revue croisée ; au doute, ver
   production (seed, migration, correction manuelle). Y restent, pour git (D-REPRISE-009) : merge vers `main`,
   force-push ou réécriture d'historique, suppression de branche distante ; push direct sur `main` (assimilé au merge) ;
   push qui déclencherait un déploiement. Push normal sur la branche de travail : sans question (§g).
+  Règle du founder (D-REPRISE-015, 2026-11-08, F4), citée telle quelle : « Les identifiants Google locaux (ADC) sont
+  révoqués par défaut ; leur recréation fait partie de l'action F3 qu'ils servent. »
 - **Garde-fous (F4)** : cette liste d'escalade et sa correspondance ; la boucle de revue et de commit
   (D-REPRISE-003/004/005/007/008, §a, §d, skill `revue-croisee`) ; les relecteurs et l'arbitre, leurs grilles et
   leurs outils (`AGENTS.md`, `.claude/agents/*.md`, `.claude/settings.json`, `.claude/hooks/`) ; les conventions non
@@ -227,6 +229,12 @@ Précisions d'application (Claude Code ; relues en revue croisée) :
   il le consigne et rend la main, sans contournement. Le Play de preuve reste soumis au puits actif (briefing,
   « Jouer le client sur les émulateurs »). Une correction demandée par un relecteur ou l'arbitre lui est renvoyée (le
   même, repris par message, ou un neuf).
+- **Écritures protégées (D-REPRISE-015, 2026-11-08, F4)** : règle du founder, citée telle quelle : « **Pour L1 et tout
+  lot qui touche des fichiers protégés** : l'exécutant prépare les contenus dans des fichiers de travail. La session
+  principale fait les écritures protégées, regroupées au maximum, et me dit « autorisation demandée » une seule fois
+  par série. » Fichiers protégés (précision de Claude Code) : ceux que couvrent les règles `ask` de
+  `.claude/settings.json` (`CLAUDE.md`, `AGENTS.md`, `.claude/agents/**`, `.claude/settings*.json`, `.claude/hooks/**`,
+  `.claude/skills/**`) ; ces règles ne s'appliquent qu'aux sessions ouvertes après leur écriture.
 - **Fichiers** : diffs et sorties volumineuses transmis par chemin et sha1 (relecteurs : skill `revue-croisee` §3 ;
   arbitre : §c).
 - **Relais (D-REPRISE-014, précision de Claude Code)** : un relais, et toute pièce durable, est écrit dans un chemin

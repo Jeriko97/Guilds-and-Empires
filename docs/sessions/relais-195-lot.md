@@ -133,3 +133,9 @@ D-ETAPE19-019 et le briefing : la sous-étape suivante est le lot de retouches (
    résumé d'arbitrages de l'étape 19, rubrique « signal skill » : « relais non versionné, troisième occurrence »
    (signal skill / garde-fou, selon le founder). Point 2 — TD-039 ouverte (`docs/architecture/technical-debt.md`).
    Point 3 — suite : ticket L1 v2 avec l'option 1, puis L2, puis 19.5d.
+7. **D-REPRISE-015 (2026-11-08, F4, founder)** : règles `ask` du projet, autorisations locales nettoyées, identifiants
+   Google locaux révoqués. Pour L1 et tout lot qui touche des fichiers protégés, l'exécutant prépare les contenus dans
+   des fichiers de travail et la session principale fait les écritures protégées (« autorisation demandée » une fois
+   par série) ; les règles `ask` ne s'appliquent que dans les sessions ouvertes après leur écriture. Consigne d'intérim de
+   l'arbitre : aucune commande `firebase` hors `firebase emulators:*` avec `--project demo-guilds-empires` jusqu'à la
+   réponse du founder à la question F4 sur des règles supplémentaires (journal, D-REPRISE-015).
