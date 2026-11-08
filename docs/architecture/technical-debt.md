@@ -1164,6 +1164,55 @@ Appareil Android disponible chez le founder ; au plus tard avant tout testeur ex
 
 ---
 
+### TD-037 — Zone sûre (`Screen.safeArea`) non appliquée sur les écrans du client (doctrine C4)
+
+**Identifié :** 2026-11-08 (constat 19.5b §5, `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md` ; arbitrage
+de l'arbitre du 2026-11-08, D-ETAPE19-018) ; déjà relevé le 2026-05-11 (`docs/architecture/audit-v1-2026-05-11.md`
+l. 337), jamais traité
+**Criticité actuelle :** ÉLEVÉE sur iPhone (iOS est une plateforme de sortie, D-PLATEFORMES-001), MOYENNE sur Android
+(masquée par la marge fixe de 120 px ; barre de navigation non simulée)
+**Composant :** `Assets/_Project` (UIDocuments, `MainPanelSettings`)
+
+**Description :**
+Aucune occurrence de `safeArea` / `SafeArea` sous `Assets/_Project`, contrairement à la doctrine client C4
+(`docs/skills/unity-mobile-gameplay-engineer/SKILL.md` l. 308, règle 18 : « SafeArea sur chaque écran. Pas d'exception
+pour les appareils à encoche. »). Constat 19.5b (T1) : sur l'Apple iPhone 12, le titre entre dans la bande de
+l'encoche en portrait ; en paysage, marges, panneaux et boutons sortent de la zone sûre. Classement de l'arbitre
+(D-ETAPE19-018, Q1), cité tel quel : « T1 (zone sûre non gérée) est un **défaut technique**, écart à la doctrine C4
+(règle 18 : « SafeArea sur chaque écran. Pas d'exception pour les appareils à encoche. »), **pas un point F2**. » La
+conséquence d'apparence (ce que devient la marge fixe de 120 px du haut une fois la zone sûre appliquée) est F2, dans
+la demande regroupée.
+
+**Impact :**
+Sur un iPhone à encoche, du texte et des boutons passent sous l'encoche ou hors de la zone utilisable ; sur Android, le
+défaut est aujourd'hui masqué par la marge fixe de l'écran, sans garantie sur les appareils dont la bande est plus haute
+ou dont la barre de navigation est une marge.
+
+**Résolution :**
+Arbitrage (D-ETAPE19-018, Q2 (a)), cité tel quel : « conteneur racine par écran, marges de `Screen.safeArea` converties
+en unités du panneau, vérification au simulateur (iPhone 12 portrait, S10e) jointe au rapport. » Les marges sont
+réappliquées au changement d'orientation ou de résolution (Q1, cité tel quel : « réappliqué au changement
+d'orientation ou de résolution ») ; vérification au simulateur en portrait, et aussi en paysage si le founder garde la
+rotation (question F1 de la demande regroupée). Note de l'arbitre : l'exemple de code de
+`docs/skills/unity-firebase-architect/references/doctrine-mobile-performance.md` (bloc ouvert l. 215, code à partir de
+l. 216, classe `SafeAreaPanel` l. 217) est en uGUI (`RectTransform`) ; le client est en UI Toolkit ; la doctrine C4 fixe
+l'exigence, pas la technique : aucune modification de doctrine nécessaire. Technique nommée par la doctrine backend,
+citée telle quelle : `doctrine-mobile-performance.md` l. 238-239, « **Règle :** Chaque Canvas racine a un
+`SafeAreaPanel` comme enfant direct. Tous les éléments UI sont enfants du `SafeAreaPanel`, jamais du Canvas
+directement. » ; `docs/skills/unity-firebase-architect/SKILL.md` l. 112, « Safe Area handled via `SafeAreaPanel` on
+every screen — no exceptions for notched devices. » La sous-étape de corrections garde le nom `SafeAreaPanel` (ou une
+règle équivalente : un conteneur racine par `UIDocument`, parent de tous les éléments de l'écran) ; sinon, l'écart est
+noté comme adaptation à UI Toolkit et porté au lot de retouches (F4 si le texte d'une doctrine doit changer). Correction
+faite dans une seule sous-étape de corrections avec les corrections F2 approuvées par le founder ; la relecture vérifie
+qu'aucun texte ni valeur ne change au passage.
+
+**Trigger de résolution :**
+Fixé par l'arbitre : **avant le déploiement de 19.5**, dans la sous-étape de corrections qui suivra la réponse du
+founder à la demande regroupée. Le déploiement restant F3, le founder peut reporter ce déclencheur à « avant tout
+testeur externe » dans sa réponse ; la demande regroupée le lui dit.
+
+---
+
 ## TD Résolues
 
 ### TD-015 — Primitives de parsing Firebase dispersées dans 4 foyers (requalifiée le 2026-11-01)

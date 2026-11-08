@@ -35,7 +35,9 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   (diff de l'index, tests, rapport, décisions). Décisions applicables d'une saisine : joindre leur texte, ou leur
   « chemin + ligne » (règle « ID et texte », `CLAUDE.md` §c ; remarque de l'audit de clôture de 19.4c-1). Joindre
   aussi le texte brut de tout arbitrage cité dans le diff d'une sous-étape doc (arbitre, audit de clôture de 19.5-0b,
-  2026-11-04, remarque non bloquante). Le founder n'est sollicité que pour **F1** (game
+  2026-11-04, remarque non bloquante). Joindre à l'audit de clôture la sortie brute de `npm run build` et de
+  `npm run lint` quand le rapport les affirme, ou ne pas les affirmer (arbitre, audit de clôture de 19.5a, 2026-11-08,
+  remarque 2 ; relais `docs/sessions/relais-195b.md`, point 2). Le founder n'est sollicité que pour **F1** (game
   design et gameplay, règle d'effet indirect), **F2** (direction artistique, textes affichés ; révisé par
   D-REPRISE-012, ci-dessous), **F3** (actions
   irréversibles en production), **F4** (garde-fous, skills, désaccord persistant) ; tout le reste est tranché par
@@ -340,6 +342,9 @@ modification d'un garde-fou → F4. Contenu du lot :
   contrôle est écrit dans `CLAUDE.md` §c et rappelé dans chaque saisine d'audit de clôture jusqu'au lot, par la
   citation de la règle unique (`CLAUDE.md` §g), comme le rappel du push ; ce rappel est retiré quand le lot est
   appliqué.
+- (l) skill `revue-croisee` : le chemin du CLI Codex a changé (`bin/f71a721e0e6193a9/codex.exe`) ; modification du
+  skill → F4, avec le lot ; d'ici là, le skill prévoit de prendre le plus récent (relais
+  `docs/sessions/relais-195b.md`, point 6).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -776,7 +781,11 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     (d) du déploiement de 19.5 (lisibilité des écrans sur petit format). [Annotation (19.5-0, D-ETAPE19-016) :
     condition (d) révisée ; ce point se juge d'abord en 19.5b (simulateur d'appareils de Unity, petit écran Android
     et iPhone à encoche ; tout changement de mise en page de direction artistique → F2, dans la demande regroupée),
-    puis sur le rendu sur un vrai appareil, exigé avant tout testeur externe (TD-036).] Aussi (relais de 19.4c-2,
+    puis sur le rendu sur un vrai appareil, exigé avant tout testeur externe (TD-036).] [Annotation (19.5b) : jugé
+    au simulateur et **confirmé** — avec le panneau ouvert, la liste des slots se réduit à un slot en partie, puis à
+    une hauteur nulle (Samsung Galaxy S10e, dès le choix de N et pendant la confirmation d'arrêt), ou à une bande
+    d'environ 60 px (Apple iPhone 12) ; défaut F2-2 du constat `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md`,
+    repris dans « Défauts de mise en page relevés en 19.5b », ci-dessous.] Aussi (relais de 19.4c-2,
     point 1) : arrêt
     dont toutes les catégories sont vides (slot de logs sans cycle fini) — texte d'état vidé, aucun retour écrit
     (point (6) du prochain lot de textes, ci-dessous).
@@ -848,13 +857,47 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     choix du founder ; deux politiques), dans la demande regroupée. Coût de coordination de 19.5-0 : ticket 2
     versions (v1 : Codex GO, auditeur GO ; v2 passe courte : GO des deux) ; diff 2 versions (v1 : Codex GO APRÈS
     CORRECTION — 1 bloquant, ambiguïté du point 7 —, auditeur GO ; passe courte : GO des deux) ; audit de clôture 1
-    (GO) ; aucun arbitrage hors clôture ; aucune escalade. Coût de coordination de 19.5a (provisoire, complété par
-    l'orchestrateur : revue du diff et audit de clôture) : ticket 3 versions (v1 : Codex GO APRÈS CORRECTION — 2
-    bloquants : politique à deux conditions `conditionMatchedLog` refusée par l'API, clause STOP sans décision du
-    founder —, auditeur GO APRÈS CORRECTION — 2 bloquants : même point API, filtre « slot corrompu » qui ne visait pas
-    le code `data-loss` ; v2 passe courte : GO des deux ; v3 passe courte (non-bloquants de l'auditeur intégrés) : GO
-    des deux) ; 1 passe Codex écartée, version intermédiaire ; aucun arbitrage ; aucune escalade ; diff v1 : Codex GO,
-    auditeur GO (non-bloquant commun : champ `message` écrasé par le logger ; corrigé) ; passe courte en cours.
+    (GO) ; aucun arbitrage hors clôture ; aucune escalade. Coût de coordination final de 19.5a (relais
+    `docs/sessions/relais-195b.md`, point 1 ; remplace la version provisoire, versé au commit de 19.5b) : ticket 3
+    versions (v1 : Codex GO APRÈS CORRECTION — 2 bloquants : politique à deux conditions `conditionMatchedLog` refusée
+    par l'API, clause STOP sans décision du founder —, auditeur GO APRÈS CORRECTION — 2 bloquants : même point API,
+    filtre « slot corrompu » qui ne visait pas le code `data-loss` ; v2 passe courte : GO des deux ; v3 passe courte,
+    non-bloquants de l'auditeur intégrés : GO des deux) ; 1 passe Codex écartée (version intermédiaire du ticket) ;
+    diff 2 versions (v1 : Codex GO, auditeur GO, non-bloquant commun : champ `message` écrasé par le logger, corrigé ;
+    passe courte : GO des deux) ; audit de clôture 1 (GO) ; aucun arbitrage hors clôture ; aucune escalade. Passes par
+    relecteur : Codex 5 (+1 écartée), auditeur 5, arbitre 1 ; NO-GO : 0.
+  - **Incident de procédure de 19.5a, au résumé d'arbitrages de l'ÉTAPE 19** (relais `docs/sessions/relais-195b.md`,
+    point 3 ; remarque 3 de l'audit de clôture de 19.5a) : l'exécutant a lancé `gcloud beta --help` sans question
+    possible ; gcloud a installé de lui-même le composant local `beta` (2026-11-08 10:36). Outillage du poste
+    seulement, aucun projet visé ; non désinstallé (`gcloud components remove beta` le retirerait). Consigne pour les
+    exécutants : hors tests, ne lancer que des commandes dont l'effet local est connu. Une seule occurrence : pas un
+    « signal skill ».
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.5b** — constat de la condition (d) révisée :
+    `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md` (simulateur d'appareils : Samsung Galaxy S10e et
+    Apple iPhone 12 en portrait, Apple iPhone 12 en paysage, Samsung Galaxy Z Fold2 5G en complément ; boucle
+    produire → lancer un lot → arrêter → collecter → vendre jouée sur l'émulateur, état serveur identique à
+    l'affichage). **Défaut technique (doctrine C4), à l'arbitre** : zone sûre non gérée (T1 du constat ; titre dans la
+    bande de l'encoche en portrait, marges et boutons hors zone sûre en paysage sur l'iPhone 12) ; classé par
+    l'arbitre le 2026-11-08 (D-ETAPE19-018) : défaut technique, TD-037 ouverte (`docs/architecture/technical-debt.md`,
+    déclencheur « avant le déploiement de 19.5 », dans la sous-étape de corrections ; reportable par le founder à
+    « avant tout testeur externe ») ; marge fixe de 120 px une fois la zone sûre appliquée → F2. Décision prise sans
+    le founder : D-ETAPE19-018 (arbitre ; classement de T1, TD-037, orientation en F1, lecture de la condition (d)
+    révisée). **Questions F1/F2 en attente** (dans la demande regroupée) : F1, orientation de l'écran (portrait
+    seulement, portrait et paysage, ou paysage seulement ; question formulée par l'arbitre, 19.5, « Contenu de la
+    demande regroupée ») ; F2, défauts de mise en page F2-1 à F2-9, marge fixe, « sawmill lv1 ». **Jauge Phase 1** :
+    TD-037, « avant le déploiement de 19.5 » (si le founder la reporte, elle rejoint les TD « avant tout testeur
+    externe », avec TD-036). Défauts F2 : « Défauts de mise en page relevés en 19.5b », ci-dessous. Coût de
+    coordination de 19.5b (provisoire, version finale au commit de 19.5c) : ticket 2 versions (v1 : Codex GO, auditeur
+    GO APRÈS CORRECTION — 1 bloquant : zone sûre non gérée, écart à la doctrine C4, à classer en défaut technique et
+    non en F2 — ; v2 passe courte : GO des deux, trois non-bloquants de l'auditeur acceptés) ; 1 arbitrage (T1,
+    D-ETAPE19-018) ; aucune escalade ; revue du diff v1 écartée (les deux relecteurs avaient lu des fichiers de
+    `.claude/instantanes/executant/` ; dossier mis hors du dépôt pendant la relance) ; relance : GO des deux ; passe
+    courte en cours ; audit de clôture : à compléter. La version finale est écrite dans le relais versionné
+    `docs/sessions/relais-195c.md`, puis versée au commit de 19.5c.
+  - **Incident de procédure de 19.5b, au résumé d'arbitrages de l'ÉTAPE 19** : en revue du diff, les deux relecteurs
+    (auditeur et Codex) ont lu des fichiers de `.claude/instantanes/executant/` (pièces de travail de l'exécutant) ;
+    revue v1 écartée, relancée. Cause : TD-032, un filtre de lecture manque pour l'auditeur et Codex (lot unique,
+    item (i)). Contre-mesure appliquée : dossier de l'exécutant déplacé hors du dépôt pendant les revues.
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -873,6 +916,18 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     l'étape 19 (questions F2 en attente). La question est formulée par l'arbitre (`CLAUDE.md` §c) ; conversion des
     textes après la réponse du founder seulement. Le lot est soumis au founder avant le déploiement de 19.5, pour
     qu'aucun texte au tutoiement n'arrive aux joueurs.
+  - **Défauts de mise en page relevés en 19.5b (F2, dans la demande regroupée)** — constat
+    `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md`, §5 (chaque défaut avec sa proposition de correction,
+    non appliquée ; question formulée par l'arbitre) : F2-1 ligne « Or · Logs · Planks · Kits » coupée au bord droit ;
+    F2-2 liste des slots comprimée par le panneau de lancement et la confirmation d'arrêt (point F2 en attente
+    ci-dessus, confirmé) ; F2-3 bouton « Kits » hors du panneau ; F2-4 aperçu du lot coupé ; F2-5 boutons de vente
+    « Vendre 10 » coupé et « Tout » caché ; F2-6 message de vente et prix coupés ; F2-7 barres de défilement de
+    bureau ; F2-8 textes coupés sur écran étroit (Samsung Galaxy Z Fold2 5G) ; F2-9 production et marché
+    inutilisables en paysage (propositions : écrans qui défilent, ou orientation verrouillée en portrait, option à
+    présenter ; orientation : question F1, D-ETAPE19-018) ; observation de texte : titre « sawmill lv1 » (identifiant
+    brut). Le défaut de zone sûre (T1, doctrine C4) est classé par l'arbitre (D-ETAPE19-018) : défaut technique,
+    TD-037 ; seule la marge fixe de 120 px, une fois la zone sûre appliquée, est F2 (une ligne dans la demande
+    regroupée).
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout
   logs → planks → kits → vente d'un kit.
   Décision du founder (2026-11-04, D-ETAPE19-016), citée telle quelle : « Le reste de la préparation de 19.5 continue comme prévu, avec une seule demande regroupée à la fin (F2 textes, F3 alerte TD-021 et déploiement). »
@@ -887,12 +942,13 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     en production fait partie de la demande regroupée (F3, procédure `firebase/monitoring/README.md`) ; relais
     `docs/sessions/relais-195a.md` consommé (les deux arbitrages de son point 1 sont au journal, D-ETAPE19-016,
     attribués à « arbitre ») — fait le 11-08 ;
-  - 19.5b — **sous-étape suivante** — lisibilité dans le simulateur d'appareils de Unity (au moins un petit écran
+  - 19.5b — lisibilité dans le simulateur d'appareils de Unity (au moins un petit écran
     Android et un iPhone récent à encoche) et boucle complète produire → lancer un lot → arrêter → collecter →
     vendre jouée sur l'émulateur ; tout changement de mise en page qui relève de la direction artistique → F2 (dans
-    la demande regroupée) ;
-  - 19.5c — build Android jusqu'à l'installation (aucune publication) et instructions exactes pour le founder
-    (réglages à activer sur le téléphone, branchement), prêtes pour le jour où il aura un appareil (TD-036) ; rien
+    la demande regroupée) ; constat `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md` ; relais
+    `docs/sessions/relais-195b.md` consommé — fait le 11-08 ;
+  - 19.5c — **sous-étape suivante** — build Android jusqu'à l'installation (aucune publication) et instructions
+    exactes pour le founder (réglages à activer sur le téléphone, branchement), prêtes pour le jour où il aura un appareil (TD-036) ; rien
     n'est créé en dehors d'un build de développement : toute clé de publication (keystore) ou action sur une
     console (Firebase, Google Play) relève de F3, à poser au ticket de 19.5c ;
   - 19.5d — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
@@ -900,6 +956,59 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
     TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
+    [Ajustement du découpage par l'arbitre (arbitrage du 2026-11-08, D-ETAPE19-018 ; D-ETAPE19-016 : « ordre
+    ajustable par l'arbitre ») : après la réponse du founder et **avant** le déploiement, une **sous-étape de
+    corrections** — correction technique de T1 (TD-037, zone sûre) et corrections F2 approuvées par le founder,
+    ensemble (arbitre, cité tel quel : « **une seule sous-étape de corrections**, avant le déploiement » ; la relecture
+    vérifie qu'aucun texte ni valeur ne change au passage). Le founder peut reporter TD-037 à « avant tout testeur
+    externe » dans sa réponse. Risque relevé par l'arbitre (D-ETAPE19-018), cité tel quel : « chaque libellé reste
+    soumis à D-REPRISE-012 » — tout libellé touché par une correction de mise en page suit D-REPRISE-012 (libellés
+    courts listés au résumé d'étape, phrases F2, vouvoiement). Les corrections du marché (F2-5, F2-6) touchent
+    `MarketScreen` : elles déclenchent TD-035 (déclencheur, `docs/architecture/technical-debt.md` : « Premier ticket
+    qui touche `MarketScreen`, ou décision du founder au résumé d'arbitrages de l'étape 19 ») ; sa résolution suppose
+    une décision du founder (F1 : maintenance étendue au marché ; F2 : la phrase affichée), à prévoir dans la demande
+    regroupée si F2-5 ou F2-6 sont retenues.]
+    **Contenu de la demande regroupée** (arbitrage du 2026-11-08, D-ETAPE19-018, Q3, Q4, remarques 2, 4 et 6 ; trois
+    blocs numérotés, les F3 en oui / non groupés, `CLAUDE.md` §e ; question formulée par l'arbitre) :
+    (1) **F1 — orientation de l'écran**. Question formulée par l'arbitre, citée telle quelle : « Ce qui bloque (F1) :
+    en tenant le téléphone à l'horizontale (paysage), la production et le marché sont aujourd'hui inutilisables (aucun
+    slot ni ressource visible, boutons hors écran). Il faut choisir comment le jeu se tient. Options : (1) **Portrait
+    seulement** : le jeu ne tourne plus quand on incline le téléphone ; une seule mise en page à concevoir et à
+    tester ; réversible plus tard ; c'est le choix de la plupart des jeux de gestion mobile. (2) **Portrait et
+    paysage** : chaque écran doit être rendu utilisable à l'horizontale (écrans qui défilent ou mise en page dédiée) ;
+    coût de conception et de test doublé pour chaque écran, maintenant et à chaque nouvel écran. (3) **Paysage
+    seulement** : contraire au constat (les écrans sont pensés en hauteur) ; à refaire presque entièrement.
+    Recommandation : (1), parce que la Phase 1 est une boucle de gestion à listes verticales, et que le founder n'a
+    qu'un appareil à tester, bientôt (TD-036). » Phrase à y inscrire (remarque 2 de l'arbitre), citée telle quelle :
+    « aujourd'hui le jeu tourne dans les quatre sens, sans que cela ait été décidé ». Si le founder choisit (1),
+    F2-9 disparaît ; s'il choisit (2), F2-9 devient un lot de corrections F2 à part.
+    (2) **F2 — textes et mise en page** : textes du lot 19.5d (« Prochain lot de textes à soumettre au founder »,
+    ci-dessus) ; mise en page F2-1 à F2-9 (« Défauts de mise en page relevés en 19.5b », ci-dessus), marge fixe de
+    120 px une fois la zone sûre appliquée (une ligne), « sawmill lv1 » ; pour chaque défaut, la proposition de
+    correction et la mention « avant / après le déploiement ». Recommandation de l'arbitre (Q4), citée telle quelle :
+    « **avant le déploiement** — T1 (technique, TD-037), **F2-1** (le compteur de Kits n'est jamais visible : le
+    joueur ne voit pas une ressource qu'il possède), **F2-2** (liste des slots à hauteur nulle, « Marché » hors écran
+    sur S10e), **F2-5** (« Tout » caché, « Vendre 10 » coupé), et la question F1 d'orientation (qui règle F2-9) ;
+    **après le déploiement** : F2-3, F2-4, F2-6, F2-7, F2-8 et « sawmill lv1 », sauf si le founder veut tout
+    avant ». F2-1 se présente au founder par son effet pour le joueur (remarque 4 de l'arbitre, citée telle quelle) :
+    « il ne voit jamais combien de Kits il possède » (plutôt que « ligne coupée »). Risque à dire explicitement (arbitre) :
+    si toutes les corrections sont reportées après le déploiement, le client déployé a un compteur de Kits invisible
+    (F2-1) et un bouton « Tout » caché (F2-5) ; effet nul aujourd'hui (aucun joueur externe, TD-036 ouverte).
+    Limite de la vérification à y joindre (Q4 (iii)) : aucun Android de 720 × 1280 ou moins dans le simulateur (le
+    paquet d'appareils supplémentaires modifierait `Packages/manifest.json`), barre de navigation Android non
+    simulée ; le vrai appareil reste TD-036.
+    (3) **F3 — oui / non groupés** : activation de l'alerte TD-021 ; déploiement de 19.5 (et moment des corrections
+    par rapport au déploiement). À titre d'information (pas F2) : T1, zone sûre non gérée, défaut technique tranché
+    par l'arbitre (TD-037, déclencheur « avant le déploiement de 19.5 »), que le founder peut reporter à « avant tout
+    testeur externe ». Lecture de l'arbitre (Q4), citée telle quelle : « **Mais** « (d) remplie » n'autorise pas le
+    déploiement : il reste F3, et le founder doit décider avec le constat sous les yeux. »
+    Notes pour le texte F3 de la demande regroupée (relais `docs/sessions/relais-195b.md`, point 4 ; remarque 4 et
+    risques de l'audit de clôture de 19.5a) : les noms réels du service Cloud Run (`updatemarketprices`) et du job
+    Cloud Scheduler (`firebase-schedule-updateMarketPrices-<région>`, recherche de sous-chaîne sensible à la casse) et
+    la région (`us-central1`, hypothèse) sont relevés à l'étape 1 de `firebase/monitoring/README.md` ; un ajustement
+    du filtre peut suivre ce relevé (modification du dépôt, revue, puis action F3). La lecture des champs sous
+    `jsonPayload.*` et la limite « une seule condition `conditionMatchedLog` » ne sont prouvées qu'à l'activation ; si
+    la création d'une politique échoue : ajustement du dépôt (revue) puis nouvelle action F3, jamais un contournement.
   Enchaînement (D-REPRISE-014, décision du founder, citée telle quelle : « crée toi-même la session enfant pour 19.5a,
   et enchaîne 19.5a → 19.5d sans me demander. ») : la session ouverte pour 19.5a enchaîne 19.5a → 19.5d sans
   question au founder, puis prépare la demande regroupée (précision de Claude Code ; `CLAUDE.md` §h).

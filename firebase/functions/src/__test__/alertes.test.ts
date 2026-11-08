@@ -190,7 +190,9 @@ describe("TD-021 — entrée réelle du logger (sans mock de logger.error)", () 
     const corrupt = corruptSlotDetails(err);
     expect(corrupt).not.toBeNull();
 
-    // Même forme d'appel que les trois handlers (« …: état de slot corrompu »).
+    // Même forme d'appel que les trois handlers (« …: état de slot corrompu »). Appel reconstruit ici : ce test
+    // prouve la forme de l'entrée JSON écrite par le logger réel, pas que chaque handler l'écrit (ce point est
+    // couvert par les espions de logger.error des suites des handlers).
     loggerReel.error("collectProduction: état de slot corrompu", {
       uid: "u-logger-reel", buildingId: "sawmill_0", ...corrupt, ...alertes.champsAlerteSlotCorrompu(err),
     });
