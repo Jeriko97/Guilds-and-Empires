@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014, D-REPRISE-015)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014, D-REPRISE-015, D-REPRISE-016)
 
 La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
 neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
@@ -53,6 +53,8 @@ Précisions d'application (Claude Code, relues en revue croisée ; au doute, ver
   push qui déclencherait un déploiement. Push normal sur la branche de travail : sans question (§g).
   Règle du founder (D-REPRISE-015, 2026-11-08, F4), citée telle quelle : « Les identifiants Google locaux (ADC) sont
   révoqués par défaut ; leur recréation fait partie de l'action F3 qu'ils servent. »
+  Règle du founder (D-REPRISE-016, 2026-11-09, F4), citée telle quelle : « L'outil Firebase est déconnecté par
+  défaut ; sa reconnexion (`firebase login`) fait partie de l'action F3 qu'elle sert, comme les identifiants Google. »
 - **Garde-fous (F4)** : cette liste d'escalade et sa correspondance ; la boucle de revue et de commit
   (D-REPRISE-003/004/005/007/008, §a, §d, skill `revue-croisee`) ; les relecteurs et l'arbitre, leurs grilles et
   leurs outils (`AGENTS.md`, `.claude/agents/*.md`, `.claude/settings.json`, `.claude/hooks/`) ; les conventions non
@@ -234,7 +236,9 @@ Précisions d'application (Claude Code ; relues en revue croisée) :
   principale fait les écritures protégées, regroupées au maximum, et me dit « autorisation demandée » une seule fois
   par série. » Fichiers protégés (précision de Claude Code) : ceux que couvrent les règles `ask` de
   `.claude/settings.json` (`CLAUDE.md`, `AGENTS.md`, `.claude/agents/**`, `.claude/settings*.json`, `.claude/hooks/**`,
-  `.claude/skills/**`) ; ces règles ne s'appliquent qu'aux sessions ouvertes après leur écriture.
+  `.claude/skills/**`, et `docs/skills/**` depuis D-REPRISE-016) ; ces règles ne s'appliquent qu'aux sessions
+  ouvertes après leur écriture. Le briefing n'est pas protégé (décision du founder, D-REPRISE-016) : il change à
+  chaque sous-étape ; ses modifications restent soumises aux trois GO.
 - **Fichiers** : diffs et sorties volumineuses transmis par chemin et sha1 (relecteurs : skill `revue-croisee` §3 ;
   arbitre : §c).
 - **Relais (D-REPRISE-014, précision de Claude Code)** : un relais, et toute pièce durable, est écrit dans un chemin

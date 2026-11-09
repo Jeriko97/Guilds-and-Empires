@@ -136,6 +136,8 @@ D-ETAPE19-019 et le briefing : la sous-étape suivante est le lot de retouches (
 7. **D-REPRISE-015 (2026-11-08, F4, founder)** : règles `ask` du projet, autorisations locales nettoyées, identifiants
    Google locaux révoqués. Pour L1 et tout lot qui touche des fichiers protégés, l'exécutant prépare les contenus dans
    des fichiers de travail et la session principale fait les écritures protégées (« autorisation demandée » une fois
-   par série) ; les règles `ask` ne s'appliquent que dans les sessions ouvertes après leur écriture. Consigne d'intérim de
-   l'arbitre : aucune commande `firebase` hors `firebase emulators:*` avec `--project demo-guilds-empires` jusqu'à la
-   réponse du founder à la question F4 sur des règles supplémentaires (journal, D-REPRISE-015).
+   par série) ; les règles `ask` ne s'appliquent que dans les sessions ouvertes après leur écriture. La consigne d'intérim
+   de l'arbitre (D-REPRISE-015) est levée : D-REPRISE-016 (2026-11-09, F4, founder) déconnecte l'outil Firebase du
+   poste ; toute commande `firebase` hors émulateur `demo-guilds-empires` exige une reconnexion, partie de l'action F3
+   qu'elle sert. Règles `ask` ciblées ajoutées (`git push -d`/`--delete`/`--mirror`/`--prune`, identifiant de
+   production collé) ; `docs/skills/**` protégé ; briefing non protégé (trois GO).

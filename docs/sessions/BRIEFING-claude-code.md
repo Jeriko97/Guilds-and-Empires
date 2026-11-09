@@ -171,6 +171,9 @@ local (`127.0.0.1:18999`), garde tout ou rien avant tout appel.
 ### Déploiement des CF
 
 Uniquement sur autorisation explicite du founder pour ce déploiement (garde-fou auto mode).
+L'outil Firebase est déconnecté du poste par défaut (D-REPRISE-016) : reconnecter d'abord (`firebase login`, fenêtre
+de navigateur), ce qui fait partie de l'action F3 du déploiement ; se déconnecter (`firebase logout`) une fois l'action
+faite.
 ```bash
 FUNCTIONS_DISCOVERY_TIMEOUT=60 firebase deploy --only functions --project guildsandempires-ca543
 ```
@@ -993,6 +996,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     déploiement, jamais installé avant) ;
   - lot de retouches (L1 puis L2, consignes du founder du 2026-11-08) — **sous-étape suivante**, avant 19.5d : entrée
     `docs/sessions/relais-195-lot.md` (précision de Claude Code) ;
+  - garde-fous de poste (D-REPRISE-015, D-REPRISE-016, journal) : règles `ask` du projet (actives dans les sessions
+    ouvertes après leur écriture), écritures protégées faites par la session principale, identifiants Google locaux
+    révoqués et outil Firebase déconnecté (reconnexion = partie de l'action F3 qu'elle sert) ;
   - 19.5d — après le lot de retouches — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
     l'arbitre, non soumise ; elle part seulement dans la demande regroupée ;
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
