@@ -141,3 +141,59 @@ D-ETAPE19-019 et le briefing : la sous-étape suivante est le lot de retouches (
    poste ; toute commande `firebase` hors émulateur `demo-guilds-empires` exige une reconnexion, partie de l'action F3
    qu'elle sert. Règles `ask` ciblées ajoutées (`git push -d`/`--delete`/`--mirror`/`--prune`, identifiant de
    production collé) ; `docs/skills/**` protégé ; briefing non protégé (trois GO).
+8. **Relais de L1 interrompue (2026-11-10, contexte de la session à 89 %, décision du founder)** — à lire en premier.
+   Consignes du founder (2026-11-10), citées telles quelles : « STOP sur L1, priorité au relais : le contexte est à
+   89 %. » ; « 1. **N'écris plus aucun fichier protégé modification par modification.** Le développement du hook se
+   fait dans un dossier de travail non protégé (par exemple `.claude/hooks-dev/`, ignoré par git), testé là. Quand
+   c'est fini et revu : une seule copie vers `.claude/hooks/`, donc une seule « autorisation demandée ». Même règle
+   pour CLAUDE.md, les agents et les réglages. Inscris-le dans le relais. » ; « 2. **Simplifie L1 (consigne
+   founder).** Le contrôle du journal de Codex doit être **conservateur et simple**, pas un analyseur de syntaxe
+   shell : toute commande du journal qui contient un chemin absolu hors de la copie de revue, `..`, ou le nom du
+   dossier de l'exécutant ou des relais → relecture écartée et refaite par un Codex neuf. Les faux positifs sont
+   acceptés. Si l'arbitre juge que c'est insuffisant, il me le dit en F4. Sinon, on n'ajoute plus de cas de
+   syntaxe. » ; « 4. **Crée toi-même la session principale suivante** (D-REPRISE-013), démarrée depuis le relais.
+   Elle reprend L1 simplifié, puis enchaîne comme prévu jusqu'à la demande regroupée. Ne me demande rien
+   entre-temps, sauf F1 à F4 et une « autorisation demandée » par série d'écritures protégées. » La consigne 3
+   (« **Relais maintenant**, avant toute autre action […]. Commit de doc (trois GO), push. ») est appliquée par le
+   commit de ce relais.
+   **État exact (précision de Claude Code).** Rien de L1 n'est commité : l'arbre est revenu à `9010f19`
+   (D-REPRISE-016). Tout le travail en cours est sauvegardé, hors index, dans `.claude/hooks-dev/L1/` (ignoré par
+   git) : `L1-wip-contre-HEAD.patch` (sha1 `06fde571820fa0eeff8691b3e1bff6969d934dc8`, diff complet contre `9010f19`),
+   `arbre/` (les 10 fichiers dans leur dernier état : `.claude/hooks/arbitre-lecture.js` et son test,
+   `.claude/hooks/controle-journal-codex.js` et son test, `.claude/skills/revue-croisee/SKILL.md`, `CLAUDE.md`, journal,
+   dette, briefing, relais), `pieces-executant/` (pièces de travail à remettre dans `.claude/instantanes/executant/` avant toute revue, où le
+   filtre de lecture et le déplacement hors revue les couvrent : ticket L1 v16, précisions de l'orchestrateur, textes bruts des
+   arbitrages du 2026-11-08 et du 2026-11-09 — journal Codex, Q1-Q5, code 2, rejeu, convergence —, verdicts bruts
+   des passes de revue du diff, rapports des passes d'exécution 1 à 6, relevé des versions de Codex).
+   Préparé (non commité, non revu au GO) : filtre de lecture commun auditeur-arbitre (`arbitre-lecture.js`, 408/408) ;
+   preuves que les relecteurs ne lisent pas le dossier de l'exécutant (fichiers témoins : auditeur et arbitre, 22
+   appels, 17 refus, aucun témoin atteint ; Codex : lecture du témoin signalée par le contrôle du journal, code 1) ; skill `revue-croisee` (revue en worktree dédié, dossier de l'exécutant déplacé, fichier commun avec la
+   phrase `--liste`, contrôle du journal, verrou de version `0.167.0-alpha.3.2`, règle de convergence) ; `CLAUDE.md`
+   §c, §d, §h ; journal D-REPRISE-017 (consignes et décision F4 du founder, arbitrages) ; TD-031, TD-032, TD-039.
+   Arbitrages encore valables (arbitre, 2026-11-08 et 2026-11-09, textes bruts dans `pieces-executant/`, à inscrire au
+   journal D-REPRISE-017) : revue en worktree dédié et dossier de l'exécutant déplacé ; critère de bloquant des revues
+   du contrôle (une commande acceptée qui lit hors de la copie) ; verrou de version de Codex (`0.167.0-alpha.3.2`) et
+   `sandbox: read-only` dans le préambule, code 2 → arbitre saisi ; aucune détection d'en-tête inconnu par la forme ;
+   règle de convergence (un code 1 n'est jamais traité en modifiant le contrôle sans l'arbitre).
+   Abandonné par la consigne 2 : la grammaire fermée du contrôle du journal (`controle-journal-codex.js`, 312 cas,
+   passes de revue 1 à 5 du diff : chaque passe trouvait une nouvelle forme d'évasion syntaxique).
+   **Reste à faire (prochaine session, L1 simplifiée)** : (1) réécrire `controle-journal-codex.js` selon la consigne
+   2 (recherche de texte dans chaque commande `exec` : chemin absolu hors de la copie, `..`, `.revue-croisee`,
+   `.claude/instantanes/executant`, `_hors-revue`, dossier des relais ; garder le verrou de version, `sandbox:
+   read-only` et le code 2 de l'échec fermé), dans `.claude/hooks-dev/`, avec ses tests ; soumettre la consigne 2 à
+   l'arbitre (suffisante, ou F4) ; (2) reprendre de `arbre/` les autres fichiers, retirer du skill, de `CLAUDE.md`,
+   du journal et de TD-039 ce qui décrit la grammaire fermée et la phrase `--liste`, y écrire la règle simple et la
+   consigne 1 ; (3) une seule série d'écritures protégées (« autorisation demandée ») ; tests en place ; revue du diff
+   complet en worktree (Codex et auditeur), audit de clôture, commit, push ; (4) puis la suite fixée par le founder
+   (message du 2026-11-09, cité tel quel) : « **Puis enchaîne sans t'arrêter** : 1. L1 et le reste du lot de
+   retouches (contenus préparés par un exécutant neuf, écritures protégées par toi, regroupées) ; 2. 19.5d (lot de
+   textes F2 et projet de skill « interface mobile ») ; 3. la correction de TD-037 (zone sûre), qui doit être faite
+   avant le déploiement ; 4. **une seule demande regroupée** : F1 orientation, F2 textes, mise en page et projet de
+   skill, F3 reconnexion, vérification de la condition (b), activation de l'alerte et déploiement. » ; « Tu ne
+   t'arrêtes que pour F1 à F4 ou « autorisation demandée ». Le reste, tu le traites avec l'arbitre. » Lecture de
+   Claude Code, à soumettre à l'arbitre au début de la session suivante : cet ordre place la correction de TD-037
+   avant la demande regroupée, alors que D-ETAPE19-018 la plaçait après la réponse du founder ; la décision du
+   founder du 2026-11-09 prévaut, au doute vers le founder (D-REPRISE-007).
+   Coût de coordination de L1 jusqu'ici (comptes seulement) : ticket v1 → v16 ; revue du diff : 6 passes de
+   l'auditeur, 9 passes de Codex dont 4 écartées par le contrôle du journal (1 code 2, 3 code 1) ; 6 passes
+   d'exécution ; 8 arbitrages ; 3 décisions F4 du founder (D-REPRISE-015, D-REPRISE-016, consignes du 2026-11-10).
