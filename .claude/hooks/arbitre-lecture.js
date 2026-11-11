@@ -48,6 +48,17 @@
 // - R2, racine des revues du projet : une racine de Glob ou Grep égale à `REVUES_PROJET` ou à l'un de ses parents est
 //   refusée (comparaison normalisée et sur le chemin réel) ; `REVUES_PROJET` n'est pas un dossier interdit : R1 ne
 //   s'y applique pas, Read reste admis dans les worktrees de revue.
+//
+// Dossiers d'état de Claude Code et de Codex — arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7 (option 3) :
+// `C:/Users/romai/.claude` et `C:/Users/romai/.codex`, en entier, sont des dossiers interdits (R1, R2, R5). Ils
+// remplacent `C:/Users/romai/.claude/projects` et `C:/Users/romai/.codex/sessions` et couvrent les six emplacements de
+// P7 (`todos`, `file-history`, `history.jsonl`, `plans` sous `.claude` ; `archived_sessions`, `log` sous `.codex`),
+// qu'ils existent ou non. Constantes absolues seulement, aucun nom ajouté à `NOMS_INTERDITS` ni à
+// `NOMS_VISES_PAR_JOKER` : le `.claude` du dépôt (`hooks`, `agents`, `skills`, `instantanes/cloture`,
+// `instantanes/revue`) reste lisible et admis comme racine de Glob et de Grep. Examen de structure de l'orchestrateur
+// (2026-11-11, aucun contenu lu) : `todos`, `history.jsonl`, `plans`, `archived_sessions`, `log` absents ;
+// `file-history` : 1629 fichiers, 2026-05-13 → 2026-11-11 ; entrées constatées désormais couvertes, dont `sessions`,
+// `shell-snapshots`, `uploads`, `backups` sous `.claude`, les bases `sqlite` et `.tmp` sous `.codex` (détail : TD-031).
 
 const fs = require("fs");
 
@@ -61,8 +72,9 @@ const DOSSIER_SORTIES_RELECTEURS = "G:/Unity/GuildsAndEmpires/.revue-croisee";
 const DOSSIER_EXECUTANT = "G:/Unity/GuildsAndEmpires/.claude/instantanes/executant";
 const DOSSIER_HORS_REVUE = "G:/Unity/_hors-revue";
 const DOSSIER_NOTES_SESSIONS = "C:/Users/romai/AppData/Roaming/Claude/side-session-notes";
-const DOSSIER_TRANSCRIPTIONS_CODEX = "C:/Users/romai/.codex/sessions";
-const DOSSIER_TRANSCRIPTIONS_CLAUDE = "C:/Users/romai/.claude/projects";
+// Dossiers d'état de Codex et de Claude Code, en entier (arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7).
+const DOSSIER_ETAT_CODEX = "C:/Users/romai/.codex";
+const DOSSIER_ETAT_CLAUDE = "C:/Users/romai/.claude";
 const DOSSIER_TEMPORAIRE_SESSIONS = "C:/Users/romai/AppData/Local/Temp/claude";
 // Dossier de travail des fichiers protégés (consigne 1 du founder du 2026-11-10, D-REPRISE-017), partie du dossier de
 // l'exécutant élargi (ticket L1 v18, §0 et §2 A.1) : constante absolue, jamais déduite de l'emplacement du script.
@@ -72,8 +84,8 @@ const DOSSIERS_INTERDITS = [
   DOSSIER_EXECUTANT,
   DOSSIER_HORS_REVUE,
   DOSSIER_NOTES_SESSIONS,
-  DOSSIER_TRANSCRIPTIONS_CODEX,
-  DOSSIER_TRANSCRIPTIONS_CLAUDE,
+  DOSSIER_ETAT_CODEX,
+  DOSSIER_ETAT_CLAUDE,
   DOSSIER_TEMPORAIRE_SESSIONS,
   DOSSIER_TRAVAIL_PROTEGES,
 ];
@@ -108,7 +120,8 @@ function ecrireRefus(raison) {
     "Interdits : sorties des relecteurs (.revue-croisee), dossier de l'exécutant (dont .claude/hooks-dev), " +
     "dossier déplacé hors revue, dossier des avis anciens (archives/avis-relecteurs, à toute profondeur ; " +
     "décision du founder du 2026-11-11), " +
-    "transcriptions et dossiers temporaires des sessions. Glob et Grep : donner un `path` précis — sous-dossier " +
+    "transcriptions et dossiers temporaires des sessions, dossiers d'état de Claude Code et de Codex " +
+    "(`C:/Users/romai/.claude`, `C:/Users/romai/.codex`). Glob et Grep : donner un `path` précis — sous-dossier " +
     "du dépôt ou du worktree de revue (docs, Assets, firebase, .claude/skills, .claude/hooks, .claude/agents, " +
     ".claude/instantanes/revue, .claude/instantanes/cloture…) —, jamais la racine du dépôt principal, ni la racine " +
     "d'un arbre qui contient le dossier des avis anciens (worktree de revue, instantané), ni " +

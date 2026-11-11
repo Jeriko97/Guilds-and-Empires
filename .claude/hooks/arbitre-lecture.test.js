@@ -6,6 +6,8 @@
 // arbitrage de l'arbitre du 2026-11-11, Q1, Q2, B2) qui demandent un dossier existant utilisent un gabarit
 // temporaire créé sous `G:/Unity/_revues/GuildsAndEmpires/` et supprimé en fin de jeu, même en cas d'échec ; gabarit
 // impossible à créer → échec du jeu.
+// Les cas des dossiers d'état de Claude Code et de Codex (arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7,
+// condition (ii)) ne lisent aucun contenu ; le cas « chemin absent » vérifie d'abord que son chemin n'existe pas.
 
 const { spawnSync } = require("child_process");
 const fs = require("fs");
@@ -28,16 +30,17 @@ const DOSSIERS_INTERDITS = [
   "G:/Unity/GuildsAndEmpires/.claude/instantanes/executant",
   "G:/Unity/_hors-revue",
   "C:/Users/romai/AppData/Roaming/Claude/side-session-notes",
-  "C:/Users/romai/.codex/sessions",
-  "C:/Users/romai/.claude/projects",
+  "C:/Users/romai/.codex",
+  "C:/Users/romai/.claude",
   "C:/Users/romai/AppData/Local/Temp/claude",
   "G:/Unity/GuildsAndEmpires/.claude/hooks-dev",
 ];
-// Dossiers parents d'un dossier interdit (R2), en racine de Glob et de Grep.
+// Dossiers parents d'un dossier interdit (R2), en racine de Glob et de Grep. `C:/Users/romai/.codex` et
+// `C:/Users/romai/.claude` n'y sont plus : dossiers interdits depuis L2b (R1, boucle DOSSIERS_INTERDITS).
 const PARENTS = [
   RACINE, ".", "G:/Unity/GuildsAndEmpires/", ".claude", ".claude/instantanes", "G:/Unity", "G:/", "g:\\",
-  "C:/", "C:/Users", "C:/Users/romai", "C:/Users/romai/AppData", "C:/Users/romai/.codex", "C:/Users/romai/.claude",
-  "C:/Users/romai/AppData/Local", "C:/Users/romai/AppData/Local/Temp", "C:/Users/romai/AppData/Roaming",
+  "C:/", "C:/Users", "C:/Users/romai", "C:/Users/romai/AppData", "C:/Users/romai/AppData/Local",
+  "C:/Users/romai/AppData/Local/Temp", "C:/Users/romai/AppData/Roaming",
   "C:/Users/romai/AppData/Roaming/Claude", "G:\\UNITY\\GUILDSANDEMPIRES\\.CLAUDE",
 ];
 // Jonctions présentes par défaut sous Windows 10 : [chemin lu, jonction dont dépend le cas].
@@ -45,6 +48,16 @@ const JONCTIONS = [
   ["C:\\Documents and Settings\\romai\\.claude\\projects\\x", "C:\\Documents and Settings"],
   ["C:\\Users\\romai\\Local Settings\\Temp\\claude\\x", "C:\\Users\\romai\\Local Settings"],
   ["C:\\Users\\romai\\Application Data\\Claude\\side-session-notes\\x", "C:\\Users\\romai\\Application Data"],
+];
+
+// Les six chemins de P7 (arbitrage de l'arbitre du 2026-11-11, L2), couverts par les deux dossiers d'état.
+const P7_CHEMINS = [
+  "C:/Users/romai/.claude/todos", "C:/Users/romai/.claude/file-history", "C:/Users/romai/.claude/history.jsonl",
+  "C:/Users/romai/.claude/plans", "C:/Users/romai/.codex/archived_sessions", "C:/Users/romai/.codex/log",
+];
+// Chemins absents du disque (vérifié avant le cas) : le refus ne dépend pas de l'existence.
+const CHEMINS_ABSENTS = [
+  `C:/Users/romai/.claude/absent-filtre-${process.pid}/x.jsonl`, `C:/Users/romai/.codex/absent-filtre-${process.pid}`,
 ];
 
 // [code attendu, agent_type, cwd, outil, entrée] — 0 = autorisé, 2 = refusé.
@@ -257,6 +270,50 @@ for (const A of RELECTEURS) {
     ajouter(2, A, RACINE, "Glob", { pattern: "**/*.md", path: racine });
     ajouter(2, A, RACINE, "Grep", { pattern: "x", path: racine });
   }
+
+  // Dossiers d'état de Claude Code et de Codex (arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7, condition
+  // (ii)). Read refusé sur chacune des deux racines (aussi dans la boucle DOSSIERS_INTERDITS ci-dessus).
+  for (const racine of ["C:/Users/romai/.claude", "C:/Users/romai/.codex", "C:\\Users\\romai\\.claude\\",
+    "c:/users/ROMAI/.CODEX"]) {
+    ajouter(2, A, RACINE, "Read", { file_path: racine });
+  }
+  // Read refusé sur les six chemins de P7, qu'ils existent ou non (forme « fichier » `history.jsonl` comprise).
+  for (const chemin of P7_CHEMINS) {
+    ajouter(2, A, RACINE, "Read", { file_path: chemin });
+    ajouter(2, A, RACINE, "Read", { file_path: chemin.replace(/\//g, "\\") });
+  }
+  for (const chemin of ["C:/Users/romai/.claude/todos/x.json", "C:/Users/romai/.claude/file-history/x/y",
+    "C:/Users/romai/.claude/plans/x.md", "C:/Users/romai/.codex/archived_sessions/x.jsonl",
+    "C:/Users/romai/.codex/log/x.log"]) {
+    ajouter(2, A, RACINE, "Read", { file_path: chemin });
+  }
+  // Anciens chemins (non-régression) et échantillon des entrées constatées.
+  for (const chemin of ["C:/Users/romai/.claude/projects/x", "C:/Users/romai/.codex/sessions/x",
+    "C:/Users/romai/.claude/shell-snapshots/x", "C:/Users/romai/.codex/logs_2.sqlite",
+    "C:/Users/romai/.claude/sessions/x.json", "C:/Users/romai/.claude/uploads/x.jpg",
+    "C:/Users/romai/.claude/backups/x", "C:/Users/romai/.codex/.tmp/x", "C:/Users/romai/.claude/settings.json"]) {
+    ajouter(2, A, RACINE, "Read", { file_path: chemin });
+  }
+  // Glob et Grep refusés : racine dans un dossier d'état, ou parente (R2 ; `C:/Users/romai`, `C:/Users`, `C:/` aussi
+  // dans la liste PARENTS).
+  for (const racine of ["C:/Users/romai/.claude/todos", "C:/Users/romai/.codex/log", "C:/Users/romai/.claude/projects",
+    "C:/Users/romai", "C:/Users", "C:/"]) {
+    ajouter(2, A, RACINE, "Glob", { pattern: "**/*", path: racine });
+    ajouter(2, A, RACINE, "Grep", { pattern: "x", path: racine });
+  }
+  // `cwd` dans un dossier d'état (R5).
+  ajouter(2, A, "C:/Users/romai/.claude", "Read", { file_path: "G:/Unity/GuildsAndEmpires/CLAUDE.md" });
+  ajouter(2, A, "C:/Users/romai/.codex/sessions", "Read", { file_path: "G:/Unity/GuildsAndEmpires/CLAUDE.md" });
+  // Non-régression positive (condition (i)) : le `.claude` du dépôt reste lisible et admis comme racine.
+  ajouter(0, A, RACINE, "Read", { file_path: "G:/Unity/GuildsAndEmpires/.claude/hooks/arbitre-lecture.js" });
+  ajouter(0, A, RACINE, "Read", { file_path: "G:/Unity/GuildsAndEmpires/.claude/agents/auditeur.md" });
+  ajouter(0, A, RACINE, "Read", { file_path: ".claude/skills/revue-croisee/SKILL.md" });
+  for (const racine of ["G:/Unity/GuildsAndEmpires/.claude/hooks", "G:/Unity/GuildsAndEmpires/.claude/agents",
+    "G:/Unity/GuildsAndEmpires/.claude/skills", "G:/Unity/GuildsAndEmpires/.claude/instantanes/cloture",
+    "G:/Unity/GuildsAndEmpires/.claude/instantanes/revue"]) {
+    ajouter(0, A, RACINE, "Glob", { pattern: "**/*", path: racine });
+    ajouter(0, A, RACINE, "Grep", { pattern: "x", path: racine });
+  }
 }
 
 // Cas dont le refus doit venir d'une cause précise (message), gabarit compris : [entrée, expression attendue].
@@ -274,6 +331,13 @@ for (const A of RELECTEURS) {
     /contenant archives\/avis-relecteurs \(dossier des avis anciens, décision du founder du 2026-11-11 ; R4\)/]);
   CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Grep", tool_input: { pattern: "x", path: REVUES_PROJET } },
     /égale à la racine des revues du projet/]);
+  // Dossiers d'état (suite de P7) : cause R1 nommée (forme « fichier » `history.jsonl`, ancien chemin), message (iii).
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Read", tool_input: { file_path: "C:/Users/romai/.claude/history.jsonl" } },
+    /file_path dans un dossier interdit : C:\/Users\/romai\/\.claude \(R1\)/]);
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Read", tool_input: { file_path: "C:/Users/romai/.codex/sessions/x" } },
+    /file_path dans un dossier interdit : C:\/Users\/romai\/\.codex \(R1\)/]);
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Read", tool_input: { file_path: "C:/Users/romai/.codex/logs_2.sqlite" } },
+    /dossiers d'état de Claude Code et de Codex \(`C:\/Users\/romai\/\.claude`, `C:\/Users\/romai\/\.codex`\)/]);
 }
 
 // Lecteur absent (échec fermé attendu) : premier lecteur de Z à H qui n'existe pas sur ce poste.
@@ -369,6 +433,28 @@ for (const [chemin, jonction] of JONCTIONS) {
     }
   }
 }
+
+// Dossiers d'état : chemins absents du disque, refusés par R1 (le refus ne dépend pas de l'existence) ; un chemin
+// présent sur le disque fait échouer le cas (il ne prouverait plus rien).
+for (const A of RELECTEURS) {
+  for (const chemin of CHEMINS_ABSENTS) {
+    if (fs.existsSync(chemin)) {
+      echecs += 1;
+      console.log(`ÉCHEC : chemin censé absent présent sur le disque : ${chemin}`);
+      continue;
+    }
+    const sortie = lancer(JSON.stringify({ agent_type: A, cwd: RACINE, tool_name: "Read", tool_input: { file_path: chemin } }));
+    if (sortie.status === 2 && /file_path dans un dossier interdit : C:\/Users\/romai\/\.(claude|codex) \(R1\)/.test(sortie.stderr)) {
+      conformes += 1;
+    } else {
+      echecs += 1;
+      console.log(`ÉCHEC (attendu 2, R1, chemin absent ; obtenu ${sortie.status}) : ${A} Read ${chemin} — ${sortie.stderr.trim()}`);
+    }
+  }
+}
+const p7Absents = P7_CHEMINS.filter((chemin) => !fs.existsSync(chemin));
+console.log(`Chemins de P7 absents du disque pendant ce lancement : ${p7Absents.length}/${P7_CHEMINS.length}` +
+  (p7Absents.length ? ` (${p7Absents.join(", ")})` : ""));
 
 // Entrée illisible : refusée (on ne sait pas qui appelle).
 if (lancer("illisible").status !== 2) { echecs += 1; console.log("ÉCHEC : entrée illisible"); } else { conformes += 1; }

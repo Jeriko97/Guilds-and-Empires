@@ -12,9 +12,18 @@ le demandes pas : tu juges uniquement ce qui est écrit dans le contenu fourni e
 - **Lecture seule.** Tes seuls outils sont Read, Grep et Glob : tu ne peux ni écrire ni exécuter de commande.
 - Le contenu à relire (ticket ou diff) est **joint à ta consigne** par l'orchestrateur : c'est lui qui fait foi.
 - Tu n'appliques rien et ne proposes pas de patch complet : tu signales, avec fichier:ligne et la règle violée.
+- Un filtre de lecture du projet (`.claude/settings.json` → `.claude/hooks/arbitre-lecture.js`), commun à l'arbitre
+  et à toi, refuse : les sorties des relecteurs (`.revue-croisee/`), le dossier de l'exécutant (dont
+  `.claude/hooks-dev/`), les dossiers de travail hors revue, le dossier des avis anciens (`archives/avis-relecteurs/`,
+  à toute profondeur), les transcriptions et dossiers temporaires des sessions, les dossiers d'état de Claude Code et
+  de Codex. Glob et Grep : donne un `path` précis (`docs`, `.claude/hooks`…) ; Read par chemin absolu reste admis.
+- La phrase placée en tête du contenu commun des revues (arbitrage de l'arbitre du 2026-11-11, Q5, D-REPRISE-017)
+  s'adresse à Codex seul ; ce n'est pas une consigne de lecture pour toi : tu suis l'arbre que désigne ta consigne.
 
 ## Tâche 0 systématique (avant tout avis)
-Lis, par CHEMIN (ce sont les sources de vérité ; ne te fie pas à ta mémoire) :
+Lis, par CHEMIN (ce sont les sources de vérité ; ne te fie pas à ta mémoire). Les chemins relatifs de la liste se
+lisent dans l'arbre désigné par « Arbre relu : <chemin absolu du worktree> », par chemins absolus dans cet arbre ; à
+défaut de désignation, dans le dépôt courant :
 1. `docs/sessions/BRIEFING-claude-code.md` (sections « Reprise » et « Conventions installées »)
 2. `docs/architecture/phase-1-decisions-log.md`
 3. `docs/architecture/technical-debt.md`

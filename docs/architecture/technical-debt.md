@@ -982,7 +982,8 @@ Prochain ticket qui crée une Cloud Function.
 
 **Identifié :** 2026-11-03 (mise en place de l'arbitre stratégique, D-REPRISE-007 / D-REPRISE-008 ; décision du founder)
 **Criticité actuelle :** MOYENNE (indépendance de l'audit de clôture)
-**Composant :** `.claude/agents/arbitre-strategique.md`, `.claude/settings.json`, `.claude/hooks/arbitre-lecture.js`
+**Composant :** `.claude/agents/arbitre-strategique.md`, `.claude/agents/auditeur.md`, `.claude/settings.json`,
+`.claude/hooks/arbitre-lecture.js`
 
 **Description :**
 Constats du 2026-11-03 : un hook déclaré dans le frontmatter d'un agent ne s'est pas exécuté ; un hook déclaré dans
@@ -1007,7 +1008,8 @@ worktree dédié hors du dépôt (skill `revue-croisee` §1), le filtre restant 
   serait silencieusement incomplet) : `G:/Unity/GuildsAndEmpires/.revue-croisee`,
   `G:/Unity/GuildsAndEmpires/.claude/instantanes/executant`, `G:/Unity/_hors-revue`,
   `C:/Users/romai/AppData/Roaming/Claude/side-session-notes`, `C:/Users/romai/.codex/sessions`,
-  `C:/Users/romai/.claude/projects`, `C:/Users/romai/AppData/Local/Temp/claude`,
+  `C:/Users/romai/.claude/projects` (ces deux constantes remplacées en L2b par `C:/Users/romai/.codex` et
+  `C:/Users/romai/.claude`, ci-dessous), `C:/Users/romai/AppData/Local/Temp/claude`,
   `G:/Unity/GuildsAndEmpires/.claude/hooks-dev` (dossier de travail des fichiers protégés, consigne 1 du founder du
   2026-11-10 ; partie du dossier de l'exécutant élargi, déplacé avec lui pendant chaque passe ; ajout de L1 simplifiée,
   précision de Claude Code, rubrique « garde-fous resserrés » du résumé d'arbitrages de l'étape 19) ; plus les noms
@@ -1042,11 +1044,13 @@ worktree dédié hors du dépôt (skill `revue-croisee` §1), le filtre restant 
 - **Limite** : la preuve « ne peut pas lire » couvre les lectures par outil, pas ce que la plateforme injecte d'office
   dans le contexte de chaque sous-agent (l'index de la mémoire automatique `MEMORY.md`) ; rappel : la mémoire ne
   contient ni verdict ni raisonnement d'exécutant.
-- **Dépendance** : seule l'option `--ephemeral` du skill empêche Codex d'écrire ses transcriptions de revue sous
-  `C:/Users/romai/.codex/` ; dossier `sessions` désormais interdit ; `archived_sessions` à examiner en L2. Examen de
-  L2 étendu (revue du diff de L1, passe 4, remarque non bloquante de l'auditeur) aux autres emplacements des sessions
-  encore lisibles par l'auditeur et l'arbitre : sous `C:/Users/romai/.claude/`, `todos`, `file-history`,
-  `history.jsonl` et les plans éventuels ; sous `C:/Users/romai/.codex/`, `archived_sessions` et `log`.
+- **Dépendance `--ephemeral`** (mise à jour L2b, arbitrage de l'arbitre du 2026-11-11, suite de P7, condition (iii)) :
+  seule l'option `--ephemeral` du skill empêche Codex d'écrire ses transcriptions de revue sous
+  `C:/Users/romai/.codex/` ; la dépendance subsiste pour la non-écriture, plus pour la lisibilité : depuis L2b,
+  `C:/Users/romai/.codex` en entier est un dossier interdit du filtre, quoi que Codex y écrive. Texte d'avant L2b :
+  dossier `sessions` interdit, `archived_sessions` et les autres emplacements des sessions (`todos`, `file-history`,
+  `history.jsonl`, plans sous `C:/Users/romai/.claude/` ; `archived_sessions`, `log` sous `C:/Users/romai/.codex/`)
+  à examiner en L2 (revue du diff de L1, passe 4, remarque non bloquante de l'auditeur) : examen fait, ci-dessous.
 - **Hypothèse** : aucune jonction ni aucun lien sous les racines sûres (`docs`, `Assets`…) ; couverte pour le
   worktree par la vérification `120000` avant chaque passe Codex (skill §1), qui reste due (arbitrage de l'arbitre du
   2026-11-08 sur le contrôle du journal de Codex, point 3, maintenu par l'arbitrage du 2026-11-11). **Risque résiduel du dépôt
@@ -1058,6 +1062,55 @@ worktree dédié hors du dépôt (skill `revue-croisee` §1), le filtre restant 
 - `.claude/hooks/controle-journal-codex.js` (contrôle du journal de Codex, TD-039) est un **script de contrôle, pas un
   hook** ; rangé dans `.claude/hooks/` parce que `.gitignore` n'en versionne pas d'autre ; ne jamais le brancher dans
   `.claude/settings.json`.
+
+**Mise à jour L2a et L2b (2026-11-11, D-REPRISE-018, D-REPRISE-020)** — filtre nommé dans les deux corps d'agents.
+- **Constantes du filtre** (propres à ce poste et au compte Windows `romai`, à refaire sur tout nouveau poste ;
+  arbitrage de l'arbitre du 2026-11-11 sur L2a, Q1-Q4, remarque 6) : dossiers interdits
+  `G:/Unity/GuildsAndEmpires/.revue-croisee`, `G:/Unity/GuildsAndEmpires/.claude/instantanes/executant`,
+  `G:/Unity/_hors-revue`, `C:/Users/romai/AppData/Roaming/Claude/side-session-notes`, `C:/Users/romai/.codex`,
+  `C:/Users/romai/.claude`, `C:/Users/romai/AppData/Local/Temp/claude`, `G:/Unity/GuildsAndEmpires/.claude/hooks-dev` ;
+  racine du dépôt principal `G:/Unity/GuildsAndEmpires` ; racine des revues du projet `REVUES_PROJET` =
+  `G:/Unity/_revues/GuildsAndEmpires` (pas un dossier interdit) ; noms interdits à toute profondeur `.revue-croisee`,
+  `.claude/instantanes/executant`, `archives/avis-relecteurs` ; noms qu'un segment à jokers ne doit pas pouvoir
+  désigner `.revue-croisee`, `instantanes`, `executant`, `archives`, `avis-relecteurs`.
+- **Dossier des avis anciens** (L2a ; décision du founder du 2026-11-11, option 3 ; arbitrage de l'arbitre du
+  2026-11-11, Q1, Q2, B2) : nouveau nom interdit `archives/avis-relecteurs`, commun aux deux agents, refusé à toute
+  profondeur (R4, forme brute et chemin réel) ; **R2 étendue par un contrôle d'existence** : une racine de Glob ou de
+  Grep est refusée si « racine + reste d'un nom interdit » existe sur le disque (tous les noms de la liste ;
+  `ENOENT` ou `ENOTDIR` = absent ; toute autre erreur = refus, échec fermé) ; R2 refuse aussi `REVUES_PROJET` et ses
+  parents. **Racines admises mises à jour** : la racine de tout arbre qui contient le dossier des avis anciens
+  (worktree de revue, dépôt principal, instantané) et son dossier `archives/` sont refusés pour Glob et Grep ; on
+  cherche par un sous-dossier (`docs`, `.claude/hooks`…) ; Read par chemin absolu reste admis dans les worktrees.
+- **Codex et le dossier des avis anciens** (remarque 5 de l'arbitrage Q1-Q4) : Codex, sans filtre, peut lire le
+  dossier des avis anciens dans le worktree de revue ; aucune règle ne l'interdit (la décision du founder vise
+  l'arbitre). Constat, sans mesure.
+- **`REVUES_PROJET`** (arbitrage B2, condition 6) : constante propre au poste, qui dépend de l'emplacement des
+  worktrees fixé par le skill `revue-croisee` ; un worktree de revue créé ailleurs échapperait au refus de sa racine
+  grand-parente (sa propre racine reste refusée par le contrôle d'existence). Constat, sans mesure.
+- **Dossiers d'état de Claude Code et de Codex** (L2b ; arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7,
+  option 3) : `C:/Users/romai/.claude` et `C:/Users/romai/.codex`, en entier, dossiers interdits (R1, R2, R5) ; ils
+  remplacent `C:/Users/romai/.claude/projects` et `C:/Users/romai/.codex/sessions` et absorbent les six emplacements
+  de P7 (`todos`, `file-history`, `history.jsonl`, plans, sous `.claude` ; `archived_sessions`, `log`, sous
+  `.codex`), qu'ils existent ou non ; constantes absolues seulement, aucun nom ajouté aux noms interdits : le
+  `.claude` du dépôt reste lisible et admis comme racine de Glob et de Grep (tests de la condition (ii)).
+  Qualification : resserrement d'agent, règle (d) de D-REPRISE-010, rubrique « garde-fous resserrés » du résumé
+  d'arbitrages de l'étape 19 (renvoi à P7 et à cet arbitrage).
+- **Constat de l'examen P7** (examen de structure de l'orchestrateur, 2026-11-11, aucun contenu lu) :
+  `C:/Users/romai/.claude/todos`, `history.jsonl`, `plans` : absents ; `C:/Users/romai/.codex/archived_sessions`,
+  `log` : absents ; `C:/Users/romai/.claude/file-history` : dossier, 1629 fichiers, 2026-05-13 → 2026-11-11. Autres
+  entrées constatées, **désormais couvertes** : sous `.claude/`, `sessions` (12 fichiers, 6 .json, 6 .key,
+  2026-11-08 → 2026-11-11), `shell-snapshots` (26 .sh, 2026-10-22 → 2026-11-11), `uploads` (21 : 20 .jpg, 1 .xlsx,
+  2026-10-26 → 2026-11-09), `backups` (5, 2026-11-11), `session-env` (vide), `cache` (3 .json), `telemetry`
+  (4 .json), `plugins` (2 .json), `settings.json` ; sous `.codex/`, `logs_2.sqlite` (+ -shm, -wal), `memories`
+  (vide), `memories_1.sqlite`, `session_index.jsonl`, `thread_history_1.sqlite`, `state_5.sqlite`, `queue_1.sqlite`,
+  `goals_1.sqlite`, `.tmp` (4264 fichiers), `tmp`, `sqlite`, `auth.json`, `config.toml`, autres fichiers d'état.
+  Ces dossiers contiennent aussi autre chose que des données de sessions (réglages, `auth.json`, `config.toml`,
+  `plugins`, `cache`, `telemetry`) : interdits quand même, par prudence (arbitrage de l'arbitre du 2026-11-11 sur L2,
+  remarque 7 sur P7).
+- **Emplacements non examinés** (sans constante : P7 exige un examen avant tout ajout ; liste « processus à revoir »
+  du briefing) : `C:/Users/romai/AppData/Roaming/Claude/` hors `side-session-notes` (remarque 3 de l'arbitrage L2b,
+  suite de P7) ; `C:/Users/romai/.claude.json`, fichier voisin de la racine `C:/Users/romai/.claude`, que la
+  comparaison par segments ne couvre pas (88 350 octets, modifié le 2026-11-11, contenu non lu).
 
 **Trigger de résolution :**
 Une permission par agent appliquée par la plateforme, ou toute lecture hors périmètre constatée. Nouveau poste ou
@@ -1109,6 +1162,10 @@ modification de filtre ici, toute modification de filtre ou de skill reste F4, a
   « **un filtre de lecture n'est pas possible pour Codex** (processus hors Claude Code, bac à sable qui ne limite que
   l'écriture) ». Mesure retenue par le founder (option 1) : worktree dédié, dossier de l'exécutant déplacé hors du
   dépôt, contrôle automatique du journal après chaque relecture : voir **TD-039**.
+- **Mode « toujours par fichier » : non retenu (arbitre, 2026-11-11)** — item (f) du lot unique, arbitrage P2
+  (D-REPRISE-018) : le collage intégral d'un contenu court reste la règle (skill `revue-croisee` §3 ;
+  `.claude/agents/auditeur.md`, « joint à ta consigne », inchangé) ; l'indépendance visée est obtenue par le worktree
+  dédié et le filtre commun (L1) ; réouvrable sur signal (deux erreurs de collage).
 
 **Trigger de résolution :**
 Décision du founder (D-REPRISE-013) : lot unique de retouches, item (i) — étendre le filtre de lecture à l'auditeur
@@ -1451,6 +1508,47 @@ le dit en F4. Sinon, on n'ajoute plus de cas de syntaxe. »
     arbitre (fermé, faible probabilité) ; si une ligne plus loin se termine par ` in X:\…` (la commande d'un vrai
     `exec` suivant), le texte accumulé forme une commande composite, cherchée en entier (code 1 possible, relecture
     refaite).
+- **Hypothèse de format de l'étape (1) de l'ordre de lecture** (report (3) de L1 simplifiée ; L2b, D-REPRISE-020) :
+  le journal de Codex double toutes les barres inverses du texte passé à `-Command`, pas seulement celles du chemin
+  de l'interpréteur. C'est une hypothèse. Remarque 4 de l'audit de clôture de L1 simplifiée (arbitre, 2026-11-11),
+  citée telle quelle : « 4. Hypothèse « barres inverses toutes doublées dans le journal » : à inscrire dans TD-039 et
+  comme occurrence supplémentaire du signal skill (« format du journal pris pour acquis à partir d'un seul
+  journal »). » Vérification refaite par l'orchestrateur (2026-11-11, L2b), texte exact
+  (`verif-barres-inverses-v2.md`, sans son titre ; commandes, script et sortie brute) :
+
+  La vérification du 2026-11-11 (verif-barres-inverses.md) ne prouvait rien : le motif `grep -cE '[^\]\[^\]'` ne peut rien trouver (ancre `^` au milieu du motif) et `grep -c '\'` compte toute ligne qui contient une barre inverse.
+
+  Commandes (dépôt principal, Git Bash) :
+  ```
+  ls .revue-croisee/codex-*.log | wc -l   → 190
+  grep -h 'powershell.exe" -Command' .revue-croisee/codex-*.log | grep -o '\-Command .*' > cmds.txt   → 2656 lignes
+  sed -E 's/ in [A-Za-z]:[^ ]*$//' cmds.txt > cmds2.txt   (retire le suffixe « in <dossier courant> », hors du texte de la commande)
+  node barres2.js cmds2.txt
+  ```
+  Script `barres2.js` :
+  ```js
+  // Suites de barres inverses dans les lignes `-Command` des journaux de Codex, classées selon le caractère qui suit.
+  const fs=require('fs');const B=String.fromCharCode(92);
+  const lignes=fs.readFileSync(process.argv[2],'utf8').split('\n').filter(Boolean);
+  const h={};let lignesImpairesHorsGuillemet=0;const ex=[];
+  for(const l of lignes){let i=0,flag=false;while(i<l.length){if(l[i]===B){let j=i;while(j<l.length&&l[j]===B)j++;const n=j-i;const suiv=l[j]===undefined?'fin':(l[j]==='"'?'guillemet':'autre');const k=n+'/'+suiv;h[k]=(h[k]||0)+1;if(n%2===1&&suiv!=='guillemet'){flag=true;if(ex.length<4)ex.push(l.slice(Math.max(0,i-50),i+30));}i=j;}else i++;}
+   if(flag)lignesImpairesHorsGuillemet++;}
+  console.log('lignes :',lignes.length);console.log('suites (longueur/caractère suivant) :',JSON.stringify(h));
+  console.log('lignes avec une suite impaire non suivie d\'un guillemet :',lignesImpairesHorsGuillemet);ex.forEach(e=>console.log('  ex :',JSON.stringify(e)));
+  ```
+  Sortie brute :
+  ```
+  lignes : 2656
+  suites (longueur/caractère suivant) : {"1/guillemet":303,"2/autre":492,"1/autre":18,"4/autre":6}
+  lignes avec une suite impaire non suivie d'un guillemet : 6
+    ex : "acine de l'arbre relu (lettres, chiffres, _ - . / \\, espaces entre guillemets), "
+    ex : "rminé par un point ou une espace, ou absolus en X:\\… ou X:/… à l'intérieur de la"
+    ex : "s $ ni { } ; motif de nom (-Filter, -g) sans / ni \\ ; Get-ChildItem prend -Path,"
+    ex : "-Command .*' | grep -cE '[^\\]\\[^\\]'   → 0"
+  ```
+  Lecture : dans le texte des commandes `-Command`, les barres inverses apparaissent en suites de 2 ou 4 (doublées), sauf 303 suites de 1 placées devant un guillemet (échappement du guillemet) et 18 suites de 1 ailleurs, sur 6 lignes, non expliquées. L'hypothèse « le journal double toutes les barres inverses du texte passé à `-Command` » n'est donc pas confirmée à la lettre : elle reste une hypothèse (remarque 4 de l'audit de clôture de L1 simplifiée). Limites : versions de Codex des journaux présents, recherche par ligne, lignes repérées par `grep`. Aucune modification du script (liste des formes close, arbitrage du 2026-11-11, Q1.3).
+
+  Résultat : l'hypothèse n'est pas confirmée à la lettre ; elle reste une hypothèse. Script inchangé.
 
 **Trigger de résolution :**
 Fixé par le founder, cité tel quel : « une deuxième lecture interdite détectée malgré le contrôle du journal, ou avant

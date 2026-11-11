@@ -144,9 +144,13 @@ C'est l'orchestrateur qui capture le contenu (étape 1) et le **joint** : l'audi
   lectures par chemin relatif s'y résolvent, et en mode diff le dépôt de travail peut différer de l'index relu, d'où
   la seconde phrase de la désignation (pas de limitation générale de la lecture au worktree, arbitrage Q3).
   Le filtre de lecture du projet (`.claude/hooks/arbitre-lecture.js`, commun à l'auditeur et à l'arbitre, TD-031)
-  refuse les sorties des relecteurs, le dossier de l'exécutant, `$HORS_REVUE`, les transcriptions et dossiers
-  temporaires des sessions, et tout Glob ou Grep dont la racine est le dépôt principal ou un de ses parents : son
-  message de refus guide vers un `path` précis (racine du worktree, ou `docs`, `.claude/hooks`…).
+  refuse les sorties des relecteurs, le dossier de l'exécutant, `$HORS_REVUE`, le dossier des avis anciens
+  (`archives/avis-relecteurs/`, à toute profondeur), les transcriptions et dossiers temporaires des sessions, les
+  dossiers d'état de Claude Code et de Codex (`C:/Users/romai/.claude`, `C:/Users/romai/.codex`), et tout Glob ou
+  Grep dont la racine est le dépôt principal ou un de ses parents, la racine des revues du projet
+  (`G:/Unity/_revues/GuildsAndEmpires`, `$REVUES`) ou un de ses parents (arbitrage de l'arbitre du 2026-11-11, B2,
+  D-REPRISE-018), ou la racine d'un arbre qui contient le dossier des avis anciens (worktree de revue compris) : son
+  message de refus guide vers un `path` précis, sous-dossier de cet arbre (`docs`, `.claude/hooks`…).
   **Contenu volumineux** (fichier qu'on ne peut pas lire en un seul `Read` sans découpage) — règle du founder
   (D-REPRISE-011) : « Les diffs et sorties volumineuses sont transmis par fichier, jamais recopiés dans le contexte
   principal » ; conditions de l'arbitrage du 2026-11-03 :
@@ -160,6 +164,11 @@ C'est l'orchestrateur qui capture le contenu (étape 1) et le **joint** : l'audi
     fichier et qu'aucune sortie Codex ni aucun fichier de `.claude/instantanes/executant/` n'a été lu (le filtre les
     refuse ; la transcription le confirme), et le consigne au rapport (TD-032).
   En deçà, le collage intégral reste la règle.
+  **Règle d'invalidation** (item (g) du lot unique, comme pour l'arbitre, §6, « Audit contaminé ») : contrôle de
+  lecture de l'auditeur en échec — lectures qui ne couvrent pas tout le fichier commun transmis par fichier (cas
+  « Contenu volumineux »), ou lecture **aboutie** d'une sortie Codex, du dossier de l'exécutant ou d'un dossier
+  interdit du filtre — → verdict invalidé, relance de l'auditeur dans un contexte neuf. Une tentative refusée par le
+  filtre n'est pas un échec : elle est consignée au rapport.
 - **Codex** : outil Bash, `run_in_background: true` — le même fichier commun passé sur stdin, le worktree comme seul
   répertoire de travail :
   ```bash
@@ -201,9 +210,12 @@ C'est l'orchestrateur qui capture le contenu (étape 1) et le **joint** : l'audi
 
 Attendre les deux notifications. Ne pas lire une sortie avant d'avoir lancé l'autre relecteur.
 
-**Arbitre hors audit de clôture** (arbitrage d'une question, sans worktree) : la saisine rappelle de chercher par
-`path` précis (`docs`, `.claude/hooks`, `.claude/agents`, `.claude/instantanes/cloture`…), le filtre refusant tout Glob
-ou Grep à la racine du dépôt (R2, arbitrage de l'arbitre du 2026-11-08, remarque 4).
+**Arbitre hors audit de clôture** (arbitrage d'une question, sans worktree) : avant l'appel, les mêmes déplacements
+qu'au §1, « Préparer la passe » (dossier de l'exécutant et `.claude/hooks-dev/` vers `$HORS_REVUE/$SOUS_ETAPE/`,
+contrôles `ls -d` compris), sans worktree ; après le verdict, la même remise qu'au §1, « Après la passe », sans
+worktree à retirer (report (1) de L1 simplifiée ; D-REPRISE-017, remarque 2 de l'arbitre). La saisine rappelle de
+chercher par `path` précis (`docs`, `.claude/hooks`, `.claude/agents`, `.claude/instantanes/cloture`…), le filtre
+refusant tout Glob ou Grep à la racine du dépôt (R2, arbitrage de l'arbitre du 2026-11-08, remarque 4).
 
 ## 4. Échec d'un relecteur
 Codex : exit ≠ 0 ou `codex-<mode>.md` vide → une relance. Auditeur sans sortie au format imposé → une relance.
@@ -256,6 +268,10 @@ point) :
   Départ du delta : la version qui a reçu le dernier GO des deux (`go.tree`) dès qu'il en existe un dans la
   sous-étape ; sinon (aucun GO encore, par exemple après la revue diff initiale), la version de la passe
   précédente (`prev.tree`). À son GO des deux : `cp "$OUT/tree" "$OUT/go.tree"`.
+- **Reprise de main après une relance de l'exécutant pour une correction** (audit de clôture de L2a, arbitre,
+  2026-11-11) : avant toute autre action, l'index qui a produit `$OUT/tree` doit redonner `$OUT/tree` (arbre noté
+  avant la relance) — index principal préparé : `git -C "$REPO" write-tree` ; index temporaire des fichiers
+  protégés : `GIT_INDEX_FILE=<index temporaire> git -C "$REPO" write-tree` ; sinon arrêt → arbitre.
 Les verdicts bruts de chaque passe courte figurent dans le rapport de clôture, avec leur arbitrage.
 
 ## 6. Audit de clôture (arbitre) et commit
@@ -265,6 +281,11 @@ git -C "$REPO" write-tree                  # doit être identique à go.tree
 git -C "$REPO" diff --cached --binary --no-textconv > "$OUT/cloture.patch"
 git -C "$REPO" status --porcelain          # sortie brute : pièce de l'audit de clôture (D-REPRISE-014)
 ```
+Index qui touche le dossier des avis anciens (`archives/avis-relecteurs/`) : `cloture.patch` de l'arbitre est pris
+par `git -C "$REPO" diff --cached --binary --no-textconv -- . ':!archives/avis-relecteurs' > "$OUT/cloture.patch"`,
+et chaque fichier exclu est désigné dans sa saisine (chemin, statut, blob, taille ; liste complète
+`git diff --cached --name-only`) selon `CLAUDE.md` §c, qui fait foi (arbitrage de l'arbitre du 2026-11-11, Q3,
+D-REPRISE-018) ; l'auditeur et Codex reçoivent, eux, le diff complet.
 Contrôle `git status --porcelain` — règle du founder (D-REPRISE-014, 2026-11-04), citée telle quelle :
 « Ajoute à l'audit de clôture de l'arbitre et à la vérification avant push un contrôle obligatoire : `git status --porcelain` doit être vide, en dehors des dossiers ignorés. Sinon, NO-GO. »
 Règle unique de l'arbitre (arbitrage du 2026-11-04, D-REPRISE-014 ; `CLAUDE.md` §c), citée telle quelle :
@@ -273,9 +294,10 @@ Règle unique de l'arbitre (arbitrage du 2026-11-04, D-REPRISE-014 ; `CLAUDE.md`
   dans un worktree dédié créé sur `go.tree` (§1, « Préparer la passe » ; retiré après l'audit).
   Pièces obligatoires, collées intégralement : le rapport de la sous-étape (sans `git show --stat`, qui n'existe
   qu'après le commit, et sans ses sections de verdicts bruts et d'arbitrage, `CLAUDE.md` §f point 2), les décisions
-  applicables (ID et texte), les résultats des tests, `cloture.patch` (diff complet de l'index), la sortie brute de
-  `git status --porcelain` (ci-dessus ; pièce absente ou contrôle échoué → NO-GO). **Jamais** les
-  verdicts des autres relecteurs ni la recommandation de Claude Code. Pièce trop longue pour être collée : copiée dans
+  applicables (ID et texte), les résultats des tests, `cloture.patch` (diff complet de l'index, hors dossier des avis
+  anciens quand l'index le touche, ci-dessus), la sortie brute de `git status --porcelain` (ci-dessus ; pièce
+  absente ou contrôle échoué → NO-GO). **Jamais** les verdicts des autres relecteurs ni la recommandation de Claude
+  Code. Pièce trop longue pour être collée : copiée dans
   `.claude/instantanes/cloture/` (non versionné, lisible par l'arbitre ; jamais `.revue-croisee/`, que son filtre
   refuse), dossier vidé avant chaque passe pour qu'aucune pièce d'un audit précédent n'y reste, et désignée dans la
   consigne par son chemin et son sha1. Consigne :
@@ -299,7 +321,9 @@ Règle unique de l'arbitre (arbitrage du 2026-11-04, D-REPRISE-014 ; `CLAUDE.md`
   - avant : `git -C "$REPO" write-tree` identique à l'arbre audité par l'arbitre (= `go.tree`), et
     `git -C "$REPO" diff --cached --name-only` liste FICHIERS et rien d'autre ; `git -C "$REPO" worktree list` ne
     montre aucun worktree sous `$REVUES` ; aucune branche ni référence créée par les passes (`git -C "$REPO"
-    for-each-ref` inchangé) ; dossier de l'exécutant remis ; sinon, pas de commit ;
+    for-each-ref` inchangé) ; dossier de l'exécutant remis ; sinon, pas de commit ; et aucun dossier
+    `gabarit-filtre-*` sous `$REVUES` (`ls -d "$REVUES"/gabarit-filtre-* 2>/dev/null` vide ; sinon le retirer et le
+    dire au rapport ; audit de clôture de L2a, arbitre, 2026-11-11) ;
   - après : `git -C "$REPO" rev-parse HEAD^{tree}` identique à l'arbre audité, et `git -C "$REPO" status --porcelain` :
     sortie vide, à la lettre (D-REPRISE-014, règle unique ci-dessus) ; sinon, pas de push, arbitre saisi ;
   - push seulement s'il est autorisé (`CLAUDE.md` §g) ; puis `git show --stat` dans le rapport final.

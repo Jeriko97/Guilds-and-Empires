@@ -6,8 +6,9 @@ Rejeux futurs (décision du founder du 2026-11-11, option 3 : « Le rejeu du tes
 tout rejeu du test se fait sur un worktree ou un instantané où `docs/sessions/test-reception-arbitre.md` **et**
 `archives/avis-relecteurs/` sont absents, et aucune saisine d'un cas du test (rejeu) ne référence ces chemins.
 
-Ce fichier ne contient aucun avis de relecteur, ni ancien ni récent, et jamais le corps de l'arbitre
-(D-REPRISE-008). La pièce 3 de la saisine (a) est versionnée à part, dans le dossier des avis anciens.
+Ce fichier ne contient aucun texte d'avis de Codex ni de l'auditeur, ni le corps de l'arbitre (D-REPRISE-008) ;
+seulement des mentions d'une ligne et les sorties de l'arbitre (arbitrage du 2026-11-11 sur la sortie du cas (a),
+D-REPRISE-018). La pièce 3 de la saisine (a) est versionnée à part, dans le dossier des avis anciens.
 
 ## Cadre du test
 

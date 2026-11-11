@@ -262,32 +262,39 @@ prochaine retouche de `CLAUDE.md` ou du briefing ; modification d'un garde-fou �
 quelle : « Les remarques mineures reportées sur le texte de l'agent seront traitées en un seul lot, avec un seul
 nouveau test de réception. » Une seule retouche de `.claude/agents/arbitre-strategique.md` (et, pour (d), de
 `CLAUDE.md` §b et §f), revue croisée, puis un seul test de réception (4 cas, instantanés, empreinte vérifiée),
-modification d'un garde-fou → F4. Contenu du lot :
+modification d'un garde-fou → F4, sauf règle déjà décidée par le founder au journal (`CLAUDE.md` §b). Découpage
+(arbitrage de l'arbitre du 2026-11-11, P11) : L1 (revues en worktree dédié, filtre commun, contrôle du journal de
+Codex ; D-REPRISE-017), L2a (corps de l'arbitre, `CLAUDE.md`, filtre pour le dossier des avis anciens, test de
+réception unique ; D-REPRISE-018), puis L2b (corps de l'auditeur, skill `revue-croisee`, filtre, dettes ;
+D-REPRISE-020). **Lot terminé en L2b ; gel des garde-fous en vigueur jusqu'à la fin de l'étape 20** (décision du
+founder du 2026-11-11, D-REPRISE-018). Contenu du lot :
 - (a) contrôle du diff contre le dépôt limité aux lignes ajoutées : vérifier aussi que les lignes retirées sont
   absentes, et exiger avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide, ou joindre ce diff
-  non indexé (auditeur, revue du diff de D-REPRISE-007) ;
+  non indexé (auditeur, revue du diff de D-REPRISE-007) ; **fait en L2a (D-REPRISE-018)** ;
 - (b) F3 du corps : « push, merge sur `main`, suppression de branche, réécriture d'historique non autorisés par le
   ticket » à aligner sur `CLAUDE.md` §b-§g et D-REPRISE-009 (remarque non bloquante de l'arbitre, audits de clôture
   du commit `8cd670c`, rapportée au founder). D'ici là, chaque saisine d'audit de clôture rappelle « push normal
-  autorisé (D-REPRISE-009) » ;
+  autorisé (D-REPRISE-009) » ; **fait en L2a (D-REPRISE-018)** ;
 - (c) une fois (a) et (b) appliqués et le test de réception réussi : retirer ce rappel de la consigne d'audit de
-  clôture (`CLAUDE.md` §g, D-REPRISE-009) ;
+  clôture (`CLAUDE.md` §g, D-REPRISE-009) ; **fait en L2a (D-REPRISE-018)** ;
 - (d) règle des garde-fous resserrés — décision du founder (2026-11-03, D-REPRISE-010), citée telle quelle :
   « Règle : un garde-fou peut être **resserré** par les agents, à condition d'être listé dans le résumé d'étape,
   rubrique « garde-fous resserrés », pour validation a posteriori par le founder. Un garde-fou **assoupli** reste F4,
   avant toute application. » Décidée par le founder au journal : s'applique avec le lot sans nouvelle escalade
   (`CLAUDE.md` §b) ; d'ici là, `CLAUDE.md` §b reste la règle (modification d'un garde-fou → F4). Touche aussi
   `CLAUDE.md` §b (garde-fous) et §f (résumé d'arbitrages d'étape, rubrique « garde-fous resserrés »), en plus du corps
-  de l'arbitre. Portée du test de réception pour (d) : à fixer au ticket du lot.
+  de l'arbitre. Portée du test de réception pour (d) : à fixer au ticket du lot. **Fait en L2a (D-REPRISE-018)** :
+  portée fixée par l'arbitre (P3), un cas ajouté au test, réussi par décision du founder (D-REPRISE-019).
 - (e) points à reprendre au ticket du lot (remarques de l'arbitre, audit de clôture de D-REPRISE-010) : titre de
   D-REPRISE-009 à préciser « (4 précisions, voir D-REPRISE-010) » ; le test de réception du lot ne peut qu'ajouter un
   cas pour (d), jamais retirer ni affaiblir les 4 cas ; en-tête du lot « modification d'un garde-fou → F4 » à nuancer
-  « sauf règle déjà décidée par le founder au journal » ;
+  « sauf règle déjà décidée par le founder au journal » ; **fait en L2a (D-REPRISE-018)** ;
 - (f) proposition de l'arbitre (D-REPRISE-011) : mode unique « toujours par fichier » pour l'auditeur, quelle que
   soit la taille, et extension du filtre de lecture à l'auditeur (TD-032) — resserrements au-delà de la décision du
   founder : règle (d) une fois appliquée, sinon F4. Annotation (D-REPRISE-013) : l'extension du filtre de lecture à
   l'auditeur relève désormais de l'item (i) (décision du founder) ; seul le mode « toujours par fichier » reste
-  soumis à la règle (d) de D-REPRISE-010 une fois appliquée, sinon à F4.
+  soumis à la règle (d) de D-REPRISE-010 une fois appliquée, sinon à F4. Non retenu (arbitre, 2026-11-11, P2) ;
+  TD-032 annotée en L2b (D-REPRISE-020).
 - (g) points à reprendre au ticket du lot (remarques des relecteurs et de l'arbitre sur D-REPRISE-011) : ajouter §h
   et D-REPRISE-011 à la liste des garde-fous de `CLAUDE.md` §b ; skill `revue-croisee` §3 : écrire la règle
   d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
@@ -298,11 +305,17 @@ modification d'un garde-fou → F4. Contenu du lot :
   avant chaque dépôt (commande explicite, à traiter de la même façon pour `cloture/`) ; `CLAUDE.md` §h, contrôle de
   l'orchestrateur : noter `HEAD` (`git rev-parse HEAD`) avant de lancer l'exécutant puis, à la reprise de main,
   vérifier que `HEAD` est inchangé et que `git diff --cached --name-only` est vide avant de préparer l'index ; ce
-  contrôle est une pratique de l'orchestrateur, appliquée dès 19.4c sans attendre le lot.
+  contrôle est une pratique de l'orchestrateur, appliquée dès 19.4c sans attendre le lot. **Fait en L1
+  (D-REPRISE-017)** : « ce dossier » nommé dans la puce du contrôle de Codex, nettoyage de `.claude/instantanes/revue/`
+  et `.claude/instantanes/cloture/` avant chaque passe (skill §1) ; **fait en L2a (D-REPRISE-018)** : `CLAUDE.md` §b
+  (§h et D-REPRISE-011) et §h (« le même » exécutant ; contrôle `HEAD` et index de l'orchestrateur) ; **fait en L2b
+  (D-REPRISE-020)** : skill `revue-croisee` §3 (règle d'invalidation), corps de l'auditeur aligné sur la revue en
+  worktree dédié ; `.claude/agents/auditeur.md` l. 13 inchangé, (f) non retenu.
 - (h) aligner le corps de l'arbitre (`.claude/agents/arbitre-strategique.md`, définition de F2) sur D-REPRISE-012
   (libellés courts délégués à l'arbitre, listés au résumé d'étape ; phrases restant F2 ; vouvoiement). Précision de
   Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade (`CLAUDE.md` §b), au
-  doute → F4 ; d'ici là, toute saisine de l'arbitre sur un libellé court cite D-REPRISE-012.
+  doute → F4 ; d'ici là, toute saisine de l'arbitre sur un libellé court cite D-REPRISE-012. **Fait en L2a
+  (D-REPRISE-018).**
 - (i) filtre de lecture étendu — décision du founder (2026-11-03, message de clôture de 19.4c-1, point 1 ;
   D-REPRISE-013), citée telle quelle : « 1. Lot de retouches : étendre le filtre de lecture de TD-031 à l'auditeur (et à Codex si c'est possible), suite à l'incident de 19.4c-1 où un auditeur a lu les fichiers de l'exécutant. Le filtre ne doit plus reposer seulement sur la consigne. »
   Décidée par le founder au journal : s'applique avec le lot sans nouvelle escalade (`CLAUDE.md` §b). Touche le
@@ -310,9 +323,25 @@ modification d'un garde-fou → F4. Contenu du lot :
   aucune modification du filtre avant le lot. Précision de Claude Code : pour Codex (« si c'est possible »), le lot
   vérifie si un filtre peut s'appliquer à un processus lancé hors Claude Code et le dit ; la conclusion, surtout en
   cas d'impossibilité, est rapportée au founder au résumé d'arbitrages d'étape. Résolution de TD-032.
+  **Fait en L1 (D-REPRISE-017)** : filtre commun à l'auditeur et à l'arbitre ; pour Codex, conclusion de l'arbitre
+  (2026-11-08) : « un filtre de lecture n'est pas possible pour Codex », remplacé par le contrôle automatique de son
+  journal (décision du founder, option 1) ; conclusion à rapporter au résumé d'arbitrages de l'étape 19. Filtre
+  étendu en L2a (dossier des avis anciens) et en L2b (dossiers d'état de Claude Code et de Codex ; D-REPRISE-020).
 - (j) `CLAUDE.md` §h, puce « Relance (D-REPRISE-013) » : « (19.4c-2) » y est inscrit en dur comme exemple de
   relance en milieu d'étape ; à remplacer par un exemple daté ou à retirer (modification d'un garde-fou → F4, avec
-  le lot ; remarque des relecteurs, sous-étape doc D-REPRISE-013).
+  le lot ; remarque des relecteurs, sous-étape doc D-REPRISE-013). **Fait en L2a (D-REPRISE-018)** : retiré (P8).
+- (k) corps de l'arbitre (`.claude/agents/arbitre-strategique.md`) : contrôle `git status --porcelain` à l'audit de
+  clôture, le corps reprenant la règle unique de l'arbitre citée dans `CLAUDE.md` §c (arbitrage du 2026-11-04, une
+  seule formulation ; remarque 2 de l'arbitre) — décision du founder (2026-11-04, D-REPRISE-014), citée telle quelle :
+  « Ajoute à l'audit de clôture de l'arbitre et à la vérification avant push un contrôle obligatoire : `git status --porcelain` doit être vide, en dehors des dossiers ignorés. Sinon, NO-GO. »
+  Précision de Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade
+  (`CLAUDE.md` §b), au doute → F4 ; report (d) de D-REPRISE-014 : corps de l'arbitre non modifié en 19.5-0b ; le
+  contrôle est écrit dans `CLAUDE.md` §c et rappelé dans chaque saisine d'audit de clôture jusqu'au lot, par la
+  citation de la règle unique (`CLAUDE.md` §g), comme le rappel du push ; ce rappel est retiré quand le lot est
+  appliqué. **Fait en L2a (D-REPRISE-018).**
+- (l) skill `revue-croisee` : le chemin du CLI Codex a changé (`bin/f71a721e0e6193a9/codex.exe`) ; modification du
+  skill → F4, avec le lot ; d'ici là, le skill prévoit de prendre le plus récent (relais
+  `docs/sessions/relais-195b.md`, point 6). **Fait en L1 (D-REPRISE-017).**
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -399,7 +428,8 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     est revenu à « ### h. Sessions : orchestrateur et exécutant (D-REPRISE-011) » ; la réponse de Claude Code
     (décision A) est citée de la transcription de la session, non versionnée : le founder peut contrôler la citation ;
     pour information : la conclusion du lot unique sur le filtre de lecture de Codex (item (i)), surtout en cas
-    d'impossibilité, est rapportée ici ;
+    d'impossibilité, est rapportée ici : faite en L1 (D-REPRISE-017), un filtre de lecture n'est pas possible pour
+    Codex ; contrôle automatique de son journal (section du lot unique, item (i) ; TD-039) ;
 - 19.5 — déploiement backend (escalade cas 2), puis Play de bout en bout logs → planks → kits → vente d'un kit.
   Conditions écrites de déploiement (founder, ticket 19.2 ; D-ETAPE19-008) :
   (a) backend et client 19.4 déployés ensemble : le client actuel n'envoie ni N ni la clé d'idempotence ;

@@ -12,6 +12,8 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
 
 ## Reprise 2026-11-01 — LIRE EN PREMIER
 
+- **Session relancée** (D-REPRISE-019) : lire d'abord le relais `docs/sessions/relais-195-lot.md`, point 10 (état du
+  lot de retouches, relance des sessions par carte « own_initiative »), puis la suite de ce briefing.
 - Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
 - ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
   `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
@@ -63,9 +65,10 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   à chaque reprise de main ; seule la condition « index vide » ne s'applique pas à une relance de l'exécutant pour
   une correction quand l'index est déjà préparé (skill `revue-croisee` §5). Relance :
   depuis D-REPRISE-013 (ci-dessous), Claude Code ouvre lui-même la session suivante, sans question au founder
-  (D-REPRISE-014) ; le reste de D-REPRISE-011 est inchangé. Relais (D-REPRISE-014, `CLAUDE.md` §h) : écrit dans un
-  chemin versionné — dans le briefing, ou sous `docs/sessions/relais-<sous-étape>.md` — jamais sous `.claude/`
-  (ignoré par git), et commité avec la sous-étape qui le produit ; ce que les pièces de travail de
+  (D-REPRISE-014) ; le reste de D-REPRISE-011 est inchangé ; relance remplacée par une carte « own_initiative »
+  proposée au founder (D-REPRISE-019 ; relais `docs/sessions/relais-195-lot.md`, point 10). Relais (D-REPRISE-014,
+  `CLAUDE.md` §h) : écrit dans un chemin versionné — dans le briefing, ou sous `docs/sessions/relais-<sous-étape>.md` —
+  jamais sous `.claude/` (ignoré par git), et commité avec la sous-étape qui le produit ; ce que les pièces de travail de
   `.claude/instantanes/` (rapport de l'exécutant, pièces de revue) contiennent de durable est versé dans ce commit.
 - **Relance de session par Claude Code (D-REPRISE-013, 2026-11-03, F4, décision du founder)** — question, réponse de
   Claude Code approuvée et décision citées au journal ; inscrite dans `CLAUDE.md` §h. À la fin d'une étape, ou sur
@@ -98,10 +101,11 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   Fichiers protégés (consigne 1 du founder du 2026-11-10) : préparés et testés dans `.claude/hooks-dev/<sous-étape>/`
   (ignoré par git), une seule copie après le GO des deux relecteurs, une seule « autorisation demandée » (skill
   `revue-croisee`, en tête).
-  Procédure : skill `revue-croisee` §1, §3, §6. Ordre : L1 (fait) → L2a (fait) → L2b → 19.5d (arbitrage de l'arbitre du
-  2026-11-11, P11). Lot unique : items (i) et (l) faits en L1 ; faits en L2a (D-REPRISE-018) : (a)-(e), (g) pour
-  `CLAUDE.md`, (h), (j), (k) et le seul nouveau test de réception de l'arbitre ; (f) non retenu (arbitre, 2026-11-11,
-  P2) ; en L2b : reste de (g) (skill `revue-croisee`, corps de l'auditeur) et le reste du lot.
+  Procédure : skill `revue-croisee` §1, §3, §6. Ordre : L1 (fait) → L2a (fait) → L2b (fait) → 19.5d (arbitrage de
+  l'arbitre du 2026-11-11, P11). Lot unique : items (i) et (l) faits en L1 ; faits en L2a (D-REPRISE-018) : (a)-(e),
+  (g) pour `CLAUDE.md`, (h), (j), (k) et le seul nouveau test de réception de l'arbitre ; (f) non retenu (arbitre,
+  2026-11-11, P2) ; **fait en L2b (D-REPRISE-020)** : reste de (g) (skill `revue-croisee`, corps de l'auditeur) et le
+  reste du lot. Lot terminé ; gel des garde-fous en vigueur (« Processus à revoir », ci-dessous).
 - **Libellés courts et vouvoiement (D-REPRISE-012, 2026-11-03, F4, décision du founder)**, citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
   Inscrite dans `CLAUDE.md` §b et §f. Précisions de Claude Code : un libellé court décidé par l'arbitre entre au
   journal (attribué à « arbitre ») et au résumé d'arbitrages d'étape ; au doute entre libellé court et phrase → F2 ;
@@ -314,7 +318,8 @@ nouveau test de réception. » Une seule retouche de `.claude/agents/arbitre-str
 `CLAUDE.md` §b et §f), revue croisée, puis un seul test de réception (4 cas, instantanés, empreinte vérifiée),
 modification d'un garde-fou → F4, sauf règle déjà décidée par le founder au journal (`CLAUDE.md` §b). Découpage
 (arbitrage de l'arbitre du 2026-11-11, P11) : L2a (corps de l'arbitre, `CLAUDE.md`, filtre pour le dossier des avis
-anciens, test de réception unique ; D-REPRISE-018), puis L2b. Contenu du lot :
+anciens, test de réception unique ; D-REPRISE-018), puis L2b (corps de l'auditeur, skill `revue-croisee`, filtre,
+dettes ; D-REPRISE-020) ; **lot terminé en L2b**. Contenu du lot :
 - (a) contrôle du diff contre le dépôt limité aux lignes ajoutées : vérifier aussi que les lignes retirées sont
   absentes, et exiger avant l'audit de clôture que `git diff --name-only -- <FICHIERS>` soit vide, ou joindre ce diff
   non indexé (auditeur, revue du diff de D-REPRISE-007) ; **fait en L2a (D-REPRISE-018)** : lignes retirées vérifiées,
@@ -343,7 +348,7 @@ anciens, test de réception unique ; D-REPRISE-018), puis L2b. Contenu du lot :
   founder : règle (d) une fois appliquée, sinon F4. Annotation (D-REPRISE-013) : l'extension du filtre de lecture à
   l'auditeur relève désormais de l'item (i) (décision du founder) ; seul le mode « toujours par fichier » reste
   soumis à la règle (d) de D-REPRISE-010 une fois appliquée, sinon à F4. Non retenu (arbitre, 2026-11-11, P2) ;
-  TD-032 annotée en L2b.
+  TD-032 annotée en L2b ; **fait en L2b (D-REPRISE-020)**.
 - (g) points à reprendre au ticket du lot (remarques des relecteurs et de l'arbitre sur D-REPRISE-011) : ajouter §h
   et D-REPRISE-011 à la liste des garde-fous de `CLAUDE.md` §b ; skill `revue-croisee` §3 : écrire la règle
   d'invalidation (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf, comme
@@ -356,7 +361,7 @@ anciens, test de réception unique ; D-REPRISE-018), puis L2b. Contenu du lot :
   vérifier que `HEAD` est inchangé et que `git diff --cached --name-only` est vide avant de préparer l'index ; ce
   contrôle est une pratique de l'orchestrateur, appliquée dès 19.4c sans attendre le lot. **Fait en L2a (D-REPRISE-018)** :
   `CLAUDE.md` §b (§h et D-REPRISE-011) et §h (« le même » exécutant ; contrôle `HEAD` et index de l'orchestrateur) ;
-  L2b : skill `revue-croisee` §3 (règle d'invalidation).
+  **fait en L2b (D-REPRISE-020)** : skill `revue-croisee` §3 (règle d'invalidation).
 - (h) aligner le corps de l'arbitre (`.claude/agents/arbitre-strategique.md`, définition de F2) sur D-REPRISE-012
   (libellés courts délégués à l'arbitre, listés au résumé d'étape ; phrases restant F2 ; vouvoiement). Précision de
   Claude Code : décision du founder au journal, appliquée avec le lot sans nouvelle escalade (`CLAUDE.md` §b), au
@@ -397,8 +402,9 @@ anciens, test de réception unique ; D-REPRISE-018), puis L2b. Contenu du lot :
   corps d'agents sur le worktree (`.claude/agents/arbitre-strategique.md` et `.claude/agents/auditeur.md`, Tâche 0
   par chemins relatifs ; nom du filtre `arbitre-lecture.js` cité par l'agent de l'arbitre) : L2, nommément (ticket L1).
   Répartition (arbitrage du 2026-11-11, P11) : fait en L2a (D-REPRISE-018) — `CLAUDE.md` §b, §h (dont (j)), corps de
-  l'arbitre aligné sur le worktree ; L2b — skill `revue-croisee` §3 (règle d'invalidation), corps de l'auditeur
-  (alignement sur le worktree, phrase Q5 ; `.claude/agents/auditeur.md` l. 13 sans objet, (f) non retenu).
+  l'arbitre aligné sur le worktree ; **fait en L2b (D-REPRISE-020)** — skill `revue-croisee` §3 (règle
+  d'invalidation), corps de l'auditeur (alignement sur le worktree, phrase Q5 ; `.claude/agents/auditeur.md` l. 13
+  sans objet, (f) non retenu).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -590,6 +596,13 @@ Contenu (les remarques non bloquantes reçues pendant L2a et L2b sont appliquée
 reportées nommément en L2b) :
 - `CLAUDE.md` §f : ajouter la rubrique « assouplissements rejetés » au résumé d'arbitrages d'étape (D-REPRISE-019).
 - `CLAUDE.md` §h : relance des sessions par carte « own_initiative » (D-REPRISE-019) au lieu de l'ouverture directe.
+- `CLAUDE.md` §c et corps de l'arbitre (`.claude/agents/arbitre-strategique.md`) : description du filtre à compléter
+  (« dossiers d'état de Claude Code et de Codex ») à la première modification admise de ces fichiers ; après L2b,
+  elle est incomplète mais pas fausse (arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7, remarque 2).
+- Filtre de lecture : examen de structure à faire (sans lecture de contenu) de `C:/Users/romai/AppData/Roaming/Claude/`
+  hors `side-session-notes` (arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7, remarque 3) et de
+  `C:/Users/romai/.claude.json` (fichier voisin de la racine `C:/Users/romai/.claude`, non couvert) ; faiblesse
+  théorique, non incident (TD-031).
 
 ## Prochaine étape (2026-11-02)
 
@@ -1106,10 +1119,18 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - lot de retouches (L1 puis L2, consignes du founder du 2026-11-08), avant 19.5d : entrée
     `docs/sessions/relais-195-lot.md` (précision de Claude Code) ; L1 fait, sous sa forme simplifiée (consignes du
     founder du 2026-11-10, arbitrage de l'arbitre du 2026-11-11 ; D-REPRISE-017) : revues en worktree dédié, filtre
-    commun, contrôle simple du journal de Codex, fichiers protégés préparés dans `.claude/hooks-dev/` ; **L2a faite ;
-    sous-étape suivante : L2b (dernière modification de garde-fous admise ; gel ensuite, `CLAUDE.md` §b)**. Ordre de la
-    suite (décision du founder du 2026-11-11, D-REPRISE-017 ; L2 découpée en L2a et
-    L2b, arbitrage du 2026-11-11, P11) : L2a → L2b → 19.5d → demande regroupée → correction TD-037 → déploiement.
+    commun, contrôle simple du journal de Codex, fichiers protégés préparés dans `.claude/hooks-dev/` ; **L2a et L2b
+    faites (D-REPRISE-018, D-REPRISE-020) ; lot de retouches terminé ; gel des garde-fous en vigueur jusqu'à la fin de
+    l'étape 20 (« Processus à revoir », ci-dessus ; `CLAUDE.md` §b) ; sous-étape suivante : 19.5d** (relais
+    `docs/sessions/relais-195-lot.md`, points 8-9 pour la suite de l'ordre du founder). Ordre de la suite (décision du
+    founder du 2026-11-11, D-REPRISE-017 ; L2 découpée en L2a et L2b, arbitrage du 2026-11-11, P11) : L2a → L2b →
+    19.5d → demande regroupée → correction TD-037 → déploiement.
+    Reports nommés de L2b pour la clôture de l'étape 19 (arbitrage du 2026-11-11, P9 : écarts du briefing Claude.ai
+    hors de la section du lot unique, non corrigés en L2b) : (1) `docs/sessions/BRIEFING-claude-ai.md`, « Méthode
+    installée », puce « Relance de session par Claude Code » (l. ~53-62) : relance décrite selon D-REPRISE-013 et
+    D-REPRISE-014, sans le renvoi à D-REPRISE-019 (carte « own_initiative ») ; (2) même fichier, « Prochaine étape
+    attendue », découpage de 19.5 (l. ~451-458) : le lot de retouches (L1, L2a, L2b) placé avant 19.5d et l'ordre
+    « 19.5d → demande regroupée → correction TD-037 → déploiement » (D-REPRISE-017) n'y figurent pas.
     Reports à L2, remarques de l'audit de clôture de 19.5c (relais
     `relais-195-lot.md`, point 3) : (4) résumés de verdicts dans le coût de coordination lus comme contenu de §f —
     sans action, rappelé au résumé d'arbitrages de l'étape 19 ; (5) refus à tort des motifs à accolades par le filtre —
