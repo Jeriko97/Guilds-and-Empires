@@ -23,14 +23,31 @@
 //   R2 : racine parente d'un dossier interdit (dont la racine du dépôt principal et ses parents) ; R3 : motif
 //   (`pattern` de Glob, `glob` de Grep, chaque alternative après développement des accolades) absolu, commençant
 //   par un lecteur, `/` ou `\`, ou contenant un segment `..` ;
-// - tous les appels, R4 : motif ou chemin contenant `.revue-croisee`, `.claude/instantanes/executant` ou un nom
-//   court `~` suivi d'un chiffre, ou motif dont un segment à jokers (autre que `*` ou `**` seuls) peut désigner
-//   `.revue-croisee`, `instantanes` ou `executant` ; R5 : `cwd` dans un dossier interdit ;
+// - tous les appels, R4 : motif ou chemin contenant `.revue-croisee`, `.claude/instantanes/executant`,
+//   `archives/avis-relecteurs` ou un nom court `~` suivi d'un chiffre, ou motif dont un segment à jokers (autre que
+//   `*` ou `**` seuls) peut désigner `.revue-croisee`, `instantanes`, `executant`, `archives` ou `avis-relecteurs` ;
+//   R5 : `cwd` dans un dossier interdit ;
 // - motifs : `~` en tête refusé ; négation `!` toujours refusée ; accolades développées (non appariées, à une seule
 //   alternative, ou plus de 256 alternatives → refus) ; le `pattern` de Grep (expression cherchée dans le contenu)
 //   n'est pas contrôlé ; le paramètre `type` de Grep ne change pas la racine.
 // Hors de R3 et R4, aucun autre examen du motif : un outil ne cherche que sous sa racine, et une racine qui n'est
 // parente d'aucun dossier interdit ne peut pas en atteindre un.
+//
+// Dossier des avis anciens (`archives/avis-relecteurs/`, à la racine du dépôt) — décision du founder du 2026-11-11
+// (F4, option 3 : « Les avis anciens en texte exact sont versionnés dans un dossier dédié interdit à l'arbitre par le
+// filtre de lecture. ») ; forme fixée par l'arbitrage de l'arbitre du 2026-11-11 (Q1 : constante commune aux deux
+// agents, outils de lecture seulement ; Q2 : nom interdit à toute profondeur, R2 par contrôle d'existence ; Q2
+// complété par B2 : racine des revues du projet) :
+// - `archives/avis-relecteurs` est un nom de `NOMS_INTERDITS` (R4 : Read, racines et motifs qui le contiennent, forme
+//   brute et chemin réel) ; `archives` et `avis-relecteurs` sont des noms de `NOMS_VISES_PAR_JOKER` ;
+// - R2, contrôle d'existence : une racine de Glob ou Grep (normalisée et réelle) est refusée si, pour un alignement
+//   des derniers segments de la racine avec les premiers segments d'un nom de `NOMS_INTERDITS` (aucun segment aligné
+//   compris), le chemin « racine + reste du nom » existe sur le disque (`fs.statSync` ; `ENOENT` ou `ENOTDIR` =
+//   absent ; toute autre erreur = refus, échec fermé) ; appliqué à tous les noms de la liste ; la racine de tout arbre
+//   qui contient le dossier (worktree de revue, dépôt principal, instantané) est donc refusée pour Glob et Grep ;
+// - R2, racine des revues du projet : une racine de Glob ou Grep égale à `REVUES_PROJET` ou à l'un de ses parents est
+//   refusée (comparaison normalisée et sur le chemin réel) ; `REVUES_PROJET` n'est pas un dossier interdit : R1 ne
+//   s'y applique pas, Read reste admis dans les worktrees de revue.
 
 const fs = require("fs");
 
@@ -60,9 +77,19 @@ const DOSSIERS_INTERDITS = [
   DOSSIER_TEMPORAIRE_SESSIONS,
   DOSSIER_TRAVAIL_PROTEGES,
 ];
-// Noms interdits à toute profondeur (R4), et noms qu'un segment à jokers ne doit pas pouvoir désigner.
-const NOMS_INTERDITS = [".revue-croisee", ".claude/instantanes/executant"];
-const NOMS_VISES_PAR_JOKER = [".revue-croisee", "instantanes", "executant"];
+// Racine des revues du projet (worktrees de revue, skill `revue-croisee` §1) : pas un dossier interdit ; seules
+// cette racine et ses parents sont refusés comme racine de Glob et de Grep (R2). Constante propre à ce poste.
+const REVUES_PROJET = "G:/Unity/_revues/GuildsAndEmpires";
+// Noms interdits à toute profondeur (R4, et contrôle d'existence de R2), et noms qu'un segment à jokers ne doit pas
+// pouvoir désigner.
+const NOMS_INTERDITS = [".revue-croisee", ".claude/instantanes/executant", "archives/avis-relecteurs"];
+const NOMS_VISES_PAR_JOKER = [".revue-croisee", "instantanes", "executant", "archives", "avis-relecteurs"];
+// Cause nommée dans les messages de refus.
+const CAUSES_NOMS = {
+  ".revue-croisee": "sorties des relecteurs",
+  ".claude/instantanes/executant": "dossier de l'exécutant",
+  "archives/avis-relecteurs": "dossier des avis anciens, décision du founder du 2026-11-11",
+};
 const MAX_ALTERNATIVES = 256;
 
 // Seuls outils admis pour ces deux agents. Champs contrôlés : `file_path` (Read), `path` et `pattern` (Glob), `path`
@@ -79,11 +106,14 @@ function ecrireRefus(raison) {
   process.stderr.write(
     `Refusé par le filtre de lecture des relecteurs (auditeur, arbitre) : ${raison}. ` +
     "Interdits : sorties des relecteurs (.revue-croisee), dossier de l'exécutant (dont .claude/hooks-dev), " +
-    "dossier déplacé hors revue, " +
-    "transcriptions et dossiers temporaires des sessions. Glob et Grep : donner un `path` précis — racine du " +
-    "worktree de revue, ou sous-dossier du dépôt (docs, Assets, firebase, .claude/skills, .claude/hooks, " +
-    ".claude/agents, .claude/instantanes/revue, .claude/instantanes/cloture…) —, jamais la racine du dépôt ni un de " +
-    "ses parents ; motif relatif, sans `..` ni `!`. Agents, hooks et skills : les lire par Read.\n");
+    "dossier déplacé hors revue, dossier des avis anciens (archives/avis-relecteurs, à toute profondeur ; " +
+    "décision du founder du 2026-11-11), " +
+    "transcriptions et dossiers temporaires des sessions. Glob et Grep : donner un `path` précis — sous-dossier " +
+    "du dépôt ou du worktree de revue (docs, Assets, firebase, .claude/skills, .claude/hooks, .claude/agents, " +
+    ".claude/instantanes/revue, .claude/instantanes/cloture…) —, jamais la racine du dépôt principal, ni la racine " +
+    "d'un arbre qui contient le dossier des avis anciens (worktree de revue, instantané), ni " +
+    `${REVUES_PROJET}, ni un de leurs parents ; motif relatif, sans \`..\` ni \`!\`. Read par chemin absolu reste ` +
+    "admis. Agents, hooks et skills : les lire par Read.\n");
   process.exit(2);
 }
 
@@ -197,7 +227,7 @@ function dossiersInterditsResolus() {
 function controlerNomsChemin(champ, valeur, segmentsResolus) {
   const formes = [segmentsBruts(valeur).join("/"), segmentsResolus.join("/")];
   for (const forme of formes) {
-    for (const nom of NOMS_INTERDITS) if (forme.includes(nom)) refuser(`${champ} contenant ${nom} (R4)`);
+    for (const nom of NOMS_INTERDITS) if (forme.includes(nom)) refuser(`${champ} contenant ${nom} (${CAUSES_NOMS[nom]} ; R4)`);
     if (/~\d/.test(forme)) refuser(`${champ} contenant un nom court Windows (~ suivi d'un chiffre, R4)`);
   }
 }
@@ -212,19 +242,63 @@ function controlerR1(champ, variantes, interdits) {
   });
 }
 
-// R2 : racine de recherche (normalisée et réelle) parente d'un dossier interdit ou de la racine du dépôt principal.
+// Racine des revues du projet, normalisée, et son chemin réel quand il diffère (jonction ou lien).
+function revuesProjetResolues() {
+  const segments = segmentsBruts(REVUES_PROJET);
+  const liste = [segments];
+  try {
+    const reel = cheminReel(segments, "racine des revues du projet");
+    if (reel.join("/") !== segments.join("/")) liste.push(reel);
+  } catch {
+    // Constante sans chemin réel résoluble : seule sa forme écrite est comparée.
+  }
+  return liste;
+}
+
+// R2, contrôle d'existence : pour chaque nom de NOMS_INTERDITS et chaque alignement des derniers segments de la
+// racine avec les premiers segments du nom (aucun segment aligné compris), « racine + reste du nom » existe-t-il ?
+// ENOENT ou ENOTDIR = absent ; toute autre erreur = refus (échec fermé).
+function controlerExistenceNoms(libelle, segments) {
+  for (const nom of NOMS_INTERDITS) {
+    const segmentsNom = nom.split("/");
+    for (let aligne = 0; aligne < segmentsNom.length; aligne += 1) {
+      if (aligne > segments.length) break;
+      const fin = segments.slice(segments.length - aligne);
+      if (!fin.every((s, i) => s === segmentsNom[i])) continue;
+      const candidat = cheminWindows([...segments, ...segmentsNom.slice(aligne)]);
+      try {
+        fs.statSync(candidat);
+      } catch (erreur) {
+        if (erreur && (erreur.code === "ENOENT" || erreur.code === "ENOTDIR")) continue;
+        refuser(`${libelle} : contrôle d'existence de ${nom} impossible (${erreur && erreur.code} ; R2)`);
+      }
+      refuser(`${libelle} contenant ${nom} (${CAUSES_NOMS[nom]} ; R2)`);
+    }
+  }
+}
+
+// R2 : racine de recherche (normalisée et réelle) parente d'un dossier interdit, égale à la racine du dépôt principal
+// ou à un de ses parents, égale à la racine des revues du projet ou à un de ses parents, ou contenant un nom interdit
+// (contrôle d'existence).
 function controlerR2(variantes, interdits) {
   const depot = segmentsBruts(DEPOT_PRINCIPAL);
+  const revues = revuesProjetResolues();
   variantes.forEach((segments, rang) => {
     const libelle = rang === 0 ? "racine de recherche" : "racine de recherche (chemin réel)";
     if (dansOuEgal(depot, segments)) {
       refuser(`${libelle} égale à la racine du dépôt principal ou à un de ses parents (R2)`);
+    }
+    for (const racineRevues of revues) {
+      if (dansOuEgal(racineRevues, segments)) {
+        refuser(`${libelle} égale à la racine des revues du projet (${REVUES_PROJET}) ou à un de ses parents (R2)`);
+      }
     }
     for (const interdit of interdits) {
       if (parentStrict(segments, interdit.segments)) {
         refuser(`${libelle} parente d'un dossier interdit : ${interdit.nom} (R2)`);
       }
     }
+    controlerExistenceNoms(libelle, segments);
   });
 }
 
@@ -285,7 +359,7 @@ function controlerMotif(champ, motif) {
     if (segments.includes("..")) refuser(`${champ} contenant un segment « .. » (R3)`);
     controlerSegments(champ, a);
     const minuscule = a.toLowerCase();
-    for (const nom of NOMS_INTERDITS) if (minuscule.includes(nom)) refuser(`${champ} contenant ${nom} (R4)`);
+    for (const nom of NOMS_INTERDITS) if (minuscule.includes(nom)) refuser(`${champ} contenant ${nom} (${CAUSES_NOMS[nom]} ; R4)`);
     if (/~\d/.test(minuscule)) refuser(`${champ} contenant un nom court Windows (~ suivi d'un chiffre, R4)`);
     for (const segment of minuscule.split("/")) {
       if (segmentPeutViser(segment)) refuser(`${champ} : segment à jokers « ${segment} » pouvant désigner un dossier interdit (R4)`);

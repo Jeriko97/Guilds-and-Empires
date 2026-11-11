@@ -24,6 +24,15 @@ sous-étape qui lance un build Android) et (6) (preuve de compilation par `groun
 de déploiement — point 3 (1) (Cloud Diagnostics) et (2) (permissions GMS/Firebase), point 4 (nature du build, nom de
 fichier et lignes du guide) ; à la résolution de TD-038 — point 4 (`TestRunBuilder.cs`). Report nommé de chaque point
 au briefing (« Prochaine étape »). Ordre de la suite : point 9.
+**Consommé en L2a** (D-REPRISE-018 ; L2 découpée en L2a et L2b, arbitrage de l'arbitre du 2026-11-11, P11) : point 1
+(retouches (a) à (d) du corps de l'arbitre et de `CLAUDE.md`, avec (e), (h), (j), (k) et la partie `CLAUDE.md` de
+(g) ; seul nouveau test de réception de l'arbitre : fait, point 10 — 5 cas sur 5 réussis, (e) par décision du founder,
+D-REPRISE-019) ; « Reports à L2 » (2), pour le corps de l'arbitre (phrase Q5 adressée à Codex seul). **Reste pour
+L2b** : « Reports à L2 » (1) et (3), et (2) pour le corps de l'auditeur ; point 3 (4), sans action, au résumé
+d'arbitrages de l'étape 19 (point 11) ; skill `revue-croisee` §3 (règle d'invalidation ; l. 149, racine d'un
+worktree contenant le dossier des avis anciens) et §6 (`cloture.patch` selon la règle de Q3) ; corps de l'auditeur ; six emplacements de P7 dans le filtre ; TD-031, TD-032, TD-039 ;
+briefing Claude.ai (P9) ; reformulation de D-REPRISE-017 ; comptes finaux de L2a (point 11) ; L2b rétablit le
+passage omis du texte de journal d'O1 révisé (D-REPRISE-018).
 
 **Coût de coordination de L1** (comptes seulement, sans verdicts de la sous-étape en cours ; remarque de l'arbitre du
 2026-11-08 ; fourni par l'orchestrateur) :
@@ -279,3 +288,113 @@ au briefing (« Prochaine étape »). Ordre de la suite : point 9.
    relais retirés de l'index ; aucun fichier de l'arbre de travail modifié), réparé par `git read-tree HEAD`,
    `git update-index -q --refresh` et une nouvelle indexation, arbre vérifié identique à l'arbre audité. Règle du
    founder, citée telle quelle : « Si un troisième survient, c'est un signal à me soumettre. »
+10. **État de L2a** (D-REPRISE-018 ; arbitrage de l'arbitre du 2026-11-11, P4) — **L2a faite** : sonde d'empreinte et
+   test de réception joués le 2026-11-11 (D-REPRISE-018, D-REPRISE-019).
+   - **Fait** : sonde d'empreinte : 1 (empreinte nouvelle, test dans la même session) ; test de réception : 5 cas,
+     (a) à (d) conformes, (e) réussi par décision du founder (option 3, attendu corrigé ; D-REPRISE-019) ; résultat :
+     5 cas sur 5 réussis ; aucune lecture hors instantané. Saisines, attendus et sorties brutes :
+     `docs/sessions/test-reception-arbitre.md` ; pièce 3 de la saisine (a) :
+     `archives/avis-relecteurs/2026-11-02-ticket-19-2b.md`. Suite : passe courte des deux relecteurs sur le delta après
+     le test, audit de clôture, commit, push.
+   - État : fichiers protégés de L2a (`CLAUDE.md`, `.claude/agents/arbitre-strategique.md`,
+     `.claude/hooks/arbitre-lecture.js` et `.claude/hooks/arbitre-lecture.test.js`) écrits en une seule série, à l'issue
+     de la revue du diff (consigne 1 du founder du 2026-11-10) ; arbre audité : celui du fichier `G:/Unity/GuildsAndEmpires/.revue-croisee/go.tree` (sa
+     valeur ne peut pas figurer dans l'arbre qu'elle désigne) ; `git write-tree` de l'index identique ; sonde
+     d'empreinte de l'arbitre et test de réception (ticket §4) faits ; delta après le test écrit.
+   - Ticket : `G:/Unity/GuildsAndEmpires/.claude/instantanes/executant/ticket-L2a-v8.md` (version de référence
+     du ticket de L2a), complété par
+     `G:/Unity/GuildsAndEmpires/.claude/instantanes/executant/precisions-orchestrateur-L2a.md` (§3, §4).
+   - Pièces du test, même dossier : `cas-reception-origine.md` (texte exact des saisines (a) à (d), commits des
+     instantanés, sorties de référence), `cas-e-saisine.md` (saisine du cas (e)), `arbitrage-L2-2026-11-11.md`
+     (P1-P11), `arbitrage-L2a-O1-2026-11-11.md` et `arbitrage-L2a-O1-revise-2026-11-11.md` (O1),
+     `decisions-founder-2026-11-11-F4.md` (option 3, gel), `arbitrage-L2a-Q1-Q4-2026-11-11.md` (Q1 à Q4),
+     `arbitrage-L2a-B1-B2-2026-11-11.md` (B1-B2), rapport de l'exécutant `rapport-L2a.md`. Fichiers protégés préparés :
+     `G:/Unity/GuildsAndEmpires/.claude/hooks-dev/L2a/` (même arborescence que le dépôt).
+   - Emplacement pendant tout appel de l'arbitre (sonde et cas du test compris) et toute revue : ces fichiers sont
+     déplacés avec le dossier de l'exécutant dans `G:/Unity/_hors-revue/GuildsAndEmpires/L2a/executant/` (même nom
+     de fichier), et `.claude/hooks-dev/` dans `G:/Unity/_hors-revue/GuildsAndEmpires/L2a/hooks-dev/` ; remis ensuite
+     (skill `revue-croisee` §1).
+   - Empreinte ancienne relevée (orchestrateur, 2026-11-11, deux appels de l'arbitre) : `systemHash` 2183268610,
+     `systemCharCount` 10656.
+   - Rappels de `CLAUDE.md` §g **à garder dans la saisine de l'audit de clôture de L2a** (P4), bien que retirés du
+     `CLAUDE.md` du working tree : « push normal autorisé (D-REPRISE-009) » et le contrôle `git status --porcelain`
+     par la citation de la règle unique de l'arbitre (D-REPRISE-014), sans autre formulation ; texte d'origine :
+     `git show 573ca10:CLAUDE.md`, l. 193-197. La même saisine nomme `docs/sessions/test-reception-arbitre.md` et cite
+     l'arbitrage O1 révisé et la décision du founder (option 3) par leur ID de journal (D-REPRISE-018) ;
+     `cloture.patch` selon l'arbitrage Q3 (exclusion de `archives/avis-relecteurs`, fichiers exclus désignés par
+     chemin, statut, blob et taille, liste `git diff --cached --name-only` jointe).
+   - Filtre : `.claude/hooks/arbitre-lecture.js` de L2a (dossier des avis anciens, `REVUES_PROJET`) écrit dans la même
+     série ; il doit être en place avant toute écriture du dossier des avis anciens (delta après le test). Tests du
+     filtre : mêmes comptes depuis `.claude/hooks-dev/L2a/` et en place.
+   - Points ouverts : aucun (O1 tranché par la décision du founder ; Q1 à Q4 et B1-B2 tranchés par l'arbitre le
+     2026-11-11).
+   - **Relance des sessions — consigne du founder (2026-11-11, F4), citée telle quelle** : « Et pour la suite : quand
+     une nouvelle session est nécessaire, **propose-la** (mode « own_initiative ») pour que je n'aie qu'à l'accepter, et
+     inscris cette façon de faire dans le relais. Pas besoin de nouvelle écriture protégée pour ça : les garde-fous
+     sont gelés. » Application : à chaque relance (fin d'étape, ou nouvelle session exigée comme en P4), Claude Code
+     propose la session par une carte (`start_session`, initiation « own_initiative », contexte vierge, même dossier,
+     sans worktree, phrase standard pour seule consigne) et s'arrête ; le founder l'accepte. Cette consigne remplace,
+     pour la relance, l'ouverture directe et l'interdiction de la carte de proposition de `CLAUDE.md` §h
+     (D-REPRISE-013, D-REPRISE-014), sans écriture de `CLAUDE.md` (gel). Contexte : le 2026-11-11, l'ouverture directe
+     de la session de reprise de L2a a été refusée par la plateforme, qui réserve ce démarrage à une demande écrite du
+     founder dans la session. Inscrite au journal : D-REPRISE-019.
+11. **À reporter au résumé d'arbitrages de l'étape 19** (rubrique ouverte ; partie L2a ; le résumé n'est écrit qu'à
+   la clôture de l'étape ; L2b la complète) :
+   - **Décisions prises sans le founder** : arbitrage de l'arbitre du 2026-11-11 (D-REPRISE-018) — P2 ((f) non
+     retenu), P4 (sonde d'empreinte, nouvelle session si inchangée), P8 (« (19.4c-2) » retiré), P10 (cas en échec :
+     STOP, arbitre non accepté traité comme indisponible), P11 (découpage L2a / L2b), et les autres points (P1, P3,
+     P5, P6, P7, P9) ; B1 (garantie du cas (e) par construction) ; Q3 (exclusion du dossier des avis anciens du
+     `cloture.patch` de l'arbitre : précision d'application de la décision du founder, contestable ; elle touche la
+     pièce « diff complet de l'index » de l'audit de clôture fixée par D-REPRISE-008) ; Q4 (lecture du
+     gel : la règle (d) de D-REPRISE-010 suspendue comme source autonome de modifications, du commit de L2b à la fin
+     de l'étape 20) ; arbitrage de l'arbitre du 2026-11-11 sur la sortie du cas (a) (option 1 ; (i) à (iii) ;
+     D-REPRISE-018) ; précision de Claude Code (`CLAUDE.md` §c) : un résumé d'une ligne du journal ou d'un relais, sur
+     une sous-étape déjà commitée, ne rend pas un audit contaminé.
+   - **Garde-fous resserrés** (règle (d) de D-REPRISE-010, en vigueur avec le commit de L2a ; contestables par le
+     founder) : §h et D-REPRISE-011 ajoutés à la liste des garde-fous (`CLAUDE.md` §b) ; « le même » exécutant repris
+     seulement dans la même sous-étape (`CLAUDE.md` §h) ; contrôle de l'orchestrateur écrit dans `CLAUDE.md` §h sous
+     la forme stricte de l'item (g) (`HEAD` noté avant de lancer l'exécutant ; à la reprise de main, avant de préparer
+     l'index, `HEAD` inchangé et `git diff --cached --name-only` vide ; la vérification « `HEAD` inchangé » reste due
+     à chaque reprise de main ; seule la condition « index vide » ne s'applique pas à une relance de l'exécutant pour
+     une correction quand l'index est déjà préparé, skill `revue-croisee` §5) ; vigilance du corps de l'arbitre « un assouplissement
+     présenté comme un resserrement ou comme une correction » ; refus du dossier des avis anciens aussi pour
+     l'auditeur (Q1) — coût de réversibilité : revenir à « arbitre seul » exigerait un mécanisme par agent dans le
+     filtre, qui n'en a aucun aujourd'hui ; extension de R2 par contrôle d'existence et refus de la racine des
+     worktrees (et de tout arbre) qui contiennent le dossier (Q2) ; refus de `G:/Unity/_revues/GuildsAndEmpires` et de
+     ses parents (`REVUES_PROJET`), rangé avec Q2 — arbitrage de l'arbitre du 2026-11-11, B2, complément de Q2 ; coût
+     de retrait : une constante, deux cas de test ; Q2 (ii) laissait le trou des racines grand-parentes, B2 le ferme
+     sans révision du reste de Q2 (remarque 5 de l'arbitrage B1-B2) ; P7 (six emplacements du filtre) annoncé pour
+     L2b.
+   - **Portée de la règle de contamination** : tranchée par le founder (F4, 2026-11-11, option 3 ; D-REPRISE-018) ;
+     une seule entrée qui regroupe l'arbitrage O1 et sa révision, la remarque (1) de l'audit de clôture de 19.5b et
+     la ligne du 2026-11-08 (« sous-étape en cours »), pour mémoire ; plus de question en attente sur ce point.
+   - **Décisions du founder** (pour mémoire) : option 3 (dossier des avis anciens) ; gel des garde-fous de la fin du
+     lot (commit de L2b) jusqu'à la fin de l'étape 20 (`CLAUDE.md` §b ; liste « processus à revoir » du briefing) ;
+     D-REPRISE-019 : cas (e) du test de réception réussi (option 3, attendu corrigé ; rubrique « assouplissements
+     rejetés ») ; relance des sessions par carte « own_initiative ».
+   - **Assouplissements rejetés** (D-REPRISE-019) : aucun pour L2a (la proposition (ii) du cas (e) est une proposition
+     de test, pas une proposition réelle).
+   - **Coût du lot de retouches** (rubrique demandée par le founder, D-REPRISE-018) : jours : du 2026-11-08 (ticket L1
+     v1) à la date du commit de L2a ; L1 interrompue et L1 simplifiée : comptes du « Coût de coordination de L1 »
+     ci-dessus (ticket L1 v1 → v16 puis v17 → v18) ; ticket L2a (comptes arrêtés à la v8) : versions L2 v1, L2a v2,
+     v3, v4, v5, v6, v7, v8 ; mode ticket v2 : Codex 1, auditeur 1 ; passe courte v3 : Codex 1, auditeur 1 ; passe
+     courte v5 : Codex 1 (écartée, contrôle du journal code 1), auditeur 1 ; passe courte v6 : Codex 1, auditeur 1 ;
+     passe courte v7 : Codex 1, auditeur 1 ; passe courte v8 : Codex 1, auditeur 1 ; arbitrages : 6 (P1-P11, O1,
+     O1 révisé, Q1-Q4, B1-B2 ; sortie du cas (a), passe courte du delta) ; décisions F4 du founder : 2 ; après le ticket v8 (comptes fournis par l'orchestrateur) : exécution 1 exécutant (repris 4 fois
+     pour corrections) ; revue du diff : Codex 1, auditeur 1 ; passes courtes du diff : 4 (Codex 4, auditeur 4) ;
+     sondes d'empreinte : 2 (une par session) ; relance de session : 1 ; test de réception : 5 cas, 1 STOP ;
+     décisions F4 du founder : 4 au total pour L2 (option 3 avis anciens, gel, cas (e), relance) ; delta après le
+     test : 1 exécutant ; passe courte du delta et suites : versées au commit de L2b ; comptes arrêtés à l'index
+     soumis à l'audit de clôture de L2a (l'audit de clôture et ce qui le suit n'y sont pas comptés) ; comptes finaux
+     de L2a versés au commit de L2b, comme pour 19.5a → 19.5b (D-ETAPE19-017) ; L2b complète.
+   - **Signal skill** : saisines du test de réception non versionnées depuis le 2026-11-03 = nouvelle occurrence
+     « pièce durable hors du dépôt » (après les trois relais), corrigée par P6 (versionnement après le test dans
+     `docs/sessions/test-reception-arbitre.md`).
+   - **Coût de coordination de L2a** (comptes seulement, fournis par l'orchestrateur, sans verdict) : exécution : 1
+     exécutant (repris 4 fois pour corrections) ; revue du diff : Codex 1, auditeur 1 ; passes courtes du diff : 4
+     (Codex 4, auditeur 4) ; sondes d'empreinte : 2 (une par session) ; relance de session : 1 ; test de réception :
+     5 cas, 1 STOP ; décisions F4 du founder : 4 au total pour L2 (option 3 avis anciens, gel, cas (e), relance) ;
+     delta après le test : 1 exécutant ; arbitrages : 1 (sortie du cas (a), passe courte du delta) ; passe courte du
+     delta et suites : versées au commit de L2b ; comptes arrêtés à l'index soumis à l'audit de clôture.
+   - **Report à L2b** : `docs/sessions/test-reception-arbitre.md` l. 9 : « aucun avis de relecteur » → « aucun avis de
+     Codex ni de l'auditeur » (remarque de l'arbitre, arbitrage du 2026-11-11 sur la sortie du cas (a)).

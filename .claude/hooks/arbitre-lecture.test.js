@@ -2,6 +2,10 @@
 // Jeu de tests du filtre de lecture des relecteurs (arbitre-lecture.js) : à rejouer à chaque modification du filtre.
 // Lancement : node .claude/hooks/arbitre-lecture.test.js  → code 0 si tous les cas donnent le code attendu.
 // Les cas « jonction » dépendent du poste : jonction absente → cas marqué « sans objet », jamais compté comme réussi.
+// Les cas du dossier des avis anciens (`archives/avis-relecteurs`, décision du founder du 2026-11-11, option 3 ;
+// arbitrage de l'arbitre du 2026-11-11, Q1, Q2, B2) qui demandent un dossier existant utilisent un gabarit
+// temporaire créé sous `G:/Unity/_revues/GuildsAndEmpires/` et supprimé en fin de jeu, même en cas d'échec ; gabarit
+// impossible à créer → échec du jeu.
 
 const { spawnSync } = require("child_process");
 const fs = require("fs");
@@ -10,6 +14,12 @@ const path = require("path");
 const FILTRE = path.join(__dirname, "arbitre-lecture.js");
 const RACINE = "G:\\Unity\\GuildsAndEmpires";
 const WORKTREE = "G:/Unity/_revues/GuildsAndEmpires/essai-L1";
+const REVUES_PROJET = "G:/Unity/_revues/GuildsAndEmpires";
+// Gabarit temporaire (racine propre à ce lancement) : `wt` imite un worktree de revue qui contient le dossier des
+// avis anciens ; `sans` n'en contient aucun ; `avec-*` contient un dossier de chaque nom interdit ; `boucle/archives`
+// est une jonction qui pointe sur elle-même (erreur de `stat` autre que « absent »).
+const GABARIT = `${REVUES_PROJET}/gabarit-filtre-${process.pid}`;
+const AVIS = "archives/avis-relecteurs";
 const ARBITRE = "arbitre-strategique";
 const AUDITEUR = "auditeur";
 const RELECTEURS = [ARBITRE, AUDITEUR];
@@ -55,7 +65,7 @@ for (const A of RELECTEURS) {
   ajouter(0, A, RACINE, "Grep", { pattern: "STOP", path: "G:/Unity/GuildsAndEmpires/docs" });
   ajouter(0, A, RACINE, "Grep", { pattern: "\\.revue-croisee", path: "G:/Unity/GuildsAndEmpires/CLAUDE.md" });
   ajouter(0, A, RACINE, "Glob", { pattern: "**/*.md", path: "G:/Unity/GuildsAndEmpires/.claude/instantanes/a" });
-  // Cas existants admis dont la racine est celle du dépôt : passent à 2 (R2, resserrement voulu).
+  // Cas existants admis dont la racine est celle du dépôt : passent à 2 (R2).
   ajouter(2, A, RACINE, "Grep", { pattern: ".*Error", glob: "**/*.ts" });
   ajouter(2, A, RACINE, "Glob", { pattern: "**/*.md" });
   ajouter(2, A, RACINE, "Glob", { pattern: "docs/*" });
@@ -183,6 +193,108 @@ for (const A of RELECTEURS) {
   for (const outil of ["Bash", "PowerShell", "Edit", "Write", "NotebookEdit", "WebFetch", "Agent", "Skill"]) {
     ajouter(2, A, RACINE, outil, { file_path: "G:/Unity/GuildsAndEmpires/docs/a.md" });
   }
+
+  // Dossier des avis anciens (décision du founder du 2026-11-11, option 3 ; arbitrage du 2026-11-11, Q1 et Q2).
+  // Read (`/`, `\`, casse) : dépôt principal, sous la racine des revues du projet, sous `.claude/instantanes/<x>/`.
+  for (const base of ["G:/Unity/GuildsAndEmpires", `${REVUES_PROJET}/wt-x`, "G:/Unity/GuildsAndEmpires/.claude/instantanes/e"]) {
+    const fichier = `${base}/${AVIS}/2026-11-02-ticket-19-2b.md`;
+    ajouter(2, A, RACINE, "Read", { file_path: fichier });
+    ajouter(2, A, RACINE, "Read", { file_path: fichier.replace(/\//g, "\\") });
+    ajouter(2, A, RACINE, "Read", { file_path: fichier.toUpperCase() });
+    ajouter(2, A, RACINE, "Read", { file_path: `${base}/Archives/Avis-Relecteurs` });
+  }
+  ajouter(2, A, RACINE, "Read", { file_path: `${AVIS}/2026-11-02-ticket-19-2b.md` });
+  ajouter(2, A, RACINE, "Read", { file_path: "docs\\..\\archives\\avis-relecteurs\\x.md" });
+  // Glob et Grep à racine dans le dossier.
+  for (const racine of [`G:/Unity/GuildsAndEmpires/${AVIS}`, `${AVIS}/sous-dossier`, `${WORKTREE}/${AVIS}`,
+    `${WORKTREE}/ARCHIVES/Avis-Relecteurs`.replace(/\//g, "\\"), `${REVUES_PROJET}/wt-x/${AVIS}/sous-dossier`]) {
+    ajouter(2, A, RACINE, "Glob", { pattern: "*.md", path: racine });
+    ajouter(2, A, RACINE, "Grep", { pattern: "x", path: racine });
+  }
+  ajouter(2, A, `${WORKTREE}/${AVIS}`, "Glob", { pattern: "*.md" });
+  // Motifs qui contiennent le nom, ou dont un segment à jokers peut désigner `archives` ou `avis-relecteurs`.
+  for (const motif of [`${AVIS}/*`, `**/${AVIS}/*.md`, "{docs,archives/avis-relecteurs}/*", "a*/avis*/*", "*s/*.md",
+    "**/archiv?s/*", "*/avis-*/*", "**/[a]rchives/*"]) {
+    ajouter(2, A, RACINE, "Glob", { pattern: motif, path: "docs" });
+    ajouter(2, A, RACINE, "Grep", { pattern: "x", glob: motif, path: "docs" });
+  }
+
+  // Racine des revues du projet et ses parents (arbitrage du 2026-11-11, B2, complément de Q2) : Glob et Grep refusés ;
+  // `G:/Unity` et `G:/` déjà refusés (liste PARENTS, R2).
+  for (const racine of ["G:/Unity/_revues", "G:\\Unity\\_revues", "g:/unity/_REVUES", REVUES_PROJET,
+    REVUES_PROJET.replace(/\//g, "\\"), "G:/UNITY/_revues/guildsandempires/", `${REVUES_PROJET}/wt-x/..`]) {
+    ajouter(2, A, RACINE, "Glob", { pattern: "**/*.md", path: racine });
+    ajouter(2, A, RACINE, "Grep", { pattern: "x", path: racine });
+  }
+  ajouter(2, A, RACINE, "Grep", { pattern: "VERDICT", glob: "**/*.md", output_mode: "content", path: REVUES_PROJET });
+  ajouter(2, A, RACINE, "Grep", { pattern: "VERDICT", glob: "**/*.md", output_mode: "content", path: "G:/Unity/_revues" });
+  ajouter(2, A, REVUES_PROJET, "Grep", { pattern: "VERDICT", glob: "**/*.md", output_mode: "content" });
+  ajouter(2, A, "G:/Unity/_revues", "Glob", { pattern: "**/*.md" });
+
+  // Gabarit temporaire. Worktree contenant le dossier : racine refusée (contrôle d'existence), `docs` admis, Read
+  // admis hors du dossier, refusé dedans.
+  const wt = `${GABARIT}/wt`;
+  for (const racine of [wt, wt.replace(/\//g, "\\"), wt.toUpperCase(), `${wt}/`, `${wt}/docs/..`]) {
+    ajouter(2, A, RACINE, "Glob", { pattern: "**/*.md", path: racine });
+    ajouter(2, A, RACINE, "Grep", { pattern: "x", path: racine });
+  }
+  ajouter(2, A, RACINE, "Grep", { pattern: "x", glob: "**/*.md", output_mode: "content", path: wt });
+  ajouter(2, A, wt, "Grep", { pattern: "x" });
+  ajouter(2, A, wt, "Glob", { pattern: "**/*.md" });
+  ajouter(2, A, RACINE, "Glob", { pattern: "*", path: `${wt}/archives` });
+  ajouter(2, A, RACINE, "Grep", { pattern: "x", path: `${wt}\\Archives` });
+  ajouter(2, A, RACINE, "Read", { file_path: `${wt}/${AVIS}/x.md` });
+  ajouter(0, A, RACINE, "Glob", { pattern: "**/*.md", path: `${wt}/docs` });
+  ajouter(0, A, RACINE, "Grep", { pattern: "x", glob: "**/*.md", output_mode: "content", path: `${wt}/docs` });
+  ajouter(0, A, RACINE, "Read", { file_path: `${wt}/docs/a.md` });
+  ajouter(0, A, `${wt}/docs`, "Glob", { pattern: "*.md" });
+  // Racine parente sans aucun dossier interdit : admise.
+  ajouter(0, A, RACINE, "Glob", { pattern: "**/*.md", path: `${GABARIT}/sans` });
+  ajouter(0, A, RACINE, "Grep", { pattern: "x", path: `${GABARIT}/sans` });
+  // Contrôle d'existence appliqué à tous les noms de NOMS_INTERDITS, avec alignement des derniers segments.
+  for (const racine of [`${GABARIT}/avec-revue`, `${GABARIT}/avec-exec`, `${GABARIT}/avec-exec/.claude`,
+    `${GABARIT}/avec-exec/.claude/instantanes`]) {
+    ajouter(2, A, RACINE, "Glob", { pattern: "**/*.md", path: racine });
+    ajouter(2, A, RACINE, "Grep", { pattern: "x", path: racine });
+  }
+}
+
+// Cas dont le refus doit venir d'une cause précise (message), gabarit compris : [entrée, expression attendue].
+const CAS_MESSAGE = [];
+for (const A of RELECTEURS) {
+  // Erreur de `stat` autre que « absent » (jonction en boucle) → refus, échec fermé.
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Glob", tool_input: { pattern: "*", path: `${GABARIT}/boucle` } },
+    /contrôle d'existence de archives\/avis-relecteurs impossible \(ELOOP/]);
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Grep", tool_input: { pattern: "x", path: `${GABARIT}/boucle` } },
+    /contrôle d'existence de archives\/avis-relecteurs impossible \(ELOOP/]);
+  // Cause nommée : dossier des avis anciens, décision du founder du 2026-11-11.
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Glob", tool_input: { pattern: "*", path: `${GABARIT}/wt` } },
+    /contenant archives\/avis-relecteurs \(dossier des avis anciens, décision du founder du 2026-11-11 ; R2\)/]);
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Read", tool_input: { file_path: `G:/Unity/GuildsAndEmpires/${AVIS}/x.md` } },
+    /contenant archives\/avis-relecteurs \(dossier des avis anciens, décision du founder du 2026-11-11 ; R4\)/]);
+  CAS_MESSAGE.push([{ agent_type: A, cwd: RACINE, tool_name: "Grep", tool_input: { pattern: "x", path: REVUES_PROJET } },
+    /égale à la racine des revues du projet/]);
+}
+
+// Lecteur absent (échec fermé attendu) : premier lecteur de Z à H qui n'existe pas sur ce poste.
+const LECTEUR_ABSENT = [..."ZYXWVUTSRQPONMLKJIH"].find((l) => !fs.existsSync(`${l}:\\`));
+
+function creerGabarit() {
+  const dossier = (relatif) => fs.mkdirSync(path.join(GABARIT, relatif), { recursive: true });
+  dossier(`wt/${AVIS}`);
+  fs.writeFileSync(path.join(GABARIT, `wt/${AVIS}/x.md`), "gabarit\n");
+  dossier("wt/docs");
+  fs.writeFileSync(path.join(GABARIT, "wt/docs/a.md"), "gabarit\n");
+  dossier("sans/docs");
+  dossier("avec-revue/.revue-croisee");
+  dossier("avec-exec/.claude/instantanes/executant");
+  dossier("boucle");
+  const jonction = path.join(GABARIT, "boucle", "archives");
+  fs.symlinkSync(jonction, jonction, "junction");
+}
+
+function supprimerGabarit() {
+  fs.rmSync(GABARIT, { recursive: true, force: true });
 }
 
 function lancer(entree) {
@@ -191,13 +303,49 @@ function lancer(entree) {
 
 let echecs = 0;
 let conformes = 0;
-for (const [attendu, agentType, cwd, outil, entree] of CAS) {
-  const { status } = lancer(JSON.stringify({ agent_type: agentType, cwd, tool_name: outil, tool_input: entree }));
-  if (status !== attendu) {
+try {
+  try {
+    creerGabarit();
+  } catch (erreur) {
     echecs += 1;
-    console.log(`ÉCHEC (attendu ${attendu}, obtenu ${status}) : ${agentType ?? "principal"} cwd=${cwd} ${outil} ${JSON.stringify(entree)}`);
-  } else {
-    conformes += 1;
+    console.log(`ÉCHEC : gabarit temporaire impossible à créer (${erreur && erreur.code}) : ${GABARIT}`);
+  }
+  for (const [attendu, agentType, cwd, outil, entree] of CAS) {
+    const { status } = lancer(JSON.stringify({ agent_type: agentType, cwd, tool_name: outil, tool_input: entree }));
+    if (status !== attendu) {
+      echecs += 1;
+      console.log(`ÉCHEC (attendu ${attendu}, obtenu ${status}) : ${agentType ?? "principal"} cwd=${cwd} ${outil} ${JSON.stringify(entree)}`);
+    } else {
+      conformes += 1;
+    }
+  }
+  for (const [entree, attenduMessage] of CAS_MESSAGE) {
+    const sortie = lancer(JSON.stringify(entree));
+    if (sortie.status === 2 && attenduMessage.test(sortie.stderr)) {
+      conformes += 1;
+    } else {
+      echecs += 1;
+      console.log(`ÉCHEC (attendu 2, message ${attenduMessage} ; obtenu ${sortie.status}) : ${JSON.stringify(entree)} — ${sortie.stderr.trim()}`);
+    }
+  }
+} finally {
+  supprimerGabarit();
+}
+if (fs.existsSync(GABARIT)) { echecs += 1; console.log(`ÉCHEC : gabarit temporaire non supprimé : ${GABARIT}`); }
+
+// Lecteur absent : refus attendu (échec fermé), pour les deux agents ; aucun lecteur absent → « sans objet ».
+let sansObjetLecteur = 0;
+for (const A of RELECTEURS) {
+  if (!LECTEUR_ABSENT) {
+    sansObjetLecteur += 1;
+    console.log(`SANS OBJET (aucun lecteur absent de Z à H) : ${A} Glob racine sur un lecteur absent`);
+    continue;
+  }
+  for (const outil of ["Glob", "Grep"]) {
+    const { status } = lancer(JSON.stringify({ agent_type: A, cwd: RACINE, tool_name: outil,
+      tool_input: { pattern: "*", path: `${LECTEUR_ABSENT}:/x` } }));
+    if (status === 2) conformes += 1;
+    else { echecs += 1; console.log(`ÉCHEC (attendu 2, obtenu ${status}) : ${A} ${outil} racine ${LECTEUR_ABSENT}:/x`); }
   }
 }
 
@@ -226,5 +374,6 @@ for (const [chemin, jonction] of JONCTIONS) {
 if (lancer("illisible").status !== 2) { echecs += 1; console.log("ÉCHEC : entrée illisible"); } else { conformes += 1; }
 
 const total = conformes + echecs;
-console.log(`${conformes}/${total} cas conformes${sansObjet ? ` ; ${sansObjet} cas sans objet (non comptés)` : ""}`);
+const sansObjetTotal = sansObjet + sansObjetLecteur;
+console.log(`${conformes}/${total} cas conformes${sansObjetTotal ? ` ; ${sansObjetTotal} cas sans objet (non comptés)` : ""}`);
 process.exit(echecs === 0 ? 0 : 1);

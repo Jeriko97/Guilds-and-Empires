@@ -3,7 +3,7 @@
 Briefing et conventions verrouillées : `docs/sessions/BRIEFING-claude-code.md` (à lire en début de session).
 Décisions : `docs/architecture/phase-1-decisions-log.md` · Dette : `docs/architecture/technical-debt.md`.
 
-## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014, D-REPRISE-015, D-REPRISE-016)
+## Mode autonome supervisé (D-REPRISE-003, D-REPRISE-007, D-REPRISE-008, D-REPRISE-009, D-REPRISE-010, D-REPRISE-011, D-REPRISE-012, D-REPRISE-013, D-REPRISE-014, D-REPRISE-015, D-REPRISE-016, D-REPRISE-017, D-REPRISE-018)
 
 La session principale de Claude Code orchestre ; chaque sous-étape est implémentée par un sous-agent exécutant
 neuf (§h). Deux relecteurs read-only indépendants contrôlent chaque ticket et chaque diff : le
@@ -29,7 +29,7 @@ founder et rend l'audit de clôture de chaque sous-étape. Le founder (non techn
 7. **Audit de clôture de l'arbitre** (§c) sur l'index exact du futur commit.
 8. **Commit atomique**, contrôle de l'arbre (§d), puis rapport de clôture (§f).
 
-### b. Escalade — le founder n'est sollicité QUE pour F1–F4 (D-REPRISE-007, D-REPRISE-012, D-REPRISE-013)
+### b. Escalade — le founder n'est sollicité QUE pour F1–F4 (D-REPRISE-007, D-REPRISE-012, D-REPRISE-013, D-REPRISE-018)
 Texte du founder (ticket du 2026-11-03), tel quel :
 - **F1 — Game design et gameplay** : règles, valeurs économiques, bornes, durées, rythme. **Règle d'effet indirect** : toute décision technique susceptible de modifier un comportement visible par le joueur, une valeur économique ou une règle de gameplay relève de F1, **même présentée comme une correction ou une optimisation**.
 - **F2 — Direction artistique et textes affichés au joueur.**
@@ -59,9 +59,25 @@ Précisions d'application (Claude Code, relues en revue croisée ; au doute, ver
   (D-REPRISE-003/004/005/007/008, §a, §d, skill `revue-croisee`) ; les relecteurs et l'arbitre, leurs grilles et
   leurs outils (`AGENTS.md`, `.claude/agents/*.md`, `.claude/settings.json`, `.claude/hooks/`) ; les conventions non
   négociables
-  (`BRIEFING-claude-code.md`) ; les doctrines (`docs/skills/**` : C1–C9, doctrines backend) ; la règle du push (§g).
+  (`BRIEFING-claude-code.md`) ; les doctrines (`docs/skills/**` : C1–C9, doctrines backend) ; la règle du push (§g) ;
+  l'organisation des sessions, orchestrateur et exécutant (§h, D-REPRISE-011).
   **Skill** : `.claude/skills/**` et `docs/skills/**`. Une modification de garde-fou **déjà décidée par le founder
   au journal** (ex. : `data-loss` en 19.4b, D-ETAPE19-010) s'applique sans nouvelle escalade.
+  Règle du founder (D-REPRISE-010, 2026-11-03), citée telle quelle : « Règle : un garde-fou peut être **resserré** par les agents, à condition d'être listé dans le résumé d'étape, rubrique « garde-fous resserrés », pour validation a posteriori par le founder. Un garde-fou **assoupli** reste F4, avant toute application. »
+  Gel des garde-fous — décision du founder (2026-11-11, F4), citée telle quelle : « Une fois le lot de retouches terminé (L2 compris), les garde-fous sont gelés jusqu'à la fin de l'étape 20. Aucune modification de CLAUDE.md, des agents, des hooks, des réglages ou des règles de revue, sauf incident réel constaté (une lecture interdite, une action F3 non bloquée, une perte de données). Les remarques non bloquantes sur le processus vont dans une liste "processus à revoir" du briefing, sans être appliquées. Les faiblesses théoriques ne sont pas des incidents. »
+  Précision de Claude Code : le gel prend effet à la fin du lot de retouches, c'est-à-dire après le commit de L2b ;
+  L2b est donc la dernière modification de garde-fous admise avant la fin de l'étape 20, hors incident réel au sens
+  de la décision ; avant la fin du lot, L2a et L2b appliquent normalement les remarques non bloquantes sur le
+  processus ; après la fin du lot, elles vont dès leur réception à la liste « processus à revoir » du briefing, sans
+  être appliquées ; la règle (d) de D-REPRISE-010 (resserrement par les agents) est elle-même suspendue par le gel
+  pendant sa durée, sauf incident réel. Compléments de l'arbitre (arbitrage du 2026-11-11, Q4, D-REPRISE-018) : (i) la règle (d)
+  n'est pas abolie : elle qualifie les corrections d'incident — une correction qui resserre est listée (« garde-fous
+  resserrés »), une correction qui assouplit reste F4 avant toute application ; (ii) toute idée de resserrement reçue
+  pendant le gel va à la liste « processus à revoir », sans application ; (iii) « les garde-fous sont gelés » couvre
+  tous les garde-fous de `CLAUDE.md` §b (dont `AGENTS.md`, les doctrines `docs/skills/**`, le skill
+  `revue-croisee`) ; l'énumération du founder illustre, elle ne restreint pas ; au doute sur la qualité de garde-fou
+  d'un fichier → liste de §b, puis arbitre ; (iv) avant la fin du lot, L2a et L2b appliquent les remarques non
+  bloquantes **dans leur périmètre** (arbitrage du 2026-11-11, P11, D-REPRISE-018) ; ce qui le dépasse va à « processus à revoir ».
 
 Correspondance avec les 9 cas de D-REPRISE-003/005 (remplacés) ; elle sert aussi à lire les renvois historiques
 « escalade cas N » du journal, de la dette et des briefings. Fixés par le founder : cas 1 et 2 → F3 ; cas 4 → F1 ;
@@ -94,12 +110,26 @@ commence par le **type d'appel** ; les pièces requises en dépendent (D-REPRISE
   founder (D-REPRISE-014, 2026-11-04), citée telle quelle : « Ajoute à l'audit de clôture de l'arbitre et à la vérification avant push un contrôle obligatoire : `git status --porcelain` doit être vide, en dehors des dossiers ignorés. Sinon, NO-GO. »
   Règle unique de l'arbitre (arbitrage du 2026-11-04, D-REPRISE-014), citée telle quelle :
   « Application avant le commit (arbitre, 2026-11-04, précision d'application de D-REPRISE-014 ; contestable par le founder au résumé d'arbitrages de l'étape 19) : à l'audit de clôture, l'index préparé est par construction non vide ; le contrôle se lit donc « en dehors des fichiers de l'index préparé (`git diff --cached --name-only`) et des dossiers ignorés, `git status --porcelain` doit être vide » : aucune ligne `??` (`git ls-files --others --exclude-standard` vide), aucune ligne dont la 2ᵉ colonne est non vide (`git diff --name-only` vide) ; chaque ligne restante est un fichier de `git diff --cached --name-only`. Pièce absente ou contrôle échoué → NO-GO. Après le commit, avant le push : sortie vide, à la lettre (§d, §g). »
+  En audit de clôture, si l'index touche le dossier des avis anciens (`archives/avis-relecteurs/`) : `cloture.patch`
+  est pris avec `git diff --cached --binary --no-textconv -- . ':!archives/avis-relecteurs'` ; chaque fichier exclu
+  est désigné dans la saisine par son chemin, son statut (`git diff --cached --name-status -- archives/avis-relecteurs`),
+  son blob (`git rev-parse :<chemin>`) et sa taille (`git cat-file -s <blob>`), avec la liste complète
+  `git diff --cached --name-only` ; l'auditeur et Codex reçoivent, eux, le diff complet (D-REPRISE-004). Précision
+  d'application de la décision du founder du 2026-11-11 (option 3), par l'arbitre (arbitrage du 2026-11-11, Q3, D-REPRISE-018) ;
+  contestable par le founder au résumé d'arbitrages d'étape.
 Pièce requise absente → NO-GO, avec la liste. En cas de doute sur le type, l'arbitre applique la règle la plus
 exigeante et le dit. Pièce trop longue pour être collée : écrite dans `.claude/instantanes/cloture/` (non versionné,
 lisible par l'arbitre ; jamais `.revue-croisee/`), vidé avant chaque dépôt, et désignée par son chemin et son
 empreinte sha1. Audit contaminé
 (verdict d'un autre relecteur lu ou reçu en clôture) : invalidé, relancé dans un contexte neuf avec des pièces
 nettoyées.
+Avis anciens — décision du founder (2026-11-11, F4, option 3), citée mot pour mot : « Option 3. Les avis anciens en texte exact sont versionnés dans un dossier dédié interdit à l'arbitre par le filtre de lecture. Les résumés d'une ligne du journal et des relais, sur des sous-étapes déjà commitées, restent autorisés et sont dits tels dans CLAUDE.md §c. Le rejeu du test de réception exclut ce dossier. »
+Application : dossier dédié `archives/avis-relecteurs/`, à la racine du dépôt, refusé par le filtre de lecture
+(ci-dessous). Les résumés d'une ligne du journal et des relais, sur des sous-étapes déjà commitées, restent
+autorisés. Précision d'application de Claude Code (contestable par le founder au résumé d'arbitrages d'étape) : un
+tel résumé ne rend pas un audit contaminé ; le texte exact des avis anciens va dans le dossier dédié, jamais ailleurs
+dans un fichier lisible par l'arbitre. Le rejeu du test de réception de l'arbitre exclut ce dossier : procédure dans
+`docs/sessions/test-reception-arbitre.md`.
 
 Points d'appel :
 - **(a) Arbitrage** : chaque point qui aurait été escaladé et qui ne relève pas de F1–F4, et tout bloquant d'un
@@ -114,9 +144,13 @@ worktree> », skill `revue-croisee` §1 et §6 ; décision du founder du 2026-11
 question, il cherche par `path` précis (`docs`, `.claude/hooks`…). Il ne lit jamais `.revue-croisee/` : le filtre
 de lecture du projet (`.claude/settings.json` → `.claude/hooks/arbitre-lecture.js`), commun à l'auditeur et à
 l'arbitre et appliqué aux seuls appels de ces deux agents, refuse les sorties des relecteurs, le dossier de
-l'exécutant (dont `.claude/hooks-dev/`), le dossier déplacé hors revue, les transcriptions et dossiers temporaires
-des sessions, et tout Glob ou Grep dont la racine est le dépôt principal ou un de ses parents ; les lectures de chaque
-appel sont contrôlées dans sa transcription et consignées au rapport (TD-031).
+l'exécutant (dont `.claude/hooks-dev/`), le dossier déplacé hors revue, le dossier des avis anciens
+(`archives/avis-relecteurs/`, à toute profondeur ; décision du founder du 2026-11-11, option 3 ; arbitrage du
+2026-11-11, Q1 et Q2, D-REPRISE-018), les transcriptions et dossiers temporaires des sessions, et tout Glob ou Grep
+dont la racine est le dépôt principal ou un de ses parents, la racine d'un arbre qui contient le dossier des avis
+anciens (worktree de revue, dépôt principal, instantané) ou le dossier `archives/` de cet arbre, ou la racine des revues du projet
+(`G:/Unity/_revues/GuildsAndEmpires`) ou un de ses parents (arbitrage du 2026-11-11, B2, D-REPRISE-018) ; Read par chemin absolu reste admis dans les worktrees de revue ; les
+lectures de chaque appel sont contrôlées dans sa transcription et consignées au rapport (TD-031).
 Verdict binaire GO / NO-GO. Chaque arbitrage entre au journal, attribué à « arbitre ».
 
 ### d. Intégrité de l'index et boucle de commit (D-REPRISE-004 inchangée sur le fond)
@@ -176,6 +210,8 @@ page au plus. C'est la pièce que le founder apporte à Claude.ai pour l'audit i
   (périmètre de la Phase 2) ;
 - **signal skill** : nouveau domaine non couvert par les skills, ou même type d'erreur relevé deux fois ; sinon
   « aucun » ;
+- **garde-fous resserrés** : chaque resserrement décidé par un agent, avec son ID, pour validation a posteriori par
+  le founder (D-REPRISE-010, règle (d)) ;
 - **coût de coordination** : pour chaque sous-étape, nombre de passes de revue (par relecteur), de NO-GO et
   d'escalades.
 
@@ -190,11 +226,6 @@ Précisions d'application (Claude Code ; toutes vers plus de prudence par rappor
   sortie vide, à la lettre (D-REPRISE-014, règle unique de l'arbitre, §c, §d) ; sinon, pas de push, arbitre saisi.
 - Un push qui déclencherait un déploiement (workflow ajouté plus tard) reste F3, au titre du déploiement.
 - Suppression d'une branche locale dont les commits ne sont poussés nulle part : arbitre.
-- Jusqu'au lot de retouches du corps de l'arbitre (briefings, « Prochaine retouche »), chaque saisine d'audit de
-  clôture rappelle « push normal autorisé (D-REPRISE-009) » : le corps de l'agent range encore le push en F3. Ce
-  rappel est retiré quand le lot est appliqué. De même, jusqu'à ce lot, chaque saisine d'audit de clôture rappelle le
-  contrôle `git status --porcelain` en citant la règle unique de l'arbitre (§c, D-REPRISE-014), sans autre
-  formulation : le corps de l'agent ne le prévoit pas encore.
 
 ### h. Sessions : orchestrateur et exécutant (D-REPRISE-011)
 Décision du founder (2026-11-03, garde-fou resserré), règle d'origine citée telle quelle : « Une session = une
@@ -228,7 +259,11 @@ proposition, ni ouverture manuelle ; puis il s'arrête, sans autre action.
 Précisions d'application (Claude Code ; relues en revue croisée) :
 - **Orchestrateur** (session principale) : lit le briefing ; §a.1–§a.2 (ticket, revue du ticket), §a.6–§a.8 (revue
   du diff, audit de clôture, commit, contrôle de l'arbre), push (§g), relais écrit dans un chemin versionné (puce
-  « Relais ») ; sous-étape suivante. Il ne lit pas le code en détail et ne recopie aucun diff volumineux.
+  « Relais ») ; sous-étape suivante. Il ne lit pas le code en détail et ne recopie aucun diff volumineux. Avant de
+  lancer l'exécutant, il note `HEAD` (`git rev-parse HEAD`) ; à la reprise de main, avant de préparer l'index, il
+  vérifie que `HEAD` est inchangé et que `git diff --cached --name-only` est vide. La vérification « `HEAD` inchangé »
+  reste due à chaque reprise de main ; seule la condition « index vide » ne s'applique pas à une relance de
+  l'exécutant pour une correction quand l'index est déjà préparé (skill `revue-croisee` §5).
 - **Exécutant** (sous-agent `general-purpose` neuf par sous-étape) : reçoit le ticket par chemin de fichier ; §a.3–§a.5
   (implémentation, tests backend sur émulateur, compilation Unity, EditMode, Play) ; écrit son rapport et ses sorties
   dans `.claude/instantanes/executant/` (non versionné, jamais sous `Assets/` ni `.revue-croisee/` ; pièces de
@@ -237,7 +272,7 @@ Précisions d'application (Claude Code ; relues en revue croisée) :
   ni l'arbitre. Une commande refusée (il est non interactif), une clause STOP ou un point F1–F4 l'arrête :
   il le consigne et rend la main, sans contournement. Le Play de preuve reste soumis au puits actif (briefing,
   « Jouer le client sur les émulateurs »). Une correction demandée par un relecteur ou l'arbitre lui est renvoyée (le
-  même, repris par message, ou un neuf).
+  même, repris par message, seulement dans la même sous-étape ; sinon un neuf).
 - **Écritures protégées (D-REPRISE-015, 2026-11-08, F4)** : règle du founder, citée telle quelle : « **Pour L1 et tout
   lot qui touche des fichiers protégés** : l'exécutant prépare les contenus dans des fichiers de travail. La session
   principale fait les écritures protégées, regroupées au maximum, et me dit « autorisation demandée » une seule fois
@@ -270,7 +305,7 @@ Précisions d'application (Claude Code ; relues en revue croisée) :
   main. Précision de Claude Code (resserrement) : la session parente cesse toute
   action sur le dépôt et n'envoie aucun message à la session enfant. En relance d'étape, « sous-étape suivante »
   désigne la première sous-étape de l'étape suivante dans le briefing ; relance en milieu d'étape → sous-étape
-  suivante de la même étape (19.4c-2).
+  suivante de la même étape.
 - **Mémoire** : la règle « rien de durable… » couvre aussi la mémoire automatique du projet
   (`~/.claude/projects/…/memory/`), simple aide-mémoire : tout fait durable qui y figure est aussi dans le dépôt.
 - **Découpage** : une sous-étape trop grosse pour le contexte d'un exécutant (repère : 19.4b ≈ 140 000 jetons côté
