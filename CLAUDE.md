@@ -109,9 +109,14 @@ Points d'appel :
 - **(c) Avant toute question au founder**, l'arbitre la formule : français simple, options avec leur effet sur le
   jeu, une recommandation (§e).
 L'arbitre lit le dépôt (Read, Grep, Glob) ; il n'a ni écriture ni terminal. Les sorties git utiles sont jointes par
-Claude Code. Il ne lit jamais `.revue-croisee/` : le filtre du projet (`.claude/settings.json` →
-`.claude/hooks/arbitre-lecture.js`, appliqué aux seuls appels de l'arbitre) le refuse ; les lectures de chaque appel
-sont contrôlées dans sa transcription et consignées au rapport (TD-031).
+Claude Code. En audit de clôture, il lit le worktree de revue désigné dans sa saisine (« Dépôt : <chemin absolu du
+worktree> », skill `revue-croisee` §1 et §6 ; décision du founder du 2026-11-08, D-REPRISE-017) ; en arbitrage d'une
+question, il cherche par `path` précis (`docs`, `.claude/hooks`…). Il ne lit jamais `.revue-croisee/` : le filtre
+de lecture du projet (`.claude/settings.json` → `.claude/hooks/arbitre-lecture.js`), commun à l'auditeur et à
+l'arbitre et appliqué aux seuls appels de ces deux agents, refuse les sorties des relecteurs, le dossier de
+l'exécutant (dont `.claude/hooks-dev/`), le dossier déplacé hors revue, les transcriptions et dossiers temporaires
+des sessions, et tout Glob ou Grep dont la racine est le dépôt principal ou un de ses parents ; les lectures de chaque
+appel sont contrôlées dans sa transcription et consignées au rapport (TD-031).
 Verdict binaire GO / NO-GO. Chaque arbitrage entre au journal, attribué à « arbitre ».
 
 ### d. Intégrité de l'index et boucle de commit (D-REPRISE-004 inchangée sur le fond)
@@ -135,6 +140,8 @@ Verdict binaire GO / NO-GO. Chaque arbitrage entre au journal, attribué à « a
 - Après le commit, avant tout push : `git rev-parse HEAD^{tree}` doit être identique à l'arbre audité (skill §6), et
   `git status --porcelain` doit donner une sortie vide, à la lettre (D-REPRISE-014, règle unique de l'arbitre, §c).
   Sinon : pas de push, arbitre saisi.
+- Worktrees de revue retirés avant le commit : `git worktree list` ne montre aucun worktree sous
+  `G:/Unity/_revues/` ; aucune branche ni référence créée par les passes ; dossier de l'exécutant remis (skill §6).
 - `git show --stat` figure dans le rapport final, après le commit.
 
 ### e. Question au founder — français simple, pour un founder NON technique
@@ -239,8 +246,17 @@ Précisions d'application (Claude Code ; relues en revue croisée) :
   `.claude/skills/**`, et `docs/skills/**` depuis D-REPRISE-016) ; ces règles ne s'appliquent qu'aux sessions
   ouvertes après leur écriture. Le briefing n'est pas protégé (décision du founder, D-REPRISE-016) : il change à
   chaque sous-étape ; ses modifications restent soumises aux trois GO.
+  Consigne 1 du founder (2026-11-10, D-REPRISE-017), citée telle quelle : « 1. **N'écris plus aucun fichier protégé modification par modification.** Le développement du hook se fait dans un dossier de travail non protégé (par exemple `.claude/hooks-dev/`, ignoré par git), testé là. Quand c'est fini et revu : une seule copie vers `.claude/hooks/`, donc une seule « autorisation demandée ». Même règle pour CLAUDE.md, les agents et les réglages. Inscris-le dans le relais. »
+  Application : skill `revue-croisee` (en tête et §1 ; arbitrage de l'arbitre du 2026-11-11, Q4).
 - **Fichiers** : diffs et sorties volumineuses transmis par chemin et sha1 (relecteurs : skill `revue-croisee` §3 ;
-  arbitre : §c).
+  arbitre : §c). Toute revue (Codex, auditeur, arbitre) se fait dans un worktree dédié, hors du dépôt de travail,
+  pendant que le dossier de l'exécutant est déplacé hors du dépôt (décision du founder du 2026-11-08, D-REPRISE-017 ;
+  skill `revue-croisee` §1).
+  Contrôle des lectures : auditeur et arbitre, filtre de lecture du projet et transcription (§c, TD-031) ; Codex,
+  contrôle automatique de son journal après chaque relecture (`.claude/hooks/controle-journal-codex.js`) : recherche
+  de texte conservatrice, faux positifs acceptés (consigne 2 du founder du 2026-11-10, arbitrage de l'arbitre du
+  2026-11-11, D-REPRISE-017) ; règle, critère de bloquant et suites des codes 1 et 2 : skill `revue-croisee` §3.
+  Décision du founder (2026-11-08, F4, option 1), citée telle quelle : « Option 1. Pour Codex, la preuve exigée devient "n'a pas lu", contrôlée par l'analyse automatique de son journal après chaque relecture. Toute commande visant un chemin hors de la copie de revue → relecture écartée et refaite par un Codex neuf. Pour les relecteurs Claude, la preuve "ne peut pas lire" par le filtre reste exigée. »
 - **Relais (D-REPRISE-014, précision de Claude Code)** : un relais, et toute pièce durable, est écrit dans un chemin
   versionné — dans le briefing, ou sous `docs/sessions/relais-<sous-étape>.md` — jamais sous `.claude/` (ignoré par
   git), et commité avec la sous-étape qui le produit ; retour à la règle d'origine de D-REPRISE-011 (« relais écrit

@@ -5,6 +5,67 @@ audit de clôture de l'arbitre : GO, six remarques non bloquantes ; revues : GO,
 Ce fichier est écrit après le push de 19.5c. Il remplace, pour la suite, le « relais de 19.5d » annoncé par
 D-ETAPE19-019 et le briefing : la sous-étape suivante est le lot de retouches (point 1), puis 19.5d.
 
+**Consommé en L1** (D-REPRISE-017 ; L1 interrompue le 2026-11-10, reprise sous sa forme simplifiée le 2026-11-11) :
+points 1 (consignes du founder : partie « worktree dédié », filtre et vérification ; inscrites au journal), 2 (coût
+final de 19.5c, versé au briefing), 3 (5) (motifs à accolades, corrigés dans le filtre, TD-031), 4 (source « relais de
+19.5c » du briefing corrigée en « risques de l'arbitre dans D-ETAPE19-019 »), 5 et 6 (arbitrages et décision du
+founder inscrits au journal ; TD-032 et TD-039 mises à jour), 7 (déjà au journal : D-REPRISE-015, D-REPRISE-016),
+8 (« Reste à faire », points (1) à (3) : contrôle du journal de Codex réécrit selon la consigne 2, fichiers repris de
+`arbre/` et allégés, consigne 1 écrite au skill et à `CLAUDE.md`) et 9 (pièces portant des verdicts rangées hors du
+dépôt avant toute revue et tout appel de l'arbitre ; entrée de journal préparée versée dans la ligne D-REPRISE-017 ;
+journal, briefing et relais fusionnés sur HEAD) ; report de la revue de D-REPRISE-016 (précision 8 de
+l'orchestrateur, remarques non bloquantes) : paragraphe ADC du briefing, section seed TD-018 (« Depuis D-REPRISE-015,
+les identifiants Google locaux (ADC) sont révoqués par défaut… »), ligne D-REPRISE-016 « Application » remise dans
+l'ordre réel des faits, et constat de l'arbitre sur le message du filtre (TD-031).
+**Reportés** : à L2 — point 1, retouches (a)-(d) et le seul nouveau test de réception de l'arbitre (avec (e)-(h), (j),
+(k) du lot unique, briefing) ; point 3 (4), sans action, au résumé d'arbitrages de l'étape 19 ; à 19.5d — point 1 § 2
+(projet de skill « interface mobile et textes joueur », demande regroupée) ; point 3 (3) (`.utmp/`, prochaine
+sous-étape qui lance un build Android) et (6) (preuve de compilation par `groundTruth.compilationFailed`) ; au build
+de déploiement — point 3 (1) (Cloud Diagnostics) et (2) (permissions GMS/Firebase), point 4 (nature du build, nom de
+fichier et lignes du guide) ; à la résolution de TD-038 — point 4 (`TestRunBuilder.cs`). Report nommé de chaque point
+au briefing (« Prochaine étape »). Ordre de la suite : point 9.
+
+**Coût de coordination de L1** (comptes seulement, sans verdicts de la sous-étape en cours ; remarque de l'arbitre du
+2026-11-08 ; fourni par l'orchestrateur) :
+- L1 interrompue (sessions du 2026-11-08 au 2026-11-10 ; point 8) : ticket v1 → v16 ; revue du ticket : Codex 15
+  passes lancées (13 retenues, 1 échec, 1 écartée), auditeur 15 ; revue du diff : 6 passes de l'auditeur, 9 passes de
+  Codex dont 4 écartées par le contrôle du journal (1 code 2, 3 code 1) ; 6 passes d'exécution ; 8 arbitrages ;
+  3 décisions F4 du founder (D-REPRISE-015, D-REPRISE-016, consignes du 2026-11-10) ; 0 NO-GO de l'arbitre. Commit de
+  doc préalable `226bc60` : Codex 2 passes, auditeur 2, arbitre 1, 0 NO-GO, 0 escalade.
+- L1 simplifiée (session du 2026-11-11), état avant l'audit de clôture : arbitrage d'une
+  question : 1 (Q1-Q5, sans escalade), lancé après le déplacement hors du dépôt de `.claude/hooks-dev/L1/pieces-executant/`
+  (doublon des pièces de l'exécutant, verdicts compris), de `.claude/instantanes/executant/` et de `.claude/hooks-dev/`
+  (commande `mv`, 2026-11-11) ; ticket v17 → v18 : Codex 2 passes (contrôle du journal 0 et 0, contrôle provisoire de
+  l'orchestrateur, le script de L1 simplifiée n'existant pas encore), auditeur 2 passes (ticket corrigé une fois) ;
+  NO-GO : 0 ; escalade : 0 ; exécution : 1 exécutant ; revue du diff (arbre `3e8176d1`, index temporaire) : Codex 1
+  passe (contrôle du journal par le script de L1 simplifiée lancé depuis le dossier de travail : 11 blocs, 0 signalé,
+  code 0), auditeur 1 passe ; une seule série d'écritures protégées (6 fichiers), arbre après copie
+  identique à l'arbre relu, tests en place 442/442 et 73/73 ; rejeu du contrôle sur le journal réel `codex-diff-L1.log` :
+  11 blocs, 0 signalé, code 0. Passe courte prévue (arbitrage du 2026-11-11, Q4, condition 4) sur ce résumé des
+  preuves, distincte d'une correction ; audit de clôture à suivre. Les comptes finaux (passes courtes, audit de clôture)
+  sont versés au résumé d'arbitrages de l'étape 19, rubrique « coût de coordination ».
+- **Preuves §1 B de L1 simplifiée** (2026-11-11, filtre installé, après la copie ; quatre témoins au contenu aléatoire :
+  dossier de l'exécutant, `G:/Unity/_hors-revue/GuildsAndEmpires/`, `.revue-croisee/`, `.claude/hooks-dev/` ; copie de
+  revue dédiée) : **auditeur** — 25 appels d'essai (hors lecture de la consigne), 20 refus du filtre (Read des
+  quatre témoins, Glob et Grep sans `path` ou avec `path` = `.claude`, `.claude/instantanes`, `G:/Unity`,
+  `.claude/hooks-dev`, Read de `C:/Users/romai/.claude/projects/…` et de `C:/Users/romai/AppData/Local/Temp/claude/…`,
+  formes `\\?\…`, `_hors-revue.` et `~/…`, motif `.revue-croisee/*`), 5 appels admis dans la copie de revue, aucun
+  témoin atteint (vérifié dans la transcription : aucun résultat ne contient le contenu ni le nom du témoin) ;
+  **arbitre** — mêmes 25 appels, mêmes 20 refus, mêmes 5 appels admis, aucun témoin atteint (même vérification) ;
+  **Codex** — passe d'essai lui demandant de lire deux témoins par leur chemin absolu : contrôle du journal installé,
+  2 blocs, 2 signalés (chemin absolu hors de la copie ; noms `instantanes/executant`, `_hors-revue`), code 1. Témoins
+  supprimés, copie retirée. Remarque de l'arbitre pendant l'essai : l'index `MEMORY.md` de la mémoire automatique est
+  injecté par la plateforme dans le contexte de départ, hors du filtre (limite déjà inscrite dans TD-031). Sorties
+  brutes au rapport de clôture.
+- **Reports à L2** (relevés en revue du diff de L1 simplifiée) : (1) le skill
+  `revue-croisee` ne prévoit le déplacement de `.claude/hooks-dev/` et du dossier de l'exécutant qu'avant les passes de
+  revue, pas avant un « arbitrage d'une question » (paragraphe « Arbitre hors audit de clôture »), alors que le journal
+  (D-REPRISE-017) le dit pour chaque appel de l'arbitre ; risque couvert par le filtre (R1) ; (2) la phrase Q5 en tête
+  du fichier commun est lue aussi par l'auditeur et l'arbitre : préciser dans leurs corps
+  (`.claude/agents/auditeur.md`, `.claude/agents/arbitre-strategique.md`) qu'elle vise Codex seul ; (3) vérifier sur
+  les journaux réels que le journal de Codex double toutes les barres inverses du texte passé à `-Command`, pas
+  seulement celles du chemin de l'interpréteur (hypothèse de format de l'étape (1) du contrôle).
+
 1. **Consignes du founder reçues le 2026-11-08 pendant 19.5c** (décision F4 sur les garde-fous ; texte cité tel
    quel ; à inscrire au journal, attribuées au founder) :
 
@@ -194,6 +255,10 @@ D-ETAPE19-019 et le briefing : la sous-étape suivante est le lot de retouches (
    Claude Code, à soumettre à l'arbitre au début de la session suivante : cet ordre place la correction de TD-037
    avant la demande regroupée, alors que D-ETAPE19-018 la plaçait après la réponse du founder ; la décision du
    founder du 2026-11-09 prévaut, au doute vers le founder (D-REPRISE-007). **Remplacé par le point 9.**
+   **Fait (L1 simplifiée, D-REPRISE-017)** : points (1) à (3) de ce « Reste à faire » — contrôle réécrit (recherche de
+   texte, `.claude/hooks/controle-journal-codex.js` et ses tests), consigne 2 soumise à l'arbitre (arbitrage du
+   2026-11-11 : règle suffisante, pas de F4), fichiers repris de `arbre/` et allégés, une seule série d'écritures
+   protégées ; le point (4) est remplacé par l'ordre du point 9.
    Coût de coordination de L1 jusqu'ici (comptes seulement) : ticket v1 → v16 ; revue du diff : 6 passes de
    l'auditeur, 9 passes de Codex dont 4 écartées par le contrôle du journal (1 code 2, 3 code 1) ; 6 passes
    d'exécution ; 8 arbitrages ; 3 décisions F4 du founder (D-REPRISE-015, D-REPRISE-016, consignes du 2026-11-10).

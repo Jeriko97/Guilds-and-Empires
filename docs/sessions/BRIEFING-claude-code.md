@@ -30,7 +30,7 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
 - **Arbitre stratégique et escalade F1–F4 (D-REPRISE-007, D-REPRISE-008, 2026-11-03)** : le rôle d'auditeur
   stratégique et d'arbitre, tenu jusqu'ici dans Claude.ai, est l'agent `.claude/agents/arbitre-strategique.md`
   (Read, Grep, Glob seulement ; sorties git jointes par Claude Code ; filtre du projet `.claude/settings.json` →
-  `.claude/hooks/arbitre-lecture.js` qui lui interdit `.revue-croisee/` ; TD-031). La consigne commence par le type
+  `.claude/hooks/arbitre-lecture.js`, commun à l'auditeur et à l'arbitre depuis L1, D-REPRISE-017 ; TD-031). La consigne commence par le type
   d'appel : « arbitrage d'une question » (ni diff ni tests) ou « audit de clôture / proposition de modification »
   (diff de l'index, tests, rapport, décisions). Décisions applicables d'une saisine : joindre leur texte, ou leur
   « chemin + ligne » (règle « ID et texte », `CLAUDE.md` §c ; remarque de l'audit de clôture de 19.4c-1). Joindre
@@ -77,8 +77,23 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   puis s'arrête (`CLAUDE.md` §h). Précision de Claude Code (resserrement) : la session parente cesse toute action
   sur le dépôt et n'envoie aucun message à la session enfant. Par renvoi, règle F4 du founder (D-REPRISE-013, 2026-11-04),
   inscrite dans `CLAUDE.md` §b, citée telle quelle : « Toute modification de CLAUDE.md ou de la définition d'un agent déclenche le contrôle de la plateforme : c'est attendu, et c'est l'application de F4. Ne jamais le contourner. »
-  Filtre de lecture étendu à l'auditeur (et à Codex si c'est possible) : lot unique, item (i) ; condition (d) du
+  Filtre de lecture étendu à l'auditeur (et à Codex si c'est possible) : lot unique, item (i), fait en L1
+  (D-REPRISE-017 ; pour Codex, aucun filtre possible : contrôle automatique de son journal) ; condition (d) du
   déploiement de 19.5 : ci-dessous (19.5) ; révisée le 11-04 par D-ETAPE19-016 (décision du founder, F4).
+- **Revues en worktree dédié (L1 du lot de retouches, D-REPRISE-017 ; décisions du founder du 2026-11-08, F4)** :
+  toute revue (Codex, auditeur, arbitre) se fait dans un worktree détaché sous `G:/Unity/_revues/GuildsAndEmpires/`,
+  créé sur l'arbre relu (commit technique `git commit-tree`, jamais référencé ni poussé), retiré après chaque passe ;
+  pendant la passe, `.claude/instantanes/executant/` et `.claude/hooks-dev/` sont déplacés dans
+  `G:/Unity/_hors-revue/GuildsAndEmpires/<sous-étape>/`.
+  Filtre de lecture commun à l'auditeur et à l'arbitre (`.claude/hooks/arbitre-lecture.js`, TD-031) ; Codex lancé
+  avec `-C <worktree>`, contenu précédé de la phrase de l'arbitrage du 2026-11-11 (Q5), journal contrôlé après chaque
+  passe par `.claude/hooks/controle-journal-codex.js` : recherche de texte conservatrice (consigne 2 du founder du
+  2026-11-10), code 1 → relecture écartée, refaite par un Codex neuf ; code 2 → arbitre (TD-039).
+  Fichiers protégés (consigne 1 du founder du 2026-11-10) : préparés et testés dans `.claude/hooks-dev/<sous-étape>/`
+  (ignoré par git), une seule copie après le GO des deux relecteurs, une seule « autorisation demandée » (skill
+  `revue-croisee`, en tête).
+  Procédure : skill `revue-croisee` §1, §3, §6. Ordre : L1 (fait) → L2 → 19.5d. Lot unique : items (i) et (l) faits
+  en L1 ; restent pour L2 : (a)-(h), (j), (k) et le seul nouveau test de réception de l'arbitre.
 - **Libellés courts et vouvoiement (D-REPRISE-012, 2026-11-03, F4, décision du founder)**, citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
   Inscrite dans `CLAUDE.md` §b et §f. Précisions de Claude Code : un libellé court décidé par l'arbitre entre au
   journal (attribué à « arbitre ») et au résumé d'arbitrages d'étape ; au doute entre libellé court et phrase → F2 ;
@@ -199,6 +214,10 @@ npm --prefix firebase/functions run seed:market -- --project guildsandempires-ca
 Identifiants : Application Default Credentials. Google Cloud CLI 591.0.0 installé le 11-01
 (`%LOCALAPPDATA%\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd`), ADC du founder dans
 `%APPDATA%\gcloud\application_default_credentials.json` (hors repo). Avertissement « quota project » sans effet.
+Depuis D-REPRISE-015, les identifiants Google locaux (ADC) sont révoqués par défaut ; règle du founder, citée telle
+quelle : « Les identifiants Google locaux (ADC) sont révoqués par défaut ; leur recréation fait partie de l'action F3
+qu'ils servent. » (`CLAUDE.md` §b). Toute exécution du seed en production commence donc par cette recréation, dans
+l'action F3 autorisée.
 
 ## État du repo (mise à jour : 2026-06-18 — historique, voir « Reprise » ci-dessus)
 
@@ -333,6 +352,9 @@ modification d'un garde-fou → F4. Contenu du lot :
   aucune modification du filtre avant le lot. Précision de Claude Code : pour Codex (« si c'est possible »), le lot
   vérifie si un filtre peut s'appliquer à un processus lancé hors Claude Code et le dit ; la conclusion, surtout en
   cas d'impossibilité, est rapportée au founder au résumé d'arbitrages d'étape. Résolution de TD-032.
+  **Fait en L1 (D-REPRISE-017)** : filtre commun à l'auditeur et à l'arbitre ; pour Codex, conclusion de l'arbitre
+  (2026-11-08) : « un filtre de lecture n'est pas possible pour Codex », remplacé par le contrôle automatique de son
+  journal (décision du founder, option 1) ; conclusion à rapporter au résumé d'arbitrages de l'étape 19.
 - (j) `CLAUDE.md` §h, puce « Relance (D-REPRISE-013) » : « (19.4c-2) » y est inscrit en dur comme exemple de
   relance en milieu d'étape ; à remplacer par un exemple daté ou à retirer (modification d'un garde-fou → F4, avec
   le lot ; remarque des relecteurs, sous-étape doc D-REPRISE-013).
@@ -347,7 +369,17 @@ modification d'un garde-fou → F4. Contenu du lot :
   appliqué.
 - (l) skill `revue-croisee` : le chemin du CLI Codex a changé (`bin/f71a721e0e6193a9/codex.exe`) ; modification du
   skill → F4, avec le lot ; d'ici là, le skill prévoit de prendre le plus récent (relais
-  `docs/sessions/relais-195b.md`, point 6).
+  `docs/sessions/relais-195b.md`, point 6). **Fait en L1 (D-REPRISE-017).**
+- Reste des items (g) et (j) après L1 (pour L2, nommément) : skill `revue-croisee` §3, règle d'invalidation
+  (contrôle de lecture de l'auditeur en échec → verdict invalidé, relance dans un contexte neuf) ; `CLAUDE.md` §b :
+  ajouter §h et D-REPRISE-011 à la liste des garde-fous ; `CLAUDE.md` §h, exécutant : « le même » exécutant repris
+  seulement dans la même sous-étape ; `CLAUDE.md` §h, contrôle de l'orchestrateur (`HEAD` noté avant l'exécutant,
+  inchangé et index vide à la reprise) ; si (f) est retenu, `.claude/agents/auditeur.md` l. 13 ; (j) en entier
+  (`CLAUDE.md` §h, exemple « (19.4c-2) »). Faits en L1 : nommer `.claude/instantanes/executant/` dans la puce du
+  contrôle de Codex (skill §3, contrôle du journal) ; commandes explicites de nettoyage de
+  `.claude/instantanes/revue/` et `.claude/instantanes/cloture/`, avant chaque passe (skill §1). Alignement des
+  corps d'agents sur le worktree (`.claude/agents/arbitre-strategique.md` et `.claude/agents/auditeur.md`, Tâche 0
+  par chemins relatifs ; nom du filtre `arbitre-lecture.js` cité par l'agent de l'arbitre) : L2, nommément (ticket L1).
 
 Fait : l'identification par Claude Code des « 4 précisions ajoutées au cas 3 » (les 4 premières puces de
 `CLAUDE.md` §g) a été confirmée par le founder le 2026-11-03 (D-REPRISE-010) ; plus rien à reporter au résumé
@@ -835,6 +867,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - **Pour le résumé d'arbitrages de l'ÉTAPE 19, 19.5-0b (D-REPRISE-014)** — **signal skill** (`CLAUDE.md` §f :
     « même type d'erreur relevé deux fois ») : fichiers de relais non versionnés, deuxième occurrence
     (`relais-195.md`, puis `relais-195a.md`) ; décision du founder, citée telle quelle : « Note-le comme « signal skill » pour le résumé de l'étape 19. »
+    Troisième occurrence (2026-11-08, `docs/sessions/relais-195-lot.md`, versionné ensuite par le commit de doc
+    `226bc60`), qualifiée par le founder « signal skill / garde-fou » (relais `relais-195-lot.md`, point 6), texte
+    cité tel quel : « Troisième occurrence d'un relais non versionné : c'est noté comme « signal skill / garde-fou » pour le résumé de l'étape 19. »
     Limite du contrôle (remarque 1 de l'arbitre, arbitrage du 2026-11-04 ; résumé fidèle) : le contrôle
     `git status --porcelain` n'aurait détecté ni `relais-195.md` ni `relais-195a.md` (sous `.claude/instantanes/`,
     ignoré) ; c'est la règle « Relais » de `CLAUDE.md` §h (chemin versionné) qui couvre l'incident. Arbitrage de
@@ -916,14 +951,15 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     fichiers réécrits par le build ; **correction d'une erreur de fait de l'arbitre (le `.meta` était suivi, non créé
     par l'Éditeur)** : `Assets/Resources.meta`, suivi depuis l'initialisation du projet, est conservé ; seuls les
     `PerformanceTest*` créés par le build sont supprimés). TD ouverte : TD-038 (dossier vide `Assets/Resources/`) ;
-    TD-017 complétée (ligne AppCheck). Coût de coordination de 19.5c (provisoire, version finale au relais de 19.5d) :
-    ticket 3 versions (v1 : Codex GO, auditeur GO APRÈS CORRECTION — 1 bloquant : téléchargements du build certains,
-    clause STOP sans décision du founder, inapplicable — ; v2 après l'arbitrage des téléchargements : passe courte, GO
-    des deux, six non-bloquants acceptés ; v3 après l'arbitrage des DLL et des fichiers réécrits : passe courte, GO des
-    deux, non-bloquants de l'auditeur et de Codex acceptés en six points) ; arbitrages hors clôture : 3
-    (téléchargements ; DLL et fichiers réécrits ; correction de fait de la Q2), plus 1 appel perdu ; un build échoué
-    (DLL Firebase exclues d'Android), repris après l'arbitrage ; build repris : réussi ; diff v1 : GO des deux
-    (non-bloquants acceptés) ; passe courte en cours ; aucune escalade.
+    TD-017 complétée (ligne AppCheck). Coût de coordination final de 19.5c (relais `docs/sessions/relais-195-lot.md`,
+    point 2, remplaçant la version provisoire) : ticket 3 versions (v1 : Codex GO, auditeur GO APRÈS CORRECTION — 1
+    bloquant : téléchargements certains, clause STOP sans décision du founder — ; v2, après arbitrage des
+    téléchargements : passe courte GO des deux, six non-bloquants acceptés ; v3, après arbitrage des DLL Firebase :
+    passe courte GO des deux, non-bloquants acceptés, puis correction factuelle de l'arbitre sur
+    `Assets/Resources.meta`) ; arbitrages hors clôture : 3 rendus (téléchargements, DLL / fichiers réécrits, correction
+    `Assets/Resources.meta`) + 1 appel perdu (lancé depuis `.revue-croisee/`) ; builds : 1 échoué, 1 réussi ; diff :
+    v1 GO des deux, passe courte après corrections GO des deux ; audit de clôture 1 (GO) ; NO-GO de fond : 0 ;
+    escalade : 0. Passes par relecteur : Codex 5, auditeur 5, arbitre 5 (dont 1 perdu).
   - **Incidents de procédure de 19.5c, au résumé d'arbitrages de l'ÉTAPE 19** : (1) un premier appel de l'arbitre a
     été lancé depuis `.revue-croisee/` : son filtre a refusé toute lecture, il n'a rien tranché (NO-GO de lancement) ;
     relancé depuis la racine du dépôt (`CLAUDE.md` §c : « lancé depuis la racine du dépôt (jamais depuis
@@ -932,6 +968,49 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     l'API d'import de Unity, build repris. (3) En appliquant la Q2, `Assets/Resources.meta` (suivi) a été supprimé puis
     rétabli aussitôt (` D` constaté, `git checkout -- Assets/Resources.meta`, dossier vide recréé) ; l'arbitre a
     corrigé sa Q2 (D-ETAPE19-019).
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, L1 du lot de retouches (D-REPRISE-017)** — rubrique « garde-fous
+    resserrés » (contestables par le founder ; inscription provisoire, la rubrique venant de D-REPRISE-010 (d),
+    appliquée avec L2 ; fondement : arbitrages de l'arbitre du 2026-11-08) : dossiers interdits
+    `C:/Users/romai/.claude/projects` et `C:/Users/romai/AppData/Local/Temp/claude` (Q5 ; retrait = suppression de deux
+    constantes) ; refus de Glob et Grep dont la racine est parente d'un dossier interdit, dont la racine du dépôt (R2,
+    remarque 4 de l'arbitrage Q5) ; dossier `C:/Users/romai/.codex/sessions` (arbitrage du contrôle du journal de Codex,
+    remarque 2) ; arbitrage du contrôle du journal de Codex, point 3 (vérification `120000`), en vigueur ; points 1
+    (grammaire fermée) et 5 (phrase des commandes admises) : abandonnés (consigne 2 du founder du 2026-11-10),
+    remplacés par l'arbitrage du 2026-11-11 ; arbitrage du 2026-11-11, Q1 (quatre graphies d'un chemin absolu, `~`,
+    `$HOME`, `$env:`, `%<nom>%`, ajoutées au contrôle simple ; liste des formes close ; réversible à coût nul) ;
+    dossier `G:/Unity/GuildsAndEmpires/.claude/hooks-dev` ajouté aux dossiers interdits du filtre (précision de Claude
+    Code, L1 simplifiée). Rubrique « décisions prises sans le founder » :
+    même arbitrage, points 2 (critère de bloquant) et 4 (limite écrite), remplacés par l'arbitrage du 2026-11-11
+    (Q2 et Q3), lecture par l'arbitre de la portée déjà fixée par les mots du founder ; texte brut de l'arbitre : « Je ne modifie aucun garde-fou : la lettre du
+    founder (« toute commande visant un chemin hors de la copie → écartée ») est respectée et même dépassée (tout jeton
+    inconnu est écarté). » (les guillemets intérieurs sont une reformulation de l'arbitre) ; texte exact du founder :
+    « Toute commande visant un chemin hors de la copie de revue → relecture écartée et refaite par un Codex neuf. » ;
+    Q1 (« les relais » = pièces hors index), Q3, Q4 de l'arbitrage du 2026-11-08 ; arbitrage du 2026-11-09 sur le
+    code 2 (revue du diff de L1 : détection des en-têtes inconnus du journal de Codex conditionnée à la ligne
+    précédente, avec auto-contrôle du format ; code 2 → relecture non retenue, arbitre saisi), révisé par l'arbitrage
+    du 2026-11-09 sur le rejeu : « détection des en-têtes inconnus par la forme abandonnée (format non délimité),
+    remplacée par un verrou sur la version de Codex ; code 2 → arbitre » ; arbitrage du 2026-11-09 sur la convergence
+    des passes de Codex : accolades admises dans la seule valeur d'un motif de recherche écrite entièrement entre
+    guillemets simples (abandonné, consigne 2 : plus de grammaire) et règle de convergence (un code 1 n'est jamais
+    traité en modifiant le contrôle ; fausse alerte supposée → arbitre saisi avant toute modification), contestables
+    par le founder ; arbitrage du 2026-11-11 (L1 simplifiée, D-REPRISE-017) : Q2 (critère de bloquant des revues du
+    contrôle), Q3 (limite en tête du script), Q4 (ordre : revue sur un index temporaire → une seule copie → preuves →
+    passe courte → audit de clôture), Q5 (phrase en tête du contenu envoyé à Codex), contestables par le founder ; la
+    règle simple jugée suffisante par l'arbitre (pas de F4, consigne 2 du founder). Conclusion
+    due au founder par D-REPRISE-013, item (i) (arbitre, 2026-11-08) : « un filtre de lecture n'est pas possible pour
+    Codex ». Signal skill
+    / garde-fou : relais non versionné, troisième occurrence (ci-dessus) ; format du journal de Codex pris pour acquis
+    à partir d'un seul journal, deux fois dans L1 (pièce du 2026-11-09 ; fichier de tests « au format réel ») : une
+    règle « toute affirmation sur le format d'un journal est accompagnée d'un relevé sur tous les journaux
+    disponibles » relèverait du skill `revue-croisee`, donc F4 — signalée, pas écrite (remarque 6 de l'arbitrage sur
+    le rejeu). TD mises à jour : TD-031, TD-032, TD-039.
+    Coût de coordination de L1 (interrompue puis simplifiée) : relais `relais-195-lot.md`, en-tête (comptes
+    seulement). Incidents d'outillage (D-REPRISE-017) : deux incidents git (relais, point 9) ; un troisième est un
+    signal au founder.
+  - **Pour le résumé d'arbitrages de l'ÉTAPE 19, D-REPRISE-016** (remarque de l'arbitre, audit de clôture de
+    D-REPRISE-016) : les règles `firebase *guildsandempires-ca543*` et `Invoke-WebRequest *guildsandempires-ca543*` sont
+    des précisions de Claude Code, vers plus de prudence, dans la règle « identifiant sans espace » décidée par le
+    founder ; règles `ask` non prouvées dans une session neuve : consigner le résultat au premier essai réel.
   - **Prochain lot de textes à soumettre au founder (F2)** — report du founder (2026-11-03, D-ETAPE19-014), cité tel quel : « Le message d'erreur inexact relevé par l'arbitre (« Action impossible : vérifiez l'état du slot. » pour un refus faute de ressources) est une phrase, donc F2 : inscris-le dans le briefing, pour qu'il me soit soumis dans le prochain lot de textes. »
     Contenu du lot (précision de Claude Code) : (1) ce message (`FirebaseProductionService.cs`,
     `FailedPrecondition`) — cas d'usage concret signalé par l'arbitre : c'est le message vu dans le scénario de
@@ -994,9 +1073,21 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     téléchargements Gradle : +605 Mo dans `%USERPROFILE%\.gradle\caches` (Firebase, services Google Play, AndroidX),
     SDK inchangé. Instructions pour le founder : `docs/guides/installer-build-android.md` (fichier à reconstruire au
     déploiement, jamais installé avant) ;
-  - lot de retouches (L1 puis L2, consignes du founder du 2026-11-08) — **sous-étape suivante**, avant 19.5d : entrée
-    `docs/sessions/relais-195-lot.md` (précision de Claude Code) ;
-    reprise de L1 simplifiée : points 8 et 9 du relais (consignes du founder du 2026-11-10, décision du 2026-11-11, D-REPRISE-017) ;
+  - lot de retouches (L1 puis L2, consignes du founder du 2026-11-08), avant 19.5d : entrée
+    `docs/sessions/relais-195-lot.md` (précision de Claude Code) ; L1 fait, sous sa forme simplifiée (consignes du
+    founder du 2026-11-10, arbitrage de l'arbitre du 2026-11-11 ; D-REPRISE-017) : revues en worktree dédié, filtre
+    commun, contrôle simple du journal de Codex, fichiers protégés préparés dans `.claude/hooks-dev/` ; **sous-étape
+    suivante : L2** (retouches (a)-(h), (j), (k) du lot unique, reste des items (g) et (j) listé ci-dessus, alignement
+    des corps d'agents sur le worktree, puis le seul nouveau test de réception de l'arbitre). Ordre de la suite
+    (décision du founder du 2026-11-11, D-REPRISE-017) : L2 → 19.5d → demande regroupée → correction TD-037 →
+    déploiement. Reports à L2, remarques de l'audit de clôture de 19.5c (relais
+    `relais-195-lot.md`, point 3) : (4) résumés de verdicts dans le coût de coordination lus comme contenu de §f —
+    sans action, rappelé au résumé d'arbitrages de l'étape 19 ; (5) refus à tort des motifs à accolades par le filtre —
+    corrigé en L1 (TD-031) ;
+  - reports à 19.5d (relais `relais-195-lot.md`, point 3) : (3) `.utmp/` (intermédiaires CMake / ninja de Gradle) à
+    ajouter à `.gitignore` par la prochaine sous-étape qui lance un build Android, dans son périmètre, puis complément
+    de D-ETAPE19-019 attribué à « arbitre » (décision de l'arbitre) ; (6) preuve de compilation de l'Éditeur : citer la
+    sortie brute `groundTruth.compilationFailed: false`, pas le rapport de l'exécutant (remarque réitérée) ;
   - garde-fous de poste (D-REPRISE-015, D-REPRISE-016, journal) : règles `ask` du projet (actives dans les sessions
     ouvertes après leur écriture), écritures protégées faites par la session principale, identifiants Google locaux
     révoqués et outil Firebase déconnecté (reconnexion = partie de l'action F3 qu'elle sert) ;
@@ -1005,12 +1096,22 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
     TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
-    [Avant le build de déploiement (D-ETAPE19-019, relais de 19.5c ; précision de Claude Code) : à reprendre
+    [Avant le build de déploiement (risques de l'arbitre dans D-ETAPE19-019 ; précision de Claude Code) : à reprendre
     `ProjectSettings/UnityConnectSettings.asset` (valeur en mémoire à 1 dans l'Éditeur lié aux services Unity, à
     trancher par l'arbitre) ; `Assets/Plugins/Android/FirebaseApp.androidlib/res/values/google-services.xml` suivi
     alors que `google-services.json` est ignoré (question à poser à l'arbitre) ; règle « même traitement à chaque
     build » des fichiers réécrits (rétablis ou supprimés par l'orchestrateur avant les revues) ; nature du build de
-    déploiement (de développement ou non) à trancher par l'arbitre.]
+    déploiement (de développement ou non) à qualifier par l'arbitre (F1/F2 possible : mention « Development Build »
+    visible à l'écran) ; si le build de déploiement n'est pas de développement, le nom de fichier et les l. 13-14 et 27
+    de `docs/guides/installer-build-android.md` changent (relais `relais-195-lot.md`, point 4). Remarques de l'audit de
+    clôture de 19.5c (relais `relais-195-lot.md`, point 3), même crochet : (1) la question réservée à l'arbitre avant le
+    build de déploiement vise explicitement Cloud Diagnostics (le journal du premier build dit « The Unity Cloud
+    Diagnostics service is enabled » alors que l'index porte `m_Enabled: 0` et `m_EnableCloudDiagnosticsReporting: 0`) ;
+    (2) permissions tirées des dépendances GMS/Firebase (`AD_ID`, `ACCESS_ADSERVICES_ATTRIBUTION`,
+    `ACCESS_ADSERVICES_AD_ID`, `BIND_GET_INSTALL_REFERRER_SERVICE`) : déclaration « sécurité des données » Google Play à
+    prévoir à la publication (F3 à ce moment-là). À verser dans TD-038 à sa résolution : `TestRunBuilder.cs` du paquet
+    Performance Testing crée lui-même `Assets/Resources/` s'il manque et le supprime après le build
+    (`CreateResourcesFolder`, `Cleanup`) (relais `relais-195-lot.md`, point 4).]
     [Ajustement du découpage par l'arbitre (arbitrage du 2026-11-08, D-ETAPE19-018 ; D-ETAPE19-016 : « ordre
     ajustable par l'arbitre ») : après la réponse du founder et **avant** le déploiement, une **sous-étape de
     corrections** — correction technique de T1 (TD-037, zone sûre) et corrections F2 approuvées par le founder,

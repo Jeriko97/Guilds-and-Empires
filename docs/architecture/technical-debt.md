@@ -999,8 +999,69 @@ Terminal retiré à l'arbitre ; filtre de lecture du projet (`arbitre-lecture.js
 `arbitre-lecture.test.js`) ; à chaque appel, lectures de l'arbitre contrôlées dans sa transcription et consignées au
 rapport, avec le modèle et l'empreinte de son prompt (`CLAUDE.md` §c-§d, skill `revue-croisee` §6).
 
+**Mise à jour L1 (2026-11-09 et 2026-11-11, D-REPRISE-017)** — filtre commun aux agents `auditeur` et `arbitre-strategique`
+(D-REPRISE-013, item (i) ; arbitrages de l'arbitre du 2026-11-08, Q3 et Q5) ; toute revue se fait en outre dans un
+worktree dédié hors du dépôt (skill `revue-croisee` §1), le filtre restant « en complément » (décision du founder).
+- **Dossiers interdits**, constantes nommées en tête du filtre, chemins absolus **propres à ce poste et au compte
+  Windows `romai`, à refaire sur tout nouveau poste** (même logique que D-REPRISE-006 ; sur un autre poste, le filtre
+  serait silencieusement incomplet) : `G:/Unity/GuildsAndEmpires/.revue-croisee`,
+  `G:/Unity/GuildsAndEmpires/.claude/instantanes/executant`, `G:/Unity/_hors-revue`,
+  `C:/Users/romai/AppData/Roaming/Claude/side-session-notes`, `C:/Users/romai/.codex/sessions`,
+  `C:/Users/romai/.claude/projects`, `C:/Users/romai/AppData/Local/Temp/claude`,
+  `G:/Unity/GuildsAndEmpires/.claude/hooks-dev` (dossier de travail des fichiers protégés, consigne 1 du founder du
+  2026-11-10 ; partie du dossier de l'exécutant élargi, déplacé avec lui pendant chaque passe ; ajout de L1 simplifiée,
+  précision de Claude Code, rubrique « garde-fous resserrés » du résumé d'arbitrages de l'étape 19) ; plus les noms
+  `.revue-croisee` et `.claude/instantanes/executant` à toute profondeur. Les dossiers interdits sont des constantes
+  absolues, jamais déduites de l'emplacement du script : les tests donnent les mêmes comptes lancés depuis
+  `.claude/hooks-dev/<sous-étape>/` et en place. `.claude/instantanes/cloture/` et `.claude/instantanes/revue/`
+  restent lisibles.
+- **Formes admises** (liste fermée) pour `file_path`, `path` et `cwd` : chemin absolu `X:/…` ou `X:\…`, ou relatif sans
+  séparateur en tête et sans `:` ; tout le reste est refusé avant normalisation (`~` en tête, `\…`, `/…` dont `\\?\`,
+  `\\.\`, `\??\` et les chemins réseau, `X:` sans séparateur, `:` ailleurs qu'en deuxième caractère, `?` ou `*`) ;
+  segment terminé par un point ou une espace refusé. Normalisation sans casse, `\` lu comme `/`, relatif résolu contre
+  le `cwd`, `.` `..` `//` résolus, puis chemin réel (`fs.realpathSync.native` sur l'ancêtre existant le plus profond)
+  pour couvrir jonctions et liens (dont `C:/Documents and Settings`, `Local Settings`, `Application Data`) ; échec de
+  résolution → refus.
+- **Règles** : Read refusé dans un dossier interdit (R1) ; Glob et Grep refusés si leur racine (`path`, à défaut le
+  `cwd`) est dans un dossier interdit (R1) ou **parente** d'un dossier interdit, dont la racine du dépôt principal,
+  `.claude`, `.claude/instantanes`, `G:/Unity`, `G:/`, `C:/Users/romai`… (R2) ; motif absolu, commençant par un
+  lecteur, `/` ou `\`, ou contenant `..` refusé (R3) ; refus reconduits des noms interdits, des noms courts `~` suivi
+  d'un chiffre et des segments à jokers qui peuvent désigner `.revue-croisee`, `instantanes` ou `executant` (R4) ;
+  `cwd` dans un dossier interdit (R5). Conséquence : Glob et Grep à la racine du dépôt (sans `path`) sont refusés ; les
+  relecteurs cherchent dans le worktree de revue ou par `path` précis (`docs`, `Assets`, `.claude/skills`,
+  `.claude/hooks`…), ce que dit le message de refus. Constat de revue du ticket : un Grep avec `path` = `.claude` n'a
+  pas trouvé `.claude/agents/arbitre-strategique.md` (versionné par une exception de `.gitignore`) : lire hooks,
+  agents et skills par Read, ou par Glob avec un `path` précis.
+- **Motifs à accolades désormais développés** (remarque 5 de la clôture de 19.5c, arbitrage du 2026-11-08,
+  remarque 3) : `Firebase.{Auth,Firestore,AppCheck}.dll.meta` avec `path` = `Assets` est admis ; chaque alternative est
+  contrôlée ; accolades non appariées, à une seule alternative ou plus de 256 alternatives → refus ; négation `!`
+  toujours refusée. Le message de refus nomme désormais la cause exacte (constat de l'arbitre du 2026-11-08 : l'ancien
+  message « … sur .revue-croisee/ » était plus étroit que la cause pour une accolade ou un `!`).
+- **Défense en profondeur** : tout autre outil que Read, Grep, Glob est refusé pour ces deux agents, test sur le
+  script seulement (le `matcher` de `.claude/settings.json` ne transmet que Read, Grep, Glob).
+- **Limite** : la preuve « ne peut pas lire » couvre les lectures par outil, pas ce que la plateforme injecte d'office
+  dans le contexte de chaque sous-agent (l'index de la mémoire automatique `MEMORY.md`) ; rappel : la mémoire ne
+  contient ni verdict ni raisonnement d'exécutant.
+- **Dépendance** : seule l'option `--ephemeral` du skill empêche Codex d'écrire ses transcriptions de revue sous
+  `C:/Users/romai/.codex/` ; dossier `sessions` désormais interdit ; `archived_sessions` à examiner en L2. Examen de
+  L2 étendu (revue du diff de L1, passe 4, remarque non bloquante de l'auditeur) aux autres emplacements des sessions
+  encore lisibles par l'auditeur et l'arbitre : sous `C:/Users/romai/.claude/`, `todos`, `file-history`,
+  `history.jsonl` et les plans éventuels ; sous `C:/Users/romai/.codex/`, `archived_sessions` et `log`.
+- **Hypothèse** : aucune jonction ni aucun lien sous les racines sûres (`docs`, `Assets`…) ; couverte pour le
+  worktree par la vérification `120000` avant chaque passe Codex (skill §1), qui reste due (arbitrage de l'arbitre du
+  2026-11-08 sur le contrôle du journal de Codex, point 3, maintenu par l'arbitrage du 2026-11-11). **Risque résiduel du dépôt
+  principal** (revue du diff de L1, passe 5, remarque non bloquante de l'auditeur) : l'hypothèse n'est vérifiée
+  que pour le worktree. En arbitrage d'une question, l'arbitre cherche dans les dossiers du dépôt principal
+  (`docs`, `.claude/hooks`…), et le filtre ne résout le chemin réel que de la racine qu'un appel désigne, pas des
+  entrées que Glob ou Grep parcourent sous elle : une jonction ou un lien créé sous une racine sûre du dépôt
+  principal y serait suivi sans contrôle. Aucune correction en L1.
+- `.claude/hooks/controle-journal-codex.js` (contrôle du journal de Codex, TD-039) est un **script de contrôle, pas un
+  hook** ; rangé dans `.claude/hooks/` parce que `.gitignore` n'en versionne pas d'autre ; ne jamais le brancher dans
+  `.claude/settings.json`.
+
 **Trigger de résolution :**
-Une permission par agent appliquée par la plateforme, ou toute lecture hors périmètre constatée.
+Une permission par agent appliquée par la plateforme, ou toute lecture hors périmètre constatée. Nouveau poste ou
+nouveau compte Windows : refaire les constantes du filtre (dossiers interdits) avant toute revue.
 
 ---
 
@@ -1008,7 +1069,8 @@ Une permission par agent appliquée par la plateforme, ou toute lecture hors pé
 
 **Identifié :** 2026-11-03 (arbitrage de la transmission par fichier, D-REPRISE-011 ; risque relevé par l'arbitre)
 **Criticité actuelle :** MOYENNE (indépendance des deux relecteurs)
-**Composant :** `.claude/hooks/arbitre-lecture.js` (filtre appliqué à l'arbitre seul), skill `revue-croisee` §3
+**Composant :** `.claude/hooks/arbitre-lecture.js` (filtre appliqué à l'arbitre seul jusqu'à L1 ; commun à l'auditeur
+et à l'arbitre depuis L1), skill `revue-croisee` §3
 
 **Description :**
 Avec la transmission des contenus volumineux par fichier (D-REPRISE-011), l'auditeur lit lui-même le dépôt ; rien ne
@@ -1036,12 +1098,25 @@ occurrence du même type d'erreur (« signal skill », `CLAUDE.md` §f ; relais 
 le filtre du lot unique, item (i), vise aussi `.claude/instantanes/executant/` (précision de Claude Code ; aucune
 modification de filtre ici, toute modification de filtre ou de skill reste F4, au lot unique).
 
+**Mise à jour L1 (2026-11-09, D-REPRISE-017) — résolution partielle** (arbitrage de l'arbitre du 2026-11-08 :
+« TD-032 à mettre à jour avec L1 (pas de nouvelle TD) ») :
+- **Auditeur** : résolu par le filtre de lecture commun à l'auditeur et à l'arbitre (`.claude/hooks/arbitre-lecture.js`,
+  TD-031) : `.revue-croisee/`, `.claude/instantanes/executant/`, le dossier déplacé hors revue et les transcriptions
+  des sessions sont refusés ; même limite que TD-031 (lectures par outil seulement, pas ce que la plateforme injecte
+  d'office dans le contexte du sous-agent). Toute revue se fait en outre dans un worktree dédié, où ces dossiers
+  n'existent pas. Le contrôle de la transcription reste en place (skill `revue-croisee` §3).
+- **Codex** : conclusion de l'arbitre (2026-11-08), due au founder par D-REPRISE-013, item (i), citée telle quelle :
+  « **un filtre de lecture n'est pas possible pour Codex** (processus hors Claude Code, bac à sable qui ne limite que
+  l'écriture) ». Mesure retenue par le founder (option 1) : worktree dédié, dossier de l'exécutant déplacé hors du
+  dépôt, contrôle automatique du journal après chaque relecture : voir **TD-039**.
+
 **Trigger de résolution :**
 Décision du founder (D-REPRISE-013) : lot unique de retouches, item (i) — étendre le filtre de lecture à l'auditeur
 (modification de `.claude/hooks/` et `.claude/settings.json`, décidée par le founder au journal : s'applique avec le
 lot sans nouvelle escalade). Pour Codex (processus lancé hors Claude Code, que le hook ne couvre pas), le lot
 vérifie si un filtre est possible et le dit ; s'il ne l'est pas, le contrôle de son journal reste la seule mesure,
-et la conclusion est rapportée au founder au résumé d'arbitrages d'étape.
+et la conclusion est rapportée au founder au résumé d'arbitrages d'étape. Fait en L1 pour l'auditeur ; volet Codex :
+TD-039 (déclencheur fixé par le founder).
 
 ---
 
@@ -1253,7 +1328,8 @@ résidus `PerformanceTest*` réapparaissent une deuxième fois (signal « même 
 
 ### TD-039 — Codex n'est pas isolé en lecture : la preuve est « n'a pas lu », pas « ne peut pas lire »
 
-**Identifié :** 2026-11-08 (commit de doc avant L1 ; décision F4 du founder du 2026-11-08, option 1)
+**Identifié :** 2026-11-08 (commit de doc avant L1 ; décision F4 du founder du 2026-11-08, option 1 ; mise en œuvre :
+D-REPRISE-017, L1 simplifiée)
 **Criticité actuelle :** MOYENNE (indépendance de Codex constatée après coup, pas garantie)
 **Composant :** lancement de Codex CLI dans le skill `revue-croisee` (TD-031, TD-032)
 
@@ -1271,6 +1347,110 @@ contrôle du journal, ou avant tout testeur externe. Rien à installer sur le po
 **Impact :**
 Précision de Claude Code : une lecture interdite de Codex est détectée après la relecture et coûte une relecture
 refaite ; elle n'est pas empêchée.
+
+**Mise en œuvre L1 (D-REPRISE-017)** — contrôle automatique du journal, version simple (consigne 2 du founder du
+2026-11-10 ; arbitrage de l'arbitre du 2026-11-11) : `.claude/hooks/controle-journal-codex.js` (script de contrôle,
+pas un hook ; jeu de tests `controle-journal-codex.test.js`), lancé après chaque passe Codex (skill `revue-croisee`
+§3). Consigne 2 du founder, citée telle quelle : « 2. **Simplifie L1 (consigne founder).** Le contrôle du journal de
+Codex doit être **conservateur et simple**, pas un analyseur de syntaxe shell : toute commande du journal qui contient
+un chemin absolu hors de la copie de revue, `..`, ou le nom du dossier de l'exécutant ou des relais → relecture
+écartée et refaite par un Codex neuf. Les faux positifs sont acceptés. Si l'arbitre juge que c'est insuffisant, il me
+le dit en F4. Sinon, on n'ajoute plus de cas de syntaxe. »
+- **Règle** (arbitrage du 2026-11-11, Q1 ; écrite en tête du script, qui fait foi) : recherche de texte dans la
+  commande de chaque bloc `exec` (dossier ` in <dossier>` compris) : chemin absolu hors de la copie de revue (lettre de
+  lecteur non suivie du chemin de la copie, chemin réseau `\\` ou `//`, forme Git Bash `/x/`, et les graphies `~`,
+  `$HOME`, `$env:`, `%<nom>%`), `..`, noms `.revue-croisee`, `instantanes/executant`, `_hors-revue`, `hooks-dev`,
+  `side-session-notes` → code 1 ; dossier ` in <dossier>` hors de la copie → code 1 ; seul préfixe exempté : le
+  chemin exact de `powershell.exe`, en tête de commande, relevé dans le journal réel. Code 2 (échec fermé) : journal
+  vide ou illisible, version de Codex autre que la version validée, ligne `sandbox: read-only` absente, aucun en-tête
+  de bloc reconnu, bloc `exec` incomplet. Codex est lancé avec le worktree de revue comme seul répertoire de travail
+  (`-C`), le contenu envoyé commençant par la phrase de l'arbitrage du 2026-11-11 (Q5) ; l'arbre relu est vérifié
+  sans lien symbolique (mode `120000`) avant chaque passe (arbitrage du 2026-11-08, point 3, toujours en vigueur).
+- **Limite** (arbitrage du 2026-11-11, Q3), citée telle quelle : « Le contrôle cherche du texte dans les commandes de
+  Codex : un chemin absolu hors de la copie de revue (lettre de lecteur, chemin réseau, forme `/x/`, `~`, `$HOME`,
+  variable d'environnement), `..`, ou le nom d'un dossier interdit. Il est conservateur : les faux positifs sont
+  acceptés (founder, D-REPRISE-017). Il ne voit pas un chemin construit (concaténation, encodage) ni ce qu'un
+  programme lit en interne : il détecte un relecteur qui se trompe ou qui s'écarte des consignes, pas un relecteur qui
+  chercherait délibérément à cacher une lecture. La garantie contre ce dernier cas est TD-039 (isolation par
+  conteneur), déjà ouverte par le founder. »
+- **Critère de bloquant des revues** (arbitrage du 2026-11-11, Q2), cité tel quel : « Une forme d'évasion que la
+  recherche de texte ne détecte pas (chemin construit par variable, concaténation, encodage, programme qui lit en
+  interne) n'est pas un bloquant de revue : la règle est fixée par la consigne 2 du founder (D-REPRISE-017 : « on
+  n'ajoute plus de cas de syntaxe ») ; elle est inscrite dans TD-039 comme risque résiduel. Seul l'arbitre peut juger
+  la règle insuffisante, et il le dit au founder en F4. Est un bloquant : une commande qui contient l'un des textes de
+  la règle et que le script, tel qu'écrit, ne signale pas ; **ou un bloc `exec` présent dans le journal que le script
+  n'analyse pas** (défaut d'implémentation, dans les deux cas). »
+- **Ce que la règle ne voit pas** (arbitrage du 2026-11-11, Q1.4), cité tel quel : « Ce que la règle ne voit pas, dit
+  noir sur blanc (TD-039) : chemin construit par concaténation ou encodage ; lecteur créé par `subst` ; ce qu'un
+  programme lit en interne — en particulier `git` dans le worktree, qui voit les objets du dépôt partagé
+  (`git log --all`, `git show <sha>`), déjà inscrit à mon arbitrage du 2026-11-08 (remarque 4). Couverture : TD-039
+  (conteneur), déclencheur fixé par le founder. » Risques résiduels en plus (revue du ticket L1 v17 ; précisions de
+  Claude Code) : chemin enraciné sans lettre de lecteur (`\Unity\…`), résolu par PowerShell sur le lecteur courant ;
+  variable d'environnement PowerShell écrite avec accolades (`${env:USERPROFILE}`), qui ne contient pas le texte
+  `$env:` (précision de Claude Code) ;
+  chemin relatif à un lecteur sans séparateur (`C:x`) ; ligne intérieure d'une commande sur plusieurs lignes qui se
+  termine elle-même par ` in <chemin de la copie>` (le reste de la commande est alors lu comme sortie : forme
+  délibérée) ; un type de bloc inconnu introduit sans changement de version (remarque 3 de l'arbitrage « rejeu » du
+  2026-11-09 ; les blocs d'appel d'outil autres que `exec` ne sont plus détectés, ticket L1 v18 : seuls les blocs
+  `exec` sont analysés) ; sans `-NoProfile`, PowerShell charge le profil du poste avant la commande (constat de
+  l'orchestrateur du 2026-11-09 : aucun des quatre profils n'existe sur ce poste ; à refaire sur tout nouveau poste).
+- **Codex reste capable de lire** `C:/Users/romai/.claude/projects` et `C:/Users/romai/AppData/Local/Temp/claude`
+  (transcriptions et dossiers temporaires des sessions) : chemins absolus hors du worktree, donc signalés par le
+  contrôle du journal s'il les écrit (arbitrage Q5 du 2026-11-08).
+- **Coût des fausses alertes** (accepté par le founder, consigne 2 ; arbitrage du 2026-11-11) : noms interdits, `~` ou
+  `%` dans un motif de recherche ; autre interpréteur en tête (`pwsh.exe`, `cmd.exe`, `bash.exe`, `node.exe`…) ;
+  `..` opérateur d'intervalle de PowerShell (`(Get-Content f)[0..200]`) ; `X:/` d'une adresse web `https://` ; `//`
+  (adresse web, commentaire `//` dans un motif de recherche) ; `/x/` d'un chemin relatif dont un segment n'a qu'une
+  lettre ; chemin absolu de la copie suivi d'un autre caractère que `/` (guillemet, espace : `'G:\…\<id>'`), la
+  comparaison se faisant dossier par dossier. Coût : une relecture refaite par un Codex neuf. La phrase envoyée à
+  Codex (Q5) les réduit.
+- **Liste des formes close** (arbitrage du 2026-11-11, Q1.3), citée : « après cet arbitrage, aucune autre forme n'est
+  ajoutée au contrôle, par personne, pour quelque raison que ce soit. Une forme nouvelle rencontrée ensuite n'est pas
+  un bloquant (Q2) et va dans TD-039. » Toute demande d'ajout passe par l'arbitre, qui ne peut répondre que « non » ou
+  par un F4 « insuffisant ». Règle de convergence (arbitrage du 2026-11-09 sur la convergence, condition 6) : un code 1
+  n'est jamais traité en modifiant le contrôle ; une fausse alerte supposée → arbitre.
+- **Abandonné (consigne 2)** : la grammaire fermée en refus par défaut (arbitrage du 2026-11-08 sur le contrôle du
+  journal de Codex, points 1, 2, 4 et 5, remplacés par l'arbitrage du 2026-11-11), la phrase des commandes admises
+  (`--liste`), l'exception des accolades dans les motifs (arbitrage du 2026-11-09 sur la convergence, conditions 1 à 5)
+  et les règles ajoutées par les passes 1 à 5 de la revue du diff de L1 (variables, arguments des programmes externes,
+  raccourcis d'aide) : sans objet pour une recherche de texte.
+- **Format du journal et verrou de version** (arbitrage de l'arbitre du 2026-11-09 sur le rejeu, D-REPRISE-017,
+  toujours en vigueur ; il révise l'arbitrage du 2026-11-09 sur le code 2, qui conditionnait la détection des
+  en-têtes à la ligne précédente) :
+  - **Aucune détection d'en-tête inconnu par la forme.** Pourquoi : le journal de Codex ne délimite pas les sorties
+    des commandes. Relevé de l'orchestrateur du 2026-11-09 sur les 160 journaux Codex alors présents sur le poste
+    (structure seulement ; 123 en `0.166.0-alpha.5.1`, 37 en `0.167.0-alpha.3.2` ; le chiffre « 153 » d'abord écrit
+    était une erreur de l'orchestrateur, corrigée) : les en-têtes réels suivent des lignes de commande d'un autre
+    `exec` lancé en parallèle (374 `exec`), des sorties (96 `exec`), des statuts (5 `exec`), des messages ou des
+    sorties (12 `codex`, 159 `tokens used`). Rien dans le texte ne sépare un en-tête d'une ligne de sortie ou d'un
+    message. Les en-têtes connus (`user`, `codex`, `exec`, `tokens used`) restent détectés sur toute ligne, quelle que
+    soit la précédente : aucun bloc `exec` n'échappe à l'analyse.
+  - **Verrou de version** : le jeu des types de blocs que Codex peut écrire est fixé par sa version. Le contrôle lit la
+    ligne `OpenAI Codex v<version>` du préambule (lignes qui précèdent le premier en-tête connu) et n'analyse que la
+    version dont le format a été relevé (constante `VERSION_CODEX_VALIDEE` = `0.167.0-alpha.3.2`, celle du journal
+    réel de la revue du diff de L1 et de la passe d'essai §1 B) : absente → code 2 « version de Codex absente du
+    préambule » ; différente → code 2 « version de Codex non validée : <lue> (validée : <constante>) ». Chaque sortie
+    du contrôle montre `Version de Codex : <lue>`. Code 2 → relecture non retenue, arbitre saisi.
+  - **Bac à sable** (remarque 1 de l'arbitre) : le contrôle présume un bac à sable qui bloque l'écriture. La ligne
+    `sandbox: read-only` figure dans le préambule des journaux réels de L1 (relevé de l'orchestrateur, 2026-11-09) :
+    elle est donc vérifiée ; absente du préambule → code 2.
+  - **Procédure de changement de version** (verrou fermé par une nouvelle version de Codex) : code 2 → arbitre saisi
+    avec un relevé de structure de la nouvelle version (en-têtes trouvés, ligne précédente, nombre de `exec` et de
+    statuts, lignes du préambule) ; l'arbitre valide ; la constante est mise à jour (fichier protégé : « autorisation
+    demandée », trois GO). Si cela se produit deux fois : proposer d'installer une version épinglée de Codex CLI, ce
+    qui est une installation sur le poste du founder, donc F3 (« Rien à installer sur le poste du founder sans
+    décision F3 »).
+  - **Risque de mise à jour automatique** (arbitre) : si Codex est distribué par un canal qui se met à jour seul
+    (chemin `f71a721e0e6193a9` du skill, version `alpha`), le verrou se fermera à chaque mise à jour : coût d'une
+    saisine, d'un relevé et d'une écriture protégée par mise à jour ; au deuxième cas, proposition d'épingler
+    l'installation (F3). Relevé de l'orchestrateur (2026-11-09, même périmètre que le relevé de structure) : sur les
+    160 journaux du poste, 123 en `0.166.0-alpha.5.1` (passes antérieures) et 37 en `0.167.0-alpha.3.2` : la version
+    a déjà changé une fois ; le format relevé couvre donc les deux versions, dont la version validée.
+  - **Fausses alertes de structure** (remarque 2 de l'arbitre, adaptée) : une ligne de sortie exactement `exec` suivie
+    de lignes dont aucune ne se termine par ` in X:\…` avant l'en-tête suivant → « bloc exec incomplet », code 2 →
+    arbitre (fermé, faible probabilité) ; si une ligne plus loin se termine par ` in X:\…` (la commande d'un vrai
+    `exec` suivant), le texte accumulé forme une commande composite, cherchée en entier (code 1 possible, relecture
+    refaite).
 
 **Trigger de résolution :**
 Fixé par le founder, cité tel quel : « une deuxième lecture interdite détectée malgré le contrôle du journal, ou avant
