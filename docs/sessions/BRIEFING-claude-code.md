@@ -996,7 +996,7 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     déploiement, jamais installé avant) ;
   - lot de retouches (L1 puis L2, consignes du founder du 2026-11-08) — **sous-étape suivante**, avant 19.5d : entrée
     `docs/sessions/relais-195-lot.md` (précision de Claude Code) ;
-    reprise de L1 simplifiée : point 8 du relais (consignes du founder du 2026-11-10) ;
+    reprise de L1 simplifiée : points 8 et 9 du relais (consignes du founder du 2026-11-10, décision du 2026-11-11, D-REPRISE-017) ;
   - garde-fous de poste (D-REPRISE-015, D-REPRISE-016, journal) : règles `ask` du projet (actives dans les sessions
     ouvertes après leur écriture), écritures protégées faites par la session principale, identifiants Google locaux
     révoqués et outil Firebase déconnecté (reconnexion = partie de l'action F3 qu'elle sert) ;

@@ -193,7 +193,24 @@ D-ETAPE19-019 et le briefing : la sous-étape suivante est le lot de retouches (
    t'arrêtes que pour F1 à F4 ou « autorisation demandée ». Le reste, tu le traites avec l'arbitre. » Lecture de
    Claude Code, à soumettre à l'arbitre au début de la session suivante : cet ordre place la correction de TD-037
    avant la demande regroupée, alors que D-ETAPE19-018 la plaçait après la réponse du founder ; la décision du
-   founder du 2026-11-09 prévaut, au doute vers le founder (D-REPRISE-007).
+   founder du 2026-11-09 prévaut, au doute vers le founder (D-REPRISE-007). **Remplacé par le point 9.**
    Coût de coordination de L1 jusqu'ici (comptes seulement) : ticket v1 → v16 ; revue du diff : 6 passes de
    l'auditeur, 9 passes de Codex dont 4 écartées par le contrôle du journal (1 code 2, 3 code 1) ; 6 passes
    d'exécution ; 8 arbitrages ; 3 décisions F4 du founder (D-REPRISE-015, D-REPRISE-016, consignes du 2026-11-10).
+9. **Décision du founder du 2026-11-11 (clôture du relais) — D-REPRISE-017, journal.** Elle remplace, sur l'ordre
+   de TD-037, la « lecture de Claude Code » du point 8 : aucune saisine de l'arbitre sur cet ordre. Ordre de la
+   suite, cité tel quel : « Ordre : L1 simplifié → reste du lot → 19.5d → demande regroupée → correction TD-037 →
+   déploiement. » ; « 4. La nouvelle session reprend L1 simplifié **en premier**, puisque son travail n'existe que
+   sur ce poste. »
+   Ticket de L1 simplifiée (remarque 2 de l'arbitre, D-REPRISE-017) : les pièces de `.claude/hooks-dev/L1/pieces-executant/`
+   contiennent des verdicts bruts de relecteurs ; elles sont déplacées avant toute revue **et avant tout appel de
+   l'arbitre**. L'entrée de journal préparée par L1 sous `D-REPRISE-017` (`arbre/`) est versée dans la ligne
+   D-REPRISE-017 déjà commitée, sans en changer les citations. Le journal, le briefing et le relais rangés dans
+   `arbre/` partent de `9010f19` : ils se fusionnent sur HEAD, jamais recopiés depuis `arbre/`.
+   **Incidents d'outillage** (rubrique demandée par le founder, à reporter au résumé d'arbitrages de l'étape 19) :
+   (1) 19.5c : fichier suivi `Assets/Resources.meta` supprimé pendant le nettoyage des fichiers du build, rétabli par
+   `git checkout -- Assets/Resources.meta` (D-ETAPE19-019) ; (2) relais de L1 (2026-11-10) : index git abîmé par
+   `git --work-tree=<dossier temporaire> checkout HEAD -- .` (informations de cache de l'index réécrites, fichiers du
+   relais retirés de l'index ; aucun fichier de l'arbre de travail modifié), réparé par `git read-tree HEAD`,
+   `git update-index -q --refresh` et une nouvelle indexation, arbre vérifié identique à l'arbre audité. Règle du
+   founder, citée telle quelle : « Si un troisième survient, c'est un signal à me soumettre. »
