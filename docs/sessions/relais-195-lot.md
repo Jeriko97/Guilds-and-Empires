@@ -337,7 +337,15 @@ audit de clôture de L1 simplifiée versé au journal (D-REPRISE-017) ; comptes 
      regroupée** (formulée par l'arbitre ; elle reprend telle quelle la question F2 du constat, sauf l'exemple de prix
      du point 7, que l'arbitre corrige (note du briefing : prix des kits fixe à 20 or), et soumet le projet de skill,
      question F4 et recommandation formulées par l'arbitre), puis correction de TD-037 et déploiement (ordre du
-     founder, D-REPRISE-017).
+     founder, D-REPRISE-017). Faite : 19.5e, ci-dessous.
+   - **19.5e faite (2026-11-11, D-ETAPE19-021)** : demande regroupée formulée par l'arbitre (F1, F2, F3, F4), dossier
+     `docs/sessions/2026-11-11-etape-19.5e-demande-regroupee.md`, section finale, transmise telle quelle au founder
+     après le commit ; points laissés à l'arbitre tranchés (B.1 à B.9). **Sous-étape suivante : attente de la réponse
+     du founder**, puis sous-étape de corrections (conversion des textes, F2 retenues, TD-037, TD-035 selon le bloc 4 ;
+     ouverture de la TD « build de distribution » ; versement des avis de L2b dans `archives/avis-relecteurs/` au
+     commit de cette sous-étape, ou à la première sous-étape qui s'intercale avant elle, B.2 (ii)), puis sous-étape
+     TD-019, puis F3-1 à F3-5 dans l'ordre autorisé (B.9 : F3-1 reconnexion, F3-2 alerte TD-021, F3-3
+     revérification (b) juste avant le déploiement, F3-4 déploiement, F3-5 Play ; briefing, découpage de 19.5).
    - **Fait** : sonde d'empreinte : 1 (empreinte nouvelle, test dans la même session) ; test de réception : 5 cas,
      (a) à (d) conformes, (e) réussi par décision du founder (option 3, attendu corrigé ; D-REPRISE-019) ; résultat :
      5 cas sur 5 réussis ; aucune lecture hors instantané. Saisines, attendus et sorties brutes :
@@ -486,6 +494,22 @@ audit de clôture de L1 simplifiée versé au journal (D-REPRISE-017) ; comptes 
      **question F2 en attente** : celle du constat `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, section finale
      (non soumise ; part dans la demande regroupée) ; remarque 3 de l'arbitre (table d'exemples de la doctrine C6 au
      tutoiement, garde-fou gelé) ; coût de coordination de 19.5d : briefing, entrée 19.5d du découpage de 19.5.
+   - **19.5d, remarque (4) de l'audit de clôture** (arbitre) : les remarques de la passe courte du diff de L2b ne
+     subsistent qu'en résumés d'une ligne (point 10) ; leur texte exact n'est pas conservé dans le dépôt (à dire au
+     résumé d'arbitrages de l'étape 19). Fait fourni par l'orchestrateur : les sorties d'origine de Codex existent hors
+     du dépôt (`.revue-croisee/codex-pcd-L2b.md`, non versionné) ; celles de l'auditeur, dans la transcription de la
+     session de L2b. Leur sort, décision de l'arbitre (D-ETAPE19-021, B.2 ; option 3 du founder, D-REPRISE-018 ;
+     D-REPRISE-011) : versement dans `archives/avis-relecteurs/` au commit de la sous-étape de corrections, ou à la
+     première sous-étape qui s'intercale avant elle (B.2 (ii)) ;
+     copie de Codex mise à l'abri hors du dépôt par l'orchestrateur le 2026-11-11 ; transcription de l'auditeur à
+     rechercher ; si elle est introuvable, une ligne au résumé d'arbitrages de l'étape 19.
+   - **Incident de procédure de 19.5d** (verdict d'une relecture de Codex écartée affiché, donc lu, non collé ni
+     utilisé) : briefing, entrée 19.5d du découpage de 19.5 (description et qualification de l'arbitre,
+     D-ETAPE19-021, B.1 : ni incident réel au sens du gel, ni troisième incident d'outillage ; compte à 2).
+   - **Signal skill** (19.5e, arbitre, D-ETAPE19-021, B.8), à reporter au résumé d'arbitrages de l'étape 19 :
+     (1) interface mobile (proposé, décision du founder en attente, bloc 5 de la demande regroupée) ;
+     (2) build et publication mobile (quand la chaîne iOS sera montée) ;
+     (3) « relais non versionné, troisième occurrence » (founder, 2026-11-08).
    - **Report à L2b** (soldé en L2b, D-REPRISE-020) : `docs/sessions/test-reception-arbitre.md` l. 9 : « aucun avis
      de relecteur » → « aucun avis de Codex ni de l'auditeur » (remarque de l'arbitre, arbitrage du 2026-11-11 sur la
      sortie du cas (a)) ; phrase finale : « aucun texte d'avis de Codex ni de l'auditeur, ni le corps de l'arbitre

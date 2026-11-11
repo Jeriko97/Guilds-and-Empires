@@ -13,11 +13,18 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
 ## Reprise 2026-11-01 — LIRE EN PREMIER
 
 - **Session relancée** (D-REPRISE-019) : lire d'abord le relais `docs/sessions/relais-195-lot.md`, point 10 (état du
-  lot de retouches, relance des sessions par carte « own_initiative » ; dernière puce : 19.5d faite le 11-11,
-  D-ETAPE19-020), puis la suite de ce briefing. **Sous-étape suivante : demande regroupée** (formulée par l'arbitre ;
-  elle reprend telle quelle la question F2 du constat `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, section
-  finale, sauf l'exemple de prix du point 7, que l'arbitre corrige (note du briefing : prix des kits fixe à 20 or), et
-  soumet le projet de skill `docs/sessions/2026-11-11-etape-19.5d-projet-skill-interface-mobile.md`).
+  lot de retouches, relance des sessions par carte « own_initiative » ; dernière puce : 19.5e faite le 11-11,
+  D-ETAPE19-021), puis la suite de ce briefing. 19.5e faite le 11-11 (D-ETAPE19-021) : demande regroupée formulée
+  par l'arbitre (F1, F2, F3, F4), dossier `docs/sessions/2026-11-11-etape-19.5e-demande-regroupee.md`, section
+  finale, transmise telle quelle au founder après le commit ; elle reprend la question F2 du constat
+  `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, exemple de prix du point 7 corrigé (note hors citation du
+  crochet « Depuis 19.5d » de la puce « demande regroupée au founder », découpage de 19.5, ci-dessous : prix des kits
+  fixe à 20 or). **Sous-étape suivante : attente de la réponse du founder**, puis sous-étape de corrections
+  (conversion des textes, F2 retenues, TD-037, TD-035 selon le bloc 4 ; ouverture de la TD « build de
+  distribution » ; versement des avis de L2b dans `archives/avis-relecteurs/` au commit de cette sous-étape, ou à
+  la première sous-étape qui s'intercale avant elle, D-ETAPE19-021, B.2 (ii)), puis sous-étape TD-019, puis F3-1 à
+  F3-5 dans l'ordre autorisé (B.9 : F3-1 reconnexion, F3-2 alerte TD-021, F3-3 revérification (b) juste avant le
+  déploiement, F3-4 déploiement, F3-5 Play).
 - Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
 - ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
   `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
@@ -106,7 +113,10 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   (ignoré par git), une seule copie après le GO des deux relecteurs, une seule « autorisation demandée » (skill
   `revue-croisee`, en tête).
   Procédure : skill `revue-croisee` §1, §3, §6. Ordre : L1 (fait) → L2a (fait) → L2b (fait) → 19.5d (arbitrage de
-  l'arbitre du 2026-11-11, P11 ; fait le 11-11, D-ETAPE19-020) → demande regroupée. Lot unique : items (i) et (l)
+  l'arbitre du 2026-11-11, P11 ; fait le 11-11, D-ETAPE19-020) → demande regroupée (19.5e, fait le 11-11,
+  D-ETAPE19-021) → attente de la réponse du founder → sous-étape de corrections → sous-étape TD-019 → F3-1 à F3-5
+  dans l'ordre autorisé (D-ETAPE19-021, B.9 : reconnexion, alerte TD-021, revérification (b) juste avant le
+  déploiement, déploiement, Play). Lot unique : items (i) et (l)
   faits en L1 ; faits en L2a (D-REPRISE-018) : (a)-(e), (g) pour `CLAUDE.md`, (h), (j), (k) et le seul nouveau test
   de réception de l'arbitre ; (f) non retenu (arbitre, 2026-11-11, P2) ; **fait en L2b (D-REPRISE-020)** : reste de
   (g) (skill `revue-croisee`, corps de l'auditeur) et le reste du lot. Lot terminé ; gel des garde-fous en vigueur
@@ -614,6 +624,9 @@ reportées nommément en L2b) :
 - Table d'exemples de la doctrine C6 au tutoiement (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`
   l. 175-177), contraire au vouvoiement (D-REPRISE-012) : garde-fou gelé, à revoir après le gel (remarque 3 de
   l'arbitre, 19.5d ; déjà signalée pour le résumé d'arbitrages de l'étape 19).
+- Rappel, sans application (arbitre, D-ETAPE19-021, B.1 (c) ; incident de procédure de 19.5d) : « l'orchestrateur
+  lance le contrôle du journal seul, puis lit le verdict seulement si le code est 0 » — c'est déjà la règle (skill
+  `revue-croisee` §3).
 
 ## Prochaine étape (2026-11-02)
 
@@ -1139,10 +1152,13 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     commun, contrôle simple du journal de Codex, fichiers protégés préparés dans `.claude/hooks-dev/` ; **L2a et L2b
     faites (D-REPRISE-018, D-REPRISE-020) ; lot de retouches terminé ; gel des garde-fous en vigueur jusqu'à la fin de
     l'étape 20 (« Processus à revoir », ci-dessus ; `CLAUDE.md` §b) ; 19.5d faite le 11-11 (D-ETAPE19-020) ;
-    sous-étape suivante : demande regroupée** (relais `docs/sessions/relais-195-lot.md`, points 8-10 pour la suite
+    19.5e (demande regroupée) faite le 11-11 (D-ETAPE19-021) ; sous-étape suivante : attente de la réponse du
+    founder** (relais `docs/sessions/relais-195-lot.md`, points 8-10 pour la suite
     de l'ordre du founder). Ordre de la suite (décision du
     founder du 2026-11-11, D-REPRISE-017 ; L2 découpée en L2a et L2b, arbitrage du 2026-11-11, P11) : L2a → L2b →
-    19.5d → demande regroupée → correction TD-037 → déploiement.
+    19.5d → demande regroupée → correction TD-037 → déploiement. Ajustement de l'arbitre (D-ETAPE19-021, B.5 ;
+    D-ETAPE19-016, « ordre ajustable par l'arbitre ») : sous-étape TD-019 (montée de `firebase-functions`, backend
+    seul) après la sous-étape de corrections, avant le déploiement.
     Reports nommés de L2b pour la clôture de l'étape 19 (arbitrage du 2026-11-11, P9 : écarts du briefing Claude.ai
     hors de la section du lot unique, non corrigés en L2b) : (1) `docs/sessions/BRIEFING-claude-ai.md`, « Méthode
     installée », puce « Relance de session par Claude Code » (l. ~53-62) : relance décrite selon D-REPRISE-013 et
@@ -1167,14 +1183,46 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     constat `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md` (relevé sur `c36955e`, 38 textes, sept phrases au
     tutoiement ; section finale : question F2 de l'arbitre, non soumise ; libellés courts n° 33 à 36 tranchés par
     l'arbitre) ; projet de skill, non créé, `docs/sessions/2026-11-11-etape-19.5d-projet-skill-interface-mobile.md`.
-    Coût de coordination provisoire de 19.5d (comptes seulement, sans verdict ; arrêtés avant l'audit de clôture, à
-    remplacer au commit suivant) : ticket 2 versions (v1 : Codex 1 passe, auditeur 1 passe ; v2 : Codex 1 passe,
-    auditeur 1 passe) ; 1 exécutant (repris 1 fois, phase 2) ; arbitrages : 1 (question F2, point d'appel (c)) ;
-    escalade : 1 F2 préparée, non soumise (demande regroupée) ; revue du diff : v1 (auditeur 1 passe, Codex 2 passes
-    écartées — contrôle du journal, code 1), v2 après correction (auditeur 1, Codex 1) ; 2 corrections ;
+    Coût de coordination final de 19.5d (comptes seulement, sans verdict ; remplace la version provisoire, versé au
+    commit de 19.5e) : ticket v1 (Codex 1, auditeur 1), v2 (Codex 1, auditeur 1) ; arbitrage (question F2) 1 ; diff
+    v1 : auditeur 1, Codex 2 écartées (contrôle du journal, code 1) ; correction 1 (délimiteur de la citation, prix de
+    l'exemple signalé hors citation, coût) ; diff v2 : Codex 1, auditeur 1 ; correction 2 (réserve « telle quelle »,
+    point 7 au projet de skill, lignes recoupées, coût) ; passe courte : Codex 1, auditeur 1 ; audit de clôture 1 ;
+    NO-GO : 1 (verdict de l'arbitre sur la question F2, au sens de l'escalade F2 ; aucun NO-GO bloquant) ; escalade :
+    F2 préparée, non soumise ; 1 exécutant (repris 3 fois).
+    Incident de procédure de 19.5d (à reporter au résumé d'arbitrages de l'étape 19), décrit par rapport à la lettre
+    du skill `revue-croisee` §3 (« le verdict écarté n'est ni lu ni collé ») : le verdict d'une relecture de Codex
+    écartée (code 1) a été affiché par l'orchestrateur dans la même commande que le contrôle du journal, donc lu ; il
+    n'a été ni collé ni utilisé. Depuis, l'orchestrateur lance le contrôle seul et lit le verdict seulement si le code
+    est 0 : simple application de la règle existante, aucune règle nouvelle (gel). Au regard du gel (« incident
+    réel » ou non) et de la règle du founder sur les incidents d'outillage (relais `docs/sessions/relais-195-lot.md`,
+    point 9) — qualification de l'arbitre (D-ETAPE19-021, B.1 (a) et (b)) : ni « incident réel » au sens du gel, ni
+    troisième incident d'outillage ; le compte reste à 2.
+    Remarques de l'audit de clôture de 19.5d (arbitre), destinations : (1) exemple du point 7 corrigé, confirmé par
+    l'arbitre (« Vendu 3 kits à 20 or : +60 or. ») → journal D-ETAPE19-020 et demande regroupée ; (3) seconde
+    correction nommée → coût ci-dessus ; (4) texte exact des remarques de la passe courte de L2b → relais
+    `docs/sessions/relais-195-lot.md`, point 11 ; (5) recommandation sur le projet de skill : rendue par l'arbitre dans
+    la demande regroupée (`docs/sessions/2026-11-11-etape-19.5e-demande-regroupee.md`, section finale) ;
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
     TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
+    [19.5e — **fait le 11-11** (D-ETAPE19-021) : dossier de faits et demande regroupée formulée par l'arbitre (F1
+    orientation ; F2 textes et mise en page ; TD-035, F1 puis F2, posée sans condition ; F4 projet de skill ; F3-1 à
+    F3-5 en oui / non), `docs/sessions/2026-11-11-etape-19.5e-demande-regroupee.md`, section finale, transmise telle
+    quelle au founder après le commit ; points laissés à l'arbitre tranchés (B.1 à B.9, D-ETAPE19-021) ; TD « Build
+    de distribution Android avant tout testeur externe » proposée par l'arbitre, non ouverte, à ouvrir au commit de la
+    sous-étape de corrections. Suite : **attente de la réponse du founder** → sous-étape de corrections (conversion
+    des textes, F2 retenues, TD-037, TD-035 selon le bloc 4 ; ouverture de la TD « build de distribution » ;
+    versement des avis de L2b dans `archives/avis-relecteurs/` au commit de cette sous-étape, ou à la première
+    sous-étape qui s'intercale avant elle, B.2 (ii)) →
+    sous-étape TD-019 → F3-1 à F3-5 dans l'ordre autorisé (B.9 : F3-1 reconnexion, F3-2 alerte TD-021, F3-3
+    revérification (b) juste avant le déploiement, F3-4 déploiement, F3-5 Play). Coût de coordination
+    provisoire de 19.5e (comptes seulement, sans verdict ; à remplacer au commit suivant) : ticket v1 (auditeur 1,
+    Codex 3 écartées — contrôle du journal, code 1), v2 (auditeur 1, Codex 1), v3 passe courte (auditeur 1, Codex
+    1) ; 1 exécutant (repris 2 fois) ; arbitrage (demande regroupée) 1 ; diff v1 : auditeur 1, Codex 1 ; arbitrage
+    (erratum de la demande regroupée) 1 ; correction 1 ; passe courte : auditeur 1, Codex 1 écartée (code 1) ;
+    correction 2 ; escalade : demande regroupée (F1, F2, F3, F4) préparée,
+    transmise après le commit.]
     [Depuis 19.5d (D-ETAPE19-020) : la demande regroupée reprend **telle quelle** la question F2 du constat
     `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, section finale, sauf l'exemple de prix du point 7, que
     l'arbitre corrige (note ci-dessous : prix des kits fixe à 20 or), et soumet le projet de skill
