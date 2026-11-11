@@ -1194,6 +1194,10 @@ Complément (2026-11-04, relais de l'audit de clôture de 19.4c-2, point 2) : «
 sept copies littérales : quatre dans `UI/Screens/ProductionScreen.cs` (l. 247, 639, 747, 899 après 19.4d ; l. 228, 598,
 695, 841 avant), deux dans `UI/Screens/MarketScreen.cs` (l. 142, 293) et une dans `UI/DebugScreenController.cs` (l. 64)
 (recensement complété en revue du diff de 19.4d) : à centraliser avec le lot TD-033 (aucune centralisation en 19.4d).
+Relevé exact du lot (19.5d, 2026-11-11) : `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md` (sept phrases au
+tutoiement, §3 point (3) ; confrontation avec cette liste, §2.3) ; question F2 formulée par l'arbitre, non soumise,
+section finale du même constat (D-ETAPE19-020). Dette **non fermée** : elle se ferme à la conversion, après la réponse
+du founder.
 
 **Impact :**
 Texte contraire à la règle du founder s'il atteint un joueur.

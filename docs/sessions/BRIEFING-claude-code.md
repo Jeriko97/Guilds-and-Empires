@@ -13,7 +13,11 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
 ## Reprise 2026-11-01 — LIRE EN PREMIER
 
 - **Session relancée** (D-REPRISE-019) : lire d'abord le relais `docs/sessions/relais-195-lot.md`, point 10 (état du
-  lot de retouches, relance des sessions par carte « own_initiative »), puis la suite de ce briefing.
+  lot de retouches, relance des sessions par carte « own_initiative » ; dernière puce : 19.5d faite le 11-11,
+  D-ETAPE19-020), puis la suite de ce briefing. **Sous-étape suivante : demande regroupée** (formulée par l'arbitre ;
+  elle reprend telle quelle la question F2 du constat `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, section
+  finale, sauf l'exemple de prix du point 7, que l'arbitre corrige (note du briefing : prix des kits fixe à 20 or), et
+  soumet le projet de skill `docs/sessions/2026-11-11-etape-19.5d-projet-skill-interface-mobile.md`).
 - Audit complet : `docs/architecture/audit-v2-2026-11-01.md` ; log : `docs/sessions/2026-11-01-reprise-audit-p0.md`.
 - ÉTAPE 18 (slice marché) entamée en juillet-août : `IMarketService`, `SellToMarketAsync`,
   `PlayerEconomyStateStore`, coquille `MarketScreen` + navigation (commitée le 11-01).
@@ -102,10 +106,11 @@ Plateformes de sortie : iOS et Android, priorité immédiate Android ; la chaîn
   (ignoré par git), une seule copie après le GO des deux relecteurs, une seule « autorisation demandée » (skill
   `revue-croisee`, en tête).
   Procédure : skill `revue-croisee` §1, §3, §6. Ordre : L1 (fait) → L2a (fait) → L2b (fait) → 19.5d (arbitrage de
-  l'arbitre du 2026-11-11, P11). Lot unique : items (i) et (l) faits en L1 ; faits en L2a (D-REPRISE-018) : (a)-(e),
-  (g) pour `CLAUDE.md`, (h), (j), (k) et le seul nouveau test de réception de l'arbitre ; (f) non retenu (arbitre,
-  2026-11-11, P2) ; **fait en L2b (D-REPRISE-020)** : reste de (g) (skill `revue-croisee`, corps de l'auditeur) et le
-  reste du lot. Lot terminé ; gel des garde-fous en vigueur (« Processus à revoir », ci-dessous).
+  l'arbitre du 2026-11-11, P11 ; fait le 11-11, D-ETAPE19-020) → demande regroupée. Lot unique : items (i) et (l)
+  faits en L1 ; faits en L2a (D-REPRISE-018) : (a)-(e), (g) pour `CLAUDE.md`, (h), (j), (k) et le seul nouveau test
+  de réception de l'arbitre ; (f) non retenu (arbitre, 2026-11-11, P2) ; **fait en L2b (D-REPRISE-020)** : reste de
+  (g) (skill `revue-croisee`, corps de l'auditeur) et le reste du lot. Lot terminé ; gel des garde-fous en vigueur
+  (« Processus à revoir », ci-dessous).
 - **Libellés courts et vouvoiement (D-REPRISE-012, 2026-11-03, F4, décision du founder)**, citée telle quelle : « Les libellés courts (boutons, noms d'états, formats de durée et de quantité) sont délégués à l'arbitre, à condition d'être listés dans le résumé d'étape. Les phrases (avertissements, confirmations, résumés, messages d'erreur, textes de maintenance) restent F2. Le vouvoiement est la règle pour tous les textes affichés au joueur. »
   Inscrite dans `CLAUDE.md` §b et §f. Précisions de Claude Code : un libellé court décidé par l'arbitre entre au
   journal (attribué à « arbitre ») et au résumé d'arbitrages d'étape ; au doute entre libellé court et phrase → F2 ;
@@ -602,7 +607,13 @@ reportées nommément en L2b) :
 - Filtre de lecture : examen de structure à faire (sans lecture de contenu) de `C:/Users/romai/AppData/Roaming/Claude/`
   hors `side-session-notes` (arbitrage de l'arbitre du 2026-11-11, L2b, suite de P7, remarque 3) et de
   `C:/Users/romai/.claude.json` (fichier voisin de la racine `C:/Users/romai/.claude`, non couvert) ; faiblesse
-  théorique, non incident (TD-031).
+  théorique, non incident (TD-031). À l'examen de `C:/Users/romai/.claude.json`, vérifier d'abord s'il contient des
+  textes de session, avant toute constante (audit de clôture de L2b, point 8).
+- Remarques non bloquantes de la passe courte du diff de L2b (six points) : relais `docs/sessions/relais-195-lot.md`,
+  point 10, résumés d'une ligne, non appliquées.
+- Table d'exemples de la doctrine C6 au tutoiement (`docs/skills/unity-mobile-gameplay-engineer/SKILL.md`
+  l. 175-177), contraire au vouvoiement (D-REPRISE-012) : garde-fou gelé, à revoir après le gel (remarque 3 de
+  l'arbitre, 19.5d ; déjà signalée pour le résumé d'arbitrages de l'étape 19).
 
 ## Prochaine étape (2026-11-02)
 
@@ -1072,6 +1083,12 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     l'étape 19 (questions F2 en attente). La question est formulée par l'arbitre (`CLAUDE.md` §c) ; conversion des
     textes après la réponse du founder seulement. Le lot est soumis au founder avant le déploiement de 19.5, pour
     qu'aucun texte au tutoiement n'arrive aux joueurs.
+    [Annotation (19.5d, D-ETAPE19-020) : relevé exact et question F2 de l'arbitre (non soumise) dans
+    `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`. Pour le **ticket de conversion** (après la réponse du
+    founder) : remarque 2 de l'arbitre — centraliser dans `PlayerMessages` les sept copies de « Erreur : service
+    manquant. » et les deux littéraux de `MarketScreen.cs` (l. 186, 337), et passer l'action à `MapErrorMessage` si
+    l'option 2 du point 1 est retenue ; TD proposée par l'arbitre, non ouverte, à ouvrir à ce ticket : « Valeurs
+    serveur recopiées dans des textes client » (« 20/heure », « 1 à 100 », tout délai chiffré).]
   - **Défauts de mise en page relevés en 19.5b (F2, dans la demande regroupée)** — constat
     `docs/sessions/2026-11-08-etape-19.5b-lisibilite-boucle.md`, §5 (chaque défaut avec sa proposition de correction,
     non appliquée ; question formulée par l'arbitre) : F2-1 ligne « Or · Logs · Planks · Kits » coupée au bord droit ;
@@ -1121,8 +1138,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     founder du 2026-11-10, arbitrage de l'arbitre du 2026-11-11 ; D-REPRISE-017) : revues en worktree dédié, filtre
     commun, contrôle simple du journal de Codex, fichiers protégés préparés dans `.claude/hooks-dev/` ; **L2a et L2b
     faites (D-REPRISE-018, D-REPRISE-020) ; lot de retouches terminé ; gel des garde-fous en vigueur jusqu'à la fin de
-    l'étape 20 (« Processus à revoir », ci-dessus ; `CLAUDE.md` §b) ; sous-étape suivante : 19.5d** (relais
-    `docs/sessions/relais-195-lot.md`, points 8-9 pour la suite de l'ordre du founder). Ordre de la suite (décision du
+    l'étape 20 (« Processus à revoir », ci-dessus ; `CLAUDE.md` §b) ; 19.5d faite le 11-11 (D-ETAPE19-020) ;
+    sous-étape suivante : demande regroupée** (relais `docs/sessions/relais-195-lot.md`, points 8-10 pour la suite
+    de l'ordre du founder). Ordre de la suite (décision du
     founder du 2026-11-11, D-REPRISE-017 ; L2 découpée en L2a et L2b, arbitrage du 2026-11-11, P11) : L2a → L2b →
     19.5d → demande regroupée → correction TD-037 → déploiement.
     Reports nommés de L2b pour la clôture de l'étape 19 (arbitrage du 2026-11-11, P9 : écarts du briefing Claude.ai
@@ -1135,18 +1153,38 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     `relais-195-lot.md`, point 3) : (4) résumés de verdicts dans le coût de coordination lus comme contenu de §f —
     sans action, rappelé au résumé d'arbitrages de l'étape 19 ; (5) refus à tort des motifs à accolades par le filtre —
     corrigé en L1 (TD-031) ;
-  - reports à 19.5d (relais `relais-195-lot.md`, point 3) : (3) `.utmp/` (intermédiaires CMake / ninja de Gradle) à
+  - reports de 19.5c (relais `relais-195-lot.md`, point 3), sans objet en 19.5d (sous-étape de documentation, ni build
+    ni compilation) et réorientés : (3) `.utmp/` (intermédiaires CMake / ninja de Gradle) à
     ajouter à `.gitignore` par la prochaine sous-étape qui lance un build Android, dans son périmètre, puis complément
     de D-ETAPE19-019 attribué à « arbitre » (décision de l'arbitre) ; (6) preuve de compilation de l'Éditeur : citer la
-    sortie brute `groundTruth.compilationFailed: false`, pas le rapport de l'exécutant (remarque réitérée) ;
+    sortie brute `groundTruth.compilationFailed: false`, pas le rapport de l'exécutant (remarque réitérée) — reporté
+    nommément à la prochaine sous-étape qui compile le client ;
   - garde-fous de poste (D-REPRISE-015, D-REPRISE-016, journal) : règles `ask` du projet (actives dans les sessions
     ouvertes après leur écriture), écritures protégées faites par la session principale, identifiants Google locaux
     révoqués et outil Firebase déconnecté (reconnexion = partie de l'action F3 qu'elle sert) ;
   - 19.5d — après le lot de retouches — lot de textes F2 (« Prochain lot de textes à soumettre au founder », ci-dessus) : question préparée par
-    l'arbitre, non soumise ; elle part seulement dans la demande regroupée ;
+    l'arbitre, non soumise ; elle part seulement dans la demande regroupée ; **fait le 11-11** (D-ETAPE19-020) :
+    constat `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md` (relevé sur `c36955e`, 38 textes, sept phrases au
+    tutoiement ; section finale : question F2 de l'arbitre, non soumise ; libellés courts n° 33 à 36 tranchés par
+    l'arbitre) ; projet de skill, non créé, `docs/sessions/2026-11-11-etape-19.5d-projet-skill-interface-mobile.md`.
+    Coût de coordination provisoire de 19.5d (comptes seulement, sans verdict ; arrêtés avant l'audit de clôture, à
+    remplacer au commit suivant) : ticket 2 versions (v1 : Codex 1 passe, auditeur 1 passe ; v2 : Codex 1 passe,
+    auditeur 1 passe) ; 1 exécutant (repris 1 fois, phase 2) ; arbitrages : 1 (question F2, point d'appel (c)) ;
+    escalade : 1 F2 préparée, non soumise (demande regroupée) ; revue du diff : v1 (auditeur 1 passe, Codex 2 passes
+    écartées — contrôle du journal, code 1), v2 après correction (auditeur 1, Codex 1) ; 2 corrections ;
   - demande regroupée au founder (F2 textes, F3 activation de l'alerte TD-021 et déploiement), formulée par
     l'arbitre, une fois 19.5a à 19.5d faites ; après la réponse : conversion des textes, activation de l'alerte
     TD-021, revérification (b) en lecture seule juste avant le déploiement, déploiement, Play de bout en bout.
+    [Depuis 19.5d (D-ETAPE19-020) : la demande regroupée reprend **telle quelle** la question F2 du constat
+    `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, section finale, sauf l'exemple de prix du point 7, que
+    l'arbitre corrige (note ci-dessous : prix des kits fixe à 20 or), et soumet le projet de skill
+    `docs/sessions/2026-11-11-etape-19.5d-projet-skill-interface-mobile.md` (question F4 et recommandation formulées
+    par l'arbitre). Remarque 4 de l'arbitre (19.5d) : le relevé n'a pas vérifié si une version de développement
+    affiche une console à l'écran ; à vérifier au Play sur le build ou au test TD-036, et à noter au rapport de la
+    demande regroupée si le point 3 de la question F2 (« console ») en dépend. Note (hors citation) : l'exemple de
+    vente du point 7 de la question (« Vendu 3 … à 12 or : +36 or. ») porte un prix qui n'existe pas dans le jeu (prix
+    des kits fixe à 20 or : `firebase/functions/src/shared/marketPrices.ts` l. 7 ; `docs/design/phase-1-economy-values.md`
+    l. 100) ; l'arbitre le corrige en formulant la demande regroupée ; la citation du constat reste inchangée.]
     [Avant le build de déploiement (risques de l'arbitre dans D-ETAPE19-019 ; précision de Claude Code) : à reprendre
     `ProjectSettings/UnityConnectSettings.asset` (valeur en mémoire à 1 dans l'Éditeur lié aux services Unity, à
     trancher par l'arbitre) ; `Assets/Plugins/Android/FirebaseApp.androidlib/res/values/google-services.xml` suivi
@@ -1193,8 +1231,9 @@ rendus) ; kits à la Sawmill ; idempotence sur lancement et arrêt. Corrige TD-0
     ci-dessus) ; mise en page F2-1 à F2-9 (« Défauts de mise en page relevés en 19.5b », ci-dessus), marge fixe de
     120 px une fois la zone sûre appliquée (une ligne), « sawmill lv1 » ; pour chaque défaut, la proposition de
     correction et la mention « avant / après le déploiement ». Reports du relais de 19.5c (`docs/sessions/relais-195c.md`,
-    points 3 (3) et 4 ; à écrire en 19.5d) : la question F1/F2 de TD-035 (maintenance étendue au marché, phrase
-    affichée) figure d'emblée dans la demande regroupée, sous forme conditionnelle (si F2-5 ou F2-6 sont retenues) ;
+    points 3 (3) et 4 ; à écrire dans la demande regroupée) : la question F1/F2 de TD-035 (maintenance étendue au
+    marché, phrase affichée) figure d'emblée dans la demande regroupée, sous forme conditionnelle (si F2-5 ou F2-6 sont
+    retenues) ;
     F2-2 a été élargi après l'arbitrage (carte du slot actif, « Arrêter » à moitié visible sur S10e) : le dire dans la
     demande regroupée. Recommandation de l'arbitre (Q4), citée telle quelle :
     « **avant le déploiement** — T1 (technique, TD-037), **F2-1** (le compteur de Kits n'est jamais visible : le

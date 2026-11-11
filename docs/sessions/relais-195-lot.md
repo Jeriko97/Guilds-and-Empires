@@ -312,7 +312,32 @@ audit de clôture de L1 simplifiée versé au journal (D-REPRISE-017) ; comptes 
    test de réception joués le 2026-11-11 (D-REPRISE-018, D-REPRISE-019).
    - **L2b faite (D-REPRISE-020) ; lot de retouches terminé ; gel des garde-fous en vigueur** à partir du commit de
      L2b, jusqu'à la fin de l'étape 20 (`CLAUDE.md` §b ; liste « processus à revoir » du briefing). Sous-étape
-     suivante : 19.5d (ordre du founder : points 8-9). Le « Report à L2b » du point 11 est soldé.
+     suivante à la fin de L2b : 19.5d (ordre du founder : points 8-9 ; faite, ci-dessous). Le « Report à L2b » du
+     point 11 est soldé.
+   - **L2b, remarques non bloquantes de la passe courte du diff** (sous-étape commitée, `c36955e`) — résumés d'une
+     ligne de Claude Code, sans citation (option 3 du founder, `CLAUDE.md` §c) ; « processus à revoir », gel
+     D-REPRISE-018 : **non appliquées**. Source : notes de l'orchestrateur de L2b (hors dépôt) ; ce relais en est
+     désormais la seule trace durable.
+     (1) TD-039 : la commande de comptage citée a perdu une barre inverse, et les 2 656 lignes comptées sont des lignes
+     candidates (le filtre portait sur tout le journal, pas sur les seules commandes) ;
+     (2) TD-039 : dire ce que l'hypothèse non confirmée change pour l'étape (1) du contrôle (risque résiduel), sans
+     toucher au script ;
+     (3) TD-039 : préciser que les quatre extraits de journaux de Codex versionnés sont du texte de commande et non des
+     avis, ou n'en garder que les comptes ;
+     (4) tests du filtre : depuis le retrait de `.claude` et `.codex` de `PARENTS`, plus aucun cas Grep visant
+     exactement ces deux dossiers (couverture en baisse, aucun refus devenu admis) ;
+     (5) D-REPRISE-020, colonne « Application » : l'énumération du filtre complété ne nomme pas la racine des revues du
+     projet et ses parents ;
+     (6) ce relais, l. ~36 : tournure à corriger sur la vérification faite par l'orchestrateur (forme seulement).
+   - **L2b, dossier de l'exécutant** : remis avant le commit `c36955e` (ligne demandée par l'audit de clôture de L2b).
+   - **19.5d faite (2026-11-11, D-ETAPE19-020)** : constat du lot de textes
+     `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md` (relevé sur `c36955e` ; section finale : question F2
+     formulée par l'arbitre, **non soumise**) ; projet de skill, non créé,
+     `docs/sessions/2026-11-11-etape-19.5d-projet-skill-interface-mobile.md`. **Sous-étape suivante : demande
+     regroupée** (formulée par l'arbitre ; elle reprend telle quelle la question F2 du constat, sauf l'exemple de prix
+     du point 7, que l'arbitre corrige (note du briefing : prix des kits fixe à 20 or), et soumet le projet de skill,
+     question F4 et recommandation formulées par l'arbitre), puis correction de TD-037 et déploiement (ordre du
+     founder, D-REPRISE-017).
    - **Fait** : sonde d'empreinte : 1 (empreinte nouvelle, test dans la même session) ; test de réception : 5 cas,
      (a) à (d) conformes, (e) réussi par décision du founder (option 3, attendu corrigé ; D-REPRISE-019) ; résultat :
      5 cas sur 5 réussis ; aucune lecture hors instantané. Saisines, attendus et sorties brutes :
@@ -449,6 +474,18 @@ audit de clôture de L1 simplifiée versé au journal (D-REPRISE-017) ; comptes 
      5 cas, 1 STOP ; décisions F4 du founder : 4 au total pour L2 (option 3 avis anciens, gel, cas (e), relance) ;
      delta après le test : 1 exécutant ; arbitrages : 1 (sortie du cas (a), passe courte du delta) ; passe courte du
      delta et suites : versées au commit de L2b ; comptes arrêtés à l'index soumis à l'audit de clôture.
+   - **Reports de l'audit de clôture de L2b** : (7) « décisions prises sans le founder » : citer en une ligne chacune
+     les conditions (i) à (iii) de l'arbitrage « suite de P7 » (D-REPRISE-020 ne cite que la décision et la condition
+     (iv)) ; (9) reporter la précision de Claude Code « reformulation de D-REPRISE-017 » : écart « v16 » assumé par
+     rapport à la remarque 2 de l'audit de clôture de L1 simplifiée, raison inscrite dans D-REPRISE-020 (« v16 » gardé,
+     deux de ses précisions n'étant pas dans la v18, vérifié en L2b) ; écart signalé à l'arbitre de clôture de L2b.
+   - **19.5d** (D-ETAPE19-020) : **libellés courts tranchés par l'arbitre** (D-REPRISE-012, « listés dans le résumé
+     d'étape ») : n° 33 « Chargement… » (`ProductionScreen.uxml` l. 5 ; `ProductionScreen.cs` l. 202, 207, 1115),
+     n° 34 « Prêt. » (`ProductionScreen.cs` l. 213, 268, 336 ; `MarketScreen.cs` l. 166), n° 35 « Chargement des
+     prix… » (`MarketScreen.cs` l. 116), n° 36 « Vente en cours… » (`MarketScreen.cs` l. 298) — renvoi : D-ETAPE19-020 ;
+     **question F2 en attente** : celle du constat `docs/sessions/2026-11-11-etape-19.5d-lot-textes.md`, section finale
+     (non soumise ; part dans la demande regroupée) ; remarque 3 de l'arbitre (table d'exemples de la doctrine C6 au
+     tutoiement, garde-fou gelé) ; coût de coordination de 19.5d : briefing, entrée 19.5d du découpage de 19.5.
    - **Report à L2b** (soldé en L2b, D-REPRISE-020) : `docs/sessions/test-reception-arbitre.md` l. 9 : « aucun avis
      de relecteur » → « aucun avis de Codex ni de l'auditeur » (remarque de l'arbitre, arbitrage du 2026-11-11 sur la
      sortie du cas (a)) ; phrase finale : « aucun texte d'avis de Codex ni de l'auditeur, ni le corps de l'arbitre
